@@ -1,0 +1,13 @@
+[package]
+name = "clondar_pro"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.24.1" # GUIフレームワーク
+chrono = { version = "0.4.31", features = ["serde"] } # 時刻管理
+num-traits = "0.2"
+
+# Windows固有の最適化設定
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser"] }

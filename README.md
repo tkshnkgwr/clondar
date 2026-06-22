@@ -1,72 +1,107 @@
-# 🕒 Clondar Pro
+# 🕒 Clondar
 
-**Clondar Pro** は、Windows デスクトップに溶け込む、透過・枠なし・影なしの極限までミニマルなデザインを追求した、モダンなデスクトップウィジェット型時計＆カレンダーアプリです。
+**English** | [日本語版](./README.ja.md)
 
-Tauri v2 を基盤としており、低リソース消費で動作し、常に最前面（Always on Top）に配置して日々のスケジュールと時刻をスマートに確認できます。
+<!-- UPDATE 2026-06-21: Translated main README to English and linked to README.ja.md under multi-language structure. -->
 
-![Clondar Pro Showcase](https://picsum.photos/seed/clondar/1200/600?blur=2) <!-- ここに実際のスクリーンショットを配置してください -->
+**Clondar** is a modern desktop widget-type clock & calendar application that strikes an ultra-minimal look with a transparent, borderless, and shadowless design blending natively into your Windows desktop.
 
-## ✨ 主な機能
+Powered by Tauri v2, it operates with extremely low resource consumption, stays "Always on Top" if desired, and lets you check your schedules and time in a beautiful, streamlined view.
 
-- **💎 真のボーダレスデザイン**: Windows 標準のタイトルバー、枠線、影を完全に排除。
-- **🌑 透過背景 & グラスモーフィズム**: デスクトップ壁紙を活かしつつ、背景ぼかしで視認性を確保。
-- **⏰ ハイブリッドクロック**:
-  - **デジタル**: Impact系フォントを使用した力強い表示。12H/24H切り替え、秒表示ON/OFF対応。
-  - **アナログ**: スムーズなスイープ運針のミニマルな時計。
-- **📅 カレンダー機能**:
-  - 日本の祝日（振替休日・国民の休日対応）を完全サポート。
-  - 常に6週間を表示する安定したレイアウト。
-  - 全画面表示の「年間カレンダー」モーダル搭載（前年・翌年の切り替えに対応）。
-- **💾 状態の記憶**: 終了時のウィンドウ位置、時計の設定、透過設定、ピン留め状態を次回起動時に自動復元。
-- **🖱️ 自由な配置**: ウィンドウのほぼ全域がドラッグ可能。好きな場所に配置できます。
-- **📌 常に最前面**: 他のウィンドウに隠れることなく時刻を確認可能。
-- **🌓 ダークモード対応**: システム設定や気分に合わせてテーマを切り替え。
+![Clondar Showcase](https://picsum.photos/seed/clondar/1200/600?blur=1)
 
-## 🛠️ 技術スタック
+## ✨ Core Features
 
-- **Backend**: Rust / [Tauri v2](https://v2.tauri.app/)
-- **Frontend**: React 18 / Tailwind CSS
-- **Animation**: [Framer Motion](https://www.framer.com/motion/)
-- **Styling**: Fluent Design 準拠のモダンな UI
+- **💎 Genuine Borderless Design**: Windows default titlebars, borders, and window drop shadows are completely eliminated.
+- **🌑 Transparent Canvas & Glassmorphism**: Preserves your beautiful desktop wallpaper underneath while utilizing soft background-blur filters for peak readability.
+- **⏰ Hybrid Clock**:
+  - **Digital**: Bold, muscular display based on Impact-inspired typography. Supports 12H/24H formats and show/hide seconds sub-clock.
+  - **Analog**: Super-minimal sweep second hand movement.
+- **📅 Smart Calendar**:
+  - Full support for Japanese national holidays (including substitute and national press holidays).
+  - Built-in visual stability with a locked 6-week grid layout.
+  - Full-screen "Yearly Calendar" modal (with quick toggling to previous/next years).
+- **💾 Robust State Persistence (v1.2.0)**:
+  - **Physical Coordinate Restoring (DPI-Aware)**: Built to handle multi-monitor or high-DPI scaling (125%, 150%, etc.) to eliminate layout drift on start.
+  - **Startup Race-Condition Guard**: Incorporates an `isRestoringRef` locking gate preventing the window's centering animation from accidentally overwriting clean coordinate saves in LocalStorage.
+  - Restores clock visual preferences (seconds visible, 24-hour style), opacity level, and Always on Top toggle automatically upon relaunch.
+- **🖱️ Drag-Anywhere Canvas**: Fully interactive drag region mapped across the widget profile page.
+- **📌 Stay on Top**: Freeze the widget window over other app views to monitor calendars at a glance.
+- **🌓 Dynamic Dark Mode**: Synchronizes beautifully with system styling preferences.
 
-## 🚀 セットアップと開発
+## 🛠️ Tech Stack
 
-開発には [Node.js](https://nodejs.org/) と [Rust](https://www.rust-lang.org/) の環境が必要です。
+- **Backend / Core Engine**: Rust ([Tauri v2](https://v2.tauri.app/))
+- **Frontend / Framework**: HTML5 (CDN React 18) / Tailwind CSS
+- **Animation**: [Framer Motion](https://www.framer.com/motion/) (CSS Transitions)
+- **Styling**: Modern UI matching Fluent Design guidelines
 
-### 1. リポジトリのクローン
+---
+
+## 🚀 Getting Started & Local Development
+
+To run or compile this widget locally, you will need **Node.js** and **Rust** installed on your system.
+
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/clondar-pro.git
-cd clondar-pro
+git clone https://github.com/tkshnkgwr/clondar.git
+cd clondar
 ```
 
-### 2. 依存関係のインストール
-※ 現在の構成は CDN 経由の React を使用しているため、標準的な `npm install` は不要ですが、Tauri のビルドには Rust のセットアップが必要です。
-
-### 3. 開発モードでの起動
+### 2. Launch Dev server
 ```bash
+# Frontend is served using zero-dependency CDN delivery, so 'npm install' is NOT required.
 cargo tauri dev
 ```
 
-### 4. ビルド（インストーラーの作成）
+### 3. Build Production Installer
 ```bash
 cargo tauri build
 ```
-ビルド完了後、`src-tauri/target/release/bundle/msi/` にインストーラーが生成されます。
+Once build finishes, you will find compilation assets (.msi or .exe installer) generated under `src-tauri/target/release/bundle/msi/` or `src-tauri/target/release/bundle/nsis/`.
 
-## 📝 開発ガイドライン (Tauri v2 仕様)
+---
 
-このアプリはウィジェットとしての体験を最大化するために特殊な設定を行っています。
+## 🎨 Changing Your Application Icons
 
-- **影の削除**: Rust 側 (`main.rs`) の `set_shadow(false)` と `tauri.conf.json` の設定により、透過時の薄い影を抑制しています。
-- **権限管理**: `src-tauri/capabilities/default.json` にて、ドラッグ (`allow-start-dragging`) と終了 (`allow-close`) の権限を明示的に付与しています。
-- **イベント制御**: 透明な部分でもマウスイベントを拾えるよう、CSS で `pointer-events: auto` を設定しています。
+You can easily customize desktop and system tray icons by following these steps:
 
-## ⚠️ 注意事項
+### Method A: Automated Asset Slicing (Recommended)
+Tauri supports instant icon resizing through a single high-resolution square image source (512x512px or higher is recommended).
 
-- **Windows SmartScreen**: 未署名のインストーラーを実行すると警告が表示される場合があります。「詳細情報」をクリックして「実行」を選択してください。
-- **WebView2**: Windows 10/11 には標準搭載されていますが、古い環境では自動的にダウンロードが必要になる場合があります。
+1. Place your target image as `source_icon.png` in the project root.
+2. Open terminal and run:
+```bash
+npx tauri icon /path/to/source_icon.png
+```
+This utility automatically replaces all standard files inside `src-tauri/icons/` (e.g. `icon.ico`, `icon.icns`, and scaling PNG copies) and wires them to `tauri.conf.json`.
 
-## 📄 ライセンス
+### Method B: Manual Replacements
+If you prefer manual placement, overwrite the files below with identical file extensions and names:
+- **Windows Executable & Taskbar**: Replace `src-tauri/icons/icon.ico`
+- **Other OS Tray & Platform UI PNG assets**: Replace scaling assets under `src-tauri/icons/`
+
+After replacing, trigger a `cargo clean` and execute `cargo tauri dev` or `cargo tauri build` to render new icon skins onto your system environment.
+
+---
+
+## 📝 Desktop Widget Design Directives (Tauri v2 Golden Setup)
+
+This widget is specialized for Windows and low-spec environments using specific design parameters:
+
+- **1. Shadow Removal**:
+  Binds Rust-side `set_shadow(false)` commands with `tauri.conf.json` properties (`"shadow": false`) to fully eliminate default OS borders/glow margins.
+- **2. Scoped Permissions**:
+  Strict access keys (`allow-start-dragging`, `allow-close`, `allow-outer-position`, `allow-set-position`) are configured in `capabilities/default.json` to keep system memory footprints lightweight and sandboxed.
+- **3. Pointer Events**:
+  Configures `html, body { pointer-events: auto; }` so you can click and drag anywhere even on transparent backgrounds.
+
+## ⚠️ OS Warnings
+
+- **Windows SmartScreen**: Custom, un-signed installers will warrant a standard diagnostic security screen. Click on "More Info" and select "Run Anyway" during your initial boot.
+- **WebView2**: Standard in Windows 10 & 11 base machines. Older environments or stripped operating environments might require installing Microsoft WebView2 Runtime.
+
+## 📄 License
 
 [MIT License](LICENSE)
 

@@ -21,9 +21,10 @@ Powered by Tauri v2, it operates with extremely low resource consumption, stays 
   - Full support for Japanese national holidays (including substitute and national press holidays).
   - Built-in visual stability with a locked 6-week grid layout.
   - Full-screen "Yearly Calendar" modal (with quick toggling to previous/next years).
-- **💾 Robust State Persistence (v1.2.0)**:
-  - **Physical Coordinate Restoring (DPI-Aware)**: Built to handle multi-monitor or high-DPI scaling (125%, 150%, etc.) to eliminate layout drift on start.
+- **💾 Robust State Persistence (v1.2.2)**:
+  - **Physical Coordinate Restoring (DPI-Aware & Tauri v2 Optimized)**: Prevents coordinates drifting in multi-monitor or high-DPI scaling setups. Fully migrated to Tauri v2's modern `setPosition` API for improved stability.
   - **Startup Race-Condition Guard**: Incorporates an `isRestoringRef` locking gate preventing the window's centering animation from accidentally overwriting clean coordinate saves in LocalStorage.
+  - **On-Exit Instant Save**: Automatically captures and records the absolute window position right before the application closes, ensuring 100% position persistence regardless of dragging status.
   - Restores clock visual preferences (seconds visible, 24-hour style), opacity level, and Always on Top toggle automatically upon relaunch.
 - **🖱️ Drag-Anywhere Canvas**: Fully interactive drag region mapped across the widget profile page.
 - **📌 Stay on Top**: Freeze the widget window over other app views to monitor calendars at a glance.
@@ -96,6 +97,48 @@ This widget is specialized for Windows and low-spec environments using specific 
 - **3. Pointer Events**:
   Configures `html, body { pointer-events: auto; }` so you can click and drag anywhere even on transparent backgrounds.
 
+---
+
+## 🔍 Troubleshooting (FAQ)
+
+### Q. The widget disappeared off-screen (outside the desktop) and I cannot drag it back.
+Due to disconnecting multi-monitors or accidental coordinate saving, the widget may spawn off-screen. Follow these steps to reset:
+1. Close the application.
+2. Under Windows, clear the application's LocalStorage. Typically, you can find local storage cache files under `%LOCALAPPDATA%\com.clondar.pro`. Alternatively, if you have developer tools enabled, run `localStorage.clear();` inside the console, and relaunch the application to force it to reset back to the default center coordinates.
+
+### Q. The background is not transparent, or black/white borders and shadows are visible.
+1. Ensure your OS graphics drivers are up to date.
+2. The Tauri configuration might need a clean build. Navigate to the `src-tauri` directory, run `cargo clean`, and rerun `cargo tauri dev` or `cargo tauri build`.
+3. Check if Windows "Performance Options" -> "Show shadows under windows" is interfering with the borderless configuration.
+
+---
+
+## 🛠️ Advanced Development & Maintenance
+
+### 📅 Updating Japanese National Holidays (Legal Changes)
+If Japanese public holidays are amended by legislation, update the holiday calculation engine:
+1. Open [ui/index.html](./ui/index.html).
+2. Locate the `HolidayLogic` helper inside the React application scripts.
+3. Modify the date calculation routines inside `getHolidays(year)` to match the new legal requirements.
+4. Run `cargo tauri dev` to verify the rendering grid, and update [TEST_REPORT.md](./TEST_REPORT.md).
+
+### 📦 Release & Versioning Checklist
+Before packaging a new release, verify you have executed the following steps:
+
+1. **Bump Version Codes (3 Locations)**:
+   * `version` in [Cargo.toml](./Cargo.toml)
+   * `package > version` in `src-tauri/tauri.conf.json`
+   * Version markup text in [ui/index.html](./ui/index.html) (inside the `WindowFrame` header component)
+2. **Rebuild Application Icons (If changed)**:
+   * Provide a source image (512x512px+) and run `npx tauri icon /path/to/icon.png`.
+   * Make sure to run `cargo clean` to ensure Tauri updates system cache files.
+3. **Run Production Compilation**:
+   * Execute `cargo tauri build` and retrieve output bundles from the `src-tauri/target/release/bundle/` directory.
+4. **Log Changes**:
+   * Append your version notes into [CHANGELOG.md](./CHANGELOG.md).
+
+---
+
 ## ⚠️ OS Warnings
 
 - **Windows SmartScreen**: Custom, un-signed installers will warrant a standard diagnostic security screen. Click on "More Info" and select "Run Anyway" during your initial boot.
@@ -103,7 +146,7 @@ This widget is specialized for Windows and low-spec environments using specific 
 
 ## 📄 License
 
-[MIT License](LICENSE)
+[MIT License](./LICENSE)
 
 ---
-Developed by [lunatic.chariot](mailto:lunatic.chariot@gmail.com)
+Developed by [tkshnkgwr](https://github.com/tkshnkgwr)

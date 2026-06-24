@@ -64,8 +64,9 @@ graph TD
     - 背景透過状態
     - 最前面表示（ピン留め）状態
 - **ウィンドウ位置の復元 (ロバスト設計)**:
-    - 終了時のウィンドウの物理絶対座標 (`PhysicalPosition`) を記憶し、次回起動時にその位置へ自動的に移動。
+    - 終了時のウィンドウの物理絶対座標 (`PhysicalPosition`) を記憶し、次回起動時にその位置へ自動的に移動（Tauri v2 規格の `setPosition` API を使用）。
     - **位置検出ガード**: 起動直前の配置や位置復元中の過渡的移動によって発生する位置の誤上書きを完全に防ぐ、状態ロード・セキュリティロック設計（`isRestoringRef` による書き込み制限）を搭載。
+    - **終了時の即時保存**: ドラッグ中のイベント（`tauri://move`）検知や定期的なポーリングに加え、アプリ終了時（終了ボタンやEscキー押下）に現在の位置を明示的に取得し `localStorage` に書き込むことで、保存の確実性を100%に担保。
 
 ## 4. デザイン・UI/UX 仕様
 
@@ -90,7 +91,8 @@ graph TD
 3. **Pointer Events**: `html, body` に `pointer-events: auto` を設定し、透明部分でのドラッグ操作を安定化。
 4. **Startup Position Race-Condition Guard**: 起動時の自動センター寄せ（`center: true`）完了と JS による位置復旧動作 of タイムラグ中に、一時的な位置データを拾って LocalStorage を誤破壊するのを防ぐ `isRestoring` ガードの実装。これにより低スペック PC でも起動位置が極めて安定。
 5. **DPI-Aware Coordinate Restoration**: 座標復帰時に `type: pos.type || 'Physical'`（物理ピクセル座標）を保持・適用することで、DPIスケーリングの異なるマルチモニター環境へのポータビリティを確保。
+6. **Tauri v2 API Compatibility**: Tauri v2 のグローバル API の構成（`window.__TAURI__.webviewWindow.getCurrentWebviewWindow`）に準拠させ、位置復元時のAPIを廃止された `setOuterPosition` から `setPosition` に最適化。
 
 ---
-**最終更新日**: 2026年6月15日
-**バージョン**: 1.2.0 (v1.0.0.0)
+**最終更新日**: 2026年6月24日
+**バージョン**: 1.2.2 (v1.0.0.0)

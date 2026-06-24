@@ -76,11 +76,16 @@
         // --- Tauri v2 API Wrapper ---
         const getTauriWindow = () => {
             try {
-                if (window.__TAURI__ && window.__TAURI__.window) {
-                    return window.__TAURI__.window.getCurrentWindow();
-                }
-                if (window.__TAURI__ && window.__TAURI__.getCurrentWindow) {
-                    return window.__TAURI__.getCurrentWindow();
+                if (window.__TAURI__) {
+                    if (window.__TAURI__.webviewWindow && window.__TAURI__.webviewWindow.getCurrentWebviewWindow) {
+                        return window.__TAURI__.webviewWindow.getCurrentWebviewWindow();
+                    }
+                    if (window.__TAURI__.window && window.__TAURI__.window.getCurrentWindow) {
+                        return window.__TAURI__.window.getCurrentWindow();
+                    }
+                    if (window.__TAURI__.getCurrentWindow) {
+                        return window.__TAURI__.getCurrentWindow();
+                    }
                 }
             } catch (e) {
                 console.error("Tauri API access error:", e);
@@ -95,7 +100,17 @@
 
         const closeWindow = async () => {
             const win = getTauriWindow();
-            if (win) await win.close();
+            if (win) {
+                try {
+                    const pos = await win.outerPosition();
+                    if (pos) {
+                        localStorage.setItem('windowPosition', JSON.stringify({ x: pos.x, y: pos.y, type: pos.type || 'Physical' }));
+                    }
+                } catch (e) {
+                    console.error("Failed to save position on close:", e);
+                }
+                await win.close();
+            }
         };
 
         // --- Logic: 日本祝日計算 (歴史的精度向上版) ---
@@ -505,7 +520,17 @@
                                 if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
                                     // 起動直後の自動センター配置からスムーズに引き継ぐための適切な遅延時間（300ms）を確保
                                     await new Promise(resolve => setTimeout(resolve, 300));
-                                    await win.setOuterPosition({ x: pos.x, y: pos.y, type: pos.type || 'Physical' });
+                                    
+                                    let positionObj = { x: pos.x, y: pos.y, type: pos.type || 'Physical' };
+                                    if (window.__TAURI__ && window.__TAURI__.dpi && window.__TAURI__.dpi.PhysicalPosition) {
+                                        positionObj = new window.__TAURI__.dpi.PhysicalPosition(pos.x, pos.y);
+                                    }
+
+                                    if (win.setPosition) {
+                                        await win.setPosition(positionObj);
+                                    } else if (win.setOuterPosition) {
+                                        await win.setOuterPosition(positionObj);
+                                    }
                                 }
                             }
                         }

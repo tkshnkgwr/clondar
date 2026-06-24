@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2] - 2026-06-24
+### Fixed
+- **Tauri v2 API 互換性の修正 (位置保存・復元)**:
+  - `getTauriWindow` が Tauri v2 のグローバル API 構造（`window.__TAURI__.webviewWindow.getCurrentWebviewWindow`）に適合していなかったため、正しくウィンドウオブジェクトを取得できていなかった問題を修正。
+  - ウィンドウ位置の設定 API を、Tauri v2 で廃止された `setOuterPosition` から `setPosition` に変更。
+  - 終了時（❌ボタン、Escキー）に確実にウィンドウ位置が保存されるよう、終了処理実行の直前に明示的に `outerPosition` を取得して `localStorage` に書き込む処理を追加。
+
 ## [1.2.1] - 2026-06-21
 ### Added
 - **マルチ言語README対応**: メインの `README.md` をグローバル利用を想定した英語（English）表記へ変更し、上部に日本語版へのダイレクトリンクを構成。日本語版は新設した `README.ja.md` へ完全分離・移行。

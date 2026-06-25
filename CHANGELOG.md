@@ -1,6 +1,16 @@
 # Changelog
 
 ## [1.2.2] - 2026-06-24
+### Added
+- **バージョン一括更新スクリプトの追加**: `scripts/bump-version.ps1` を導入し、リリース時のバージョン更新作業を自動化。
+
+### Changed
+- **プロジェクト内バージョンの統一**: 混在していた `Cargo.toml` (`0.1.0`)、`tauri.conf.json` (`1.0.0`)、各種ドキュメントのバージョンを `1.2.2` (内部バージョン `1.2.2.0`) に統一。
+- **プロジェクトフォルダ構成の整理**: `SPECIFICATION.md` と `TEST_REPORT.md` を新設した `docs/` フォルダへ移動し、ルートを整理。
+- **ルールファイルの移動**: `AGENTS.md` をプロジェクトカスタムルールの正しい配置場所である `.agents/AGENTS.md` に移動し、ドキュメント移動に伴うパスの参照を更新。
+- **`.gitignore` の整理と `Cargo.lock` の管理**: アプリケーションビルドの再現性向上のため `Cargo.lock` を Git 管理対象とし、`src-tauri/.gitignore` をルートの `.gitignore` にマージ・一本化。
+- **バージョン表示の動的化**: フロントエンド内のバージョンハードコードを排除し、Tauri API から動的取得するように修正。これに伴いバージョン更新スクリプトを簡素化。
+
 ### Fixed
 - **Tauri v2 API 互換性の修正 (位置保存・復元)**:
   - `getTauriWindow` が Tauri v2 のグローバル API 構造（`window.__TAURI__.webviewWindow.getCurrentWebviewWindow`）に適合していなかったため、正しくウィンドウオブジェクトを取得できていなかった問題を修正。

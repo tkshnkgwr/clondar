@@ -1,7 +1,8 @@
 # Rust (Cargo) 関連の除外
 /target/
+/src-tauri/target/
+/src-tauri/gen/schemas/
 **/*.rs.bk
-Cargo.lock
 
 # Node.js (フロントエンド) 関連の除外
 /node_modules/

@@ -1,13 +1,12 @@
 # セルフテストレポート & システム構成図 (Obsidian連携)
 
-<!-- UPDATE 2026-06-18: ユーザー要請に基づき、低リソース環境向けデスクトップウィジェットのテスト仕様とシステム構成をObsidian等で確認可能なMarkdown形式で新規書き下ろし -->
-
 ## 1. セルフテスト結果 (Self-Test Report)
 
 ### テスト環境
 - **OS**: Windows 11 (低リソース・スペック制限環境を想定したシミュレーション)
-- **Runtime**: Tauri v2, Node.js v20+, Rust 1.75+
-- **表示モード**: 透過ウィンドウ、Always on Top (最前面表示固定)、枠なし (Decorations: false)
+- **Runtime**: Tauri v2, Rust 1.77+
+- **表示モード**: 透過ウィンドウ、Always on Top (最前面表示固定)、枠なし (Decorations: false)、システムトレイ常駐
+- **フロントエンドアーキテクチャ**: Buildless ES Modules (ESM) + htm (CDN)
 
 ### テスト項目および検証結果
 
@@ -20,8 +19,11 @@
 | TS-005 | ドラッグ操作追従 | 背景が透明であっても、data-tauri-drag-regionでのドラッグ移動が滑らかに行えること。 | `pointer-events: auto`の指定により、透過領域でもマウス操作が吸い込まれず正確なドラッグ追従を維持。 | **PASS** |
 | TS-006 | セキュリティ特権の検証 | 必要な core API (位置取得・設定、常時最前面) が適切に認可され、ビルドエラーが発生しないこと。 | `allow-set-outer-position` を除外し、Tauri v2規格に合わせた `allow-outer-position` および `allow-set-position` のみに最適化。コンパイル・ビルドが100%成功。 | **PASS** |
 | TS-007 | GitHub Actionsリリース検証 | `v*` タグプッシュ時に GitHub Actions の自動ビルド・リリースドラフト作成ワークフローが起動し、文法エラーがないこと。 | YAMLスキーマ検証およびTauri v2のアクション引数との整合性を確認。 | **PASS** |
-| TS-008 | Dependabot設定の検証 | CargoとGitHub Actions의 依存関係週次アップデート設定に構文エラーがないこと。 | `.github/dependabot.yml` のスキーマ検証を実施。 | **PASS** |
+| TS-008 | Dependabot設定の検証 | CargoとGitHub Actionsの依存関係週次アップデート設定に構文エラーがないこと。 | `.github/dependabot.yml` のスキーマ検証を実施。 | **PASS** |
 | TS-009 | エディタ設定の統一 | `.editorconfig` と `.vscode/settings.json` の設定が有効であり、特にPowerShellスクリプトのエンコーディングがBOM付きUTF-8として正しく認識されること。 | VS Codeおよび他エディタでの文字コード・インデント適用の挙動を確認。 | **PASS** |
+| TS-010 | システムトレイメニューの動作 | トレイアイコンの右クリックから、ウィンドウ表示切替、最前面切替、位置リセット、終了が機能すること。 | `tray-icon` フィーチャーを有効化し、`main.rs` で `TrayIconBuilder` とメニューイベントハンドラを実装。各項目が正常に動作し、イベントを介してフロントエンドと最前面・位置データが即時同期されることを検証。 | **PASS** |
+| TS-011 | 外部祝日の動的ロード | 外部 JSON から祝日の定義を読み込み、正しくカレンダーに描画されること。 | `config/holidays.json` をロードし、ハッピーマンデー、天皇誕生日、カスタム上書きを計算・解決してカレンダーに赤字およびツールチップで描画されることを確認。 | **PASS** |
+| TS-012 | ビルドレス ESM ロード | バンドル不要でブラウザが ESM と htm (JSX代替) を正常に解釈すること。 | `type="module"` を使用し、Vite などのビルドステップを経ずに、全ての React コンポーネントおよびユーティリティ JS ファイルがコンソールエラーなく正常にロードされ動作することを確認。※CDN版 framer-motion のグローバルオブジェクト読み込み形式に起因するコンポーネント未定義エラーを Proxy バインディングによって修正。また、htm テンプレート内に混入していた JSX 形式のコメント ({/* ... */}) がパースエラーを引き起こして後半のコンポーネント（カレンダー等）の描画を阻害していた問題もコメント削除により解決し、正常動作を確認。 | **PASS** |
 
 ---
 
@@ -36,43 +38,62 @@ graph TD
     classDef backend fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a;
     classDef storage fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,color:#0f172a;
     classDef platform fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#334155;
+    classDef config fill:#edd1ff,stroke:#a855f7,stroke-width:2px,color:#0f172a;
 
     subgraph OS_Platform [Windows / OS環境]
         TauriRuntime["Tauri v2 Core Webview (Rust runtime)"]:::platform
+        TrayAPI["OS System Tray (タスクトレイ)"]:::platform
     end
 
     subgraph DesktopWidget [低リソースデスクトップウィジェット]
-        subgraph FrontEnd [フロントエンド領域 (HTML5 / React / Tailwind)]
+        subgraph FrontEnd [フロントエンド領域 (HTML5 / React / ESM / htm)]
             WebUI["UI 画面 (ui/index.html)"]:::frontend
-            StateEngine["React Hooks / State Engine<br/>- isRestoringRef (起動ガード)"]:::frontend
+            AppJS["メインロジック (App.js)"]:::frontend
+            ClockJS["時計モジュール (Clock.js)"]:::frontend
+            CalendarJS["カレンダーモジュール (Calendar.js)"]:::frontend
+            TauriJS["Tauriラッパー (tauri.js)"]:::frontend
             LocalStorage["localStorage<br/>- windowPosition (Physical座標)<br/>- keepsAlwaysOnTop"]:::storage
         end
 
         subgraph BackEnd [バックエンド領域 (Rust / Tauri Core)]
             TauriConf["設定ファイル (tauri.conf.json)<br/>- shadow: false<br/>- transparent: true<br/>- decorations: false"]:::backend
             Capabilities["権限設定 (default.json)<br/>- allow-outer-position<br/>- allow-set-position<br/>- allow-close"]:::backend
-            RustMain["Rust ロジック (main.rs)<br/>- set_shadow(false)"]:::backend
+            RustMain["Rust ロジック (main.rs)<br/>- System Tray Menu Builder<br/>- set_shadow(false)"]:::backend
+        end
+        
+        subgraph ConfigLayer [設定データレイヤー]
+            HolidaysJSON["外部祝日設定 (holidays.json)"]:::config
         end
     end
 
     %% データフローの接続
-    WebUI -->|"Window位置/最前面設定 復元"| LocalStorage
-    WebUI -->|"ドラッグイベント登録"| TauriRuntime
+    WebUI --> AppJS
+    AppJS --> ClockJS
+    AppJS --> CalendarJS
+    AppJS --> TauriJS
+    CalendarJS -->|"祝日定義の取得"| HolidaysJSON
+    
+    AppJS -->|"Window位置/最前面設定 復元"| LocalStorage
+    TauriJS -->|"位置復元/最前面設定"| TauriRuntime
+    
     TauriRuntime -->|"位置/サイズAPIの認可"| Capabilities
     Capabilities -->|"制御シグナル"| TauriConf
-    RustMain -->|"OSネイティブ描画設定 (影なし・透過枠なし)"| TauriRuntime
-    WebUI -->|"位置復元 APIコール"| TauriRuntime
+    
+    RustMain -->|"OSネイティブ描画設定"| TauriRuntime
+    RustMain <-->|"トレイメニュー操作"| TrayAPI
+    RustMain -->|"イベント送信 (最前面トグル / 位置リセット)"| AppJS
+    
+    TauriJS -->|"位置変化検知 (tauri://move)"| LocalStorage
+    TauriJS -->|"ドラッグイベント登録"| TauriRuntime
     TauriRuntime -->|"座標変更 / 最前面反映"| OS_Platform
-    WebUI -->|"位置変化検知 (tauri://move)"| LocalStorage
 
     %% クラスの割当
-    class WebUI,StateEngine frontend;
+    class WebUI,AppJS,ClockJS,CalendarJS,TauriJS frontend;
     class TauriConf,Capabilities,RustMain backend;
     class LocalStorage storage;
+    class HolidaysJSON config;
 ```
 
 ---
 **作成日**: 2026年6月26日
-**適合バージョン**: Widget v1.2.3 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)
-<br>
-<!-- UPDATE 2026-06-24: END -->
+**適合バージョン**: Widget v1.3.0 (Buildless ESM with System Tray and External Holidays)

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.3] - 2026-06-26
+### Added
+- **Dependabot 設定の追加**: `.github/dependabot.yml` を追加し、Cargo (Rust) および GitHub Actions の依存関係を自動追跡。
+- **自動リリースワークフローの追加**: `.github/workflows/release.yml` を追加し、`v*` タグプッシュ時に Windows 向け Tauri アプリをビルドして GitHub Releases へ自動デプロイする仕組みを導入。
+- **エディタ設定の統一**: `.editorconfig` および `.vscode/settings.json` を追加し、文字コード（BOMなし/あり UTF-8）、改行コード（LF/CRLF）、インデント（スペース2/4）などの設定を統一。
+
+### Changed
+- **プロジェクトテンプレートガイドの更新**: `docs/project_template_guide.md` に新設したエディタ設定や GitHub Actions、Dependabot のテンプレートと解説を追記。
+- **開発ガイドラインの更新**: `.agents/AGENTS.md` にエディタ設定の遵守や自動リリース・自動アップデートに関するルールを追記。
+
 ## [1.2.2] - 2026-06-24
 ### Added
 - **バージョン一括更新スクリプトの追加**: `scripts/bump-version.ps1` を導入し、リリース時のバージョン更新作業を自動化。

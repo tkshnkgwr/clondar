@@ -36,6 +36,8 @@ Powered by Tauri v2, it operates with extremely low resource consumption, stays 
 - **Frontend / Framework**: HTML5 (CDN React 18) / Tailwind CSS
 - **Animation**: [Framer Motion](https://www.framer.com/motion/) (CSS Transitions)
 - **Styling**: Modern UI matching Fluent Design guidelines
+- **CI/CD & Automation**: GitHub Actions (Release compilation), Dependabot (Cargo & Workflows auto-update)
+- **Editor Standards**: EditorConfig, VS Code Workspace settings (.vscode)
 
 ---
 
@@ -122,20 +124,32 @@ If Japanese public holidays are amended by legislation, update the holiday calcu
 3. Modify the date calculation routines inside `getHolidays(year)` to match the new legal requirements.
 4. Run `cargo tauri dev` to verify the rendering grid, and update [TEST_REPORT.md](./TEST_REPORT.md).
 
+### ⚙️ Editor Configurations
+This project standardizes editor settings using `.editorconfig` and `.vscode/settings.json`.
+* **UTF-8 (without BOM)** & **LF** are enforced for all general code files.
+* **UTF-8 with BOM** & **CRLF** are enforced for PowerShell scripts (`*.ps1`) to avoid execution issues in Windows PowerShell 5.1.
+* Indentation: 4 spaces for Rust, 2 spaces for others.
+
+### 🤖 CI/CD & Automated Releases
+* **Dependabot**: Automatically scans Cargo dependencies and GitHub Actions workflows weekly to submit update Pull Requests.
+* **GitHub Actions Release**: When a tag matching `v*` (e.g. `v1.2.3`) is pushed to GitHub, a workflow triggers automatically to build the Windows app installer (`.msi` or `.exe`) and upload it to a draft GitHub Release.
+
 ### 📦 Release & Versioning Checklist
 Before packaging a new release, verify you have executed the following steps:
 
-1. **Bump Version Codes (3 Locations)**:
-   * `version` in [Cargo.toml](./Cargo.toml)
-   * `package > version` in `src-tauri/tauri.conf.json`
-   * Version markup text in [ui/index.html](./ui/index.html) (inside the `WindowFrame` header component)
+1. **Bump Version Codes**:
+   * Open PowerShell 7 (`pwsh`) and run:
+     ```powershell
+     pwsh -File scripts/bump-version.ps1 -NewVersion "1.2.3"
+     ```
+     This automatically updates versions in `Cargo.toml`, `tauri.conf.json`, `docs/SPECIFICATION.md`, and `docs/TEST_REPORT.md` dynamically.
 2. **Rebuild Application Icons (If changed)**:
    * Provide a source image (512x512px+) and run `npx tauri icon /path/to/icon.png`.
    * Make sure to run `cargo clean` to ensure Tauri updates system cache files.
-3. **Run Production Compilation**:
-   * Execute `cargo tauri build` and retrieve output bundles from the `src-tauri/target/release/bundle/` directory.
-4. **Log Changes**:
+3. **Log Changes**:
    * Append your version notes into [CHANGELOG.md](./CHANGELOG.md).
+4. **Trigger Automated Build & Release**:
+   * Push a Git tag matching your version (e.g., `git tag v1.2.3` and `git push origin v1.2.3`). GitHub Actions will handle the build and create a draft release.
 
 ---
 

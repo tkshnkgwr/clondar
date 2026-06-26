@@ -84,6 +84,8 @@ graph TD
 - **Frontend**: React 18 (CDN), Tailwind CSS
 - **Animation**: Framer Motion
 - **Permissions**: Tauri v2 Capabilities System
+- **CI/CD / Dependency Auto-update**: GitHub Actions (Automatic Release Build), Dependabot (Weekly checks for Cargo & GitHub Actions)
+- **Development Standards**: EditorConfig, VS Code Workspace settings (Encoding and indentation normalization)
 
 ## 6. 特筆すべき実装
 1. **Shadow Removal**: Rust 側の `set_shadow(false)` と Config 側の `shadow: false` の二重設定により、透過時の「薄い枠」を完全に除去。
@@ -92,8 +94,10 @@ graph TD
 4. **Startup Position Race-Condition Guard**: 起動時の自動センター寄せ（`center: true`）完了と JS による位置復旧動作 of タイムラグ中に、一時的な位置データを拾って LocalStorage を誤破壊するのを防ぐ `isRestoring` ガードの実装。これにより低スペック PC でも起動位置が極めて安定。
 5. **DPI-Aware Coordinate Restoration**: 座標復帰時に `type: pos.type || 'Physical'`（物理ピクセル座標）を保持・適用することで、DPIスケーリングの異なるマルチモニター環境へのポータビリティを確保。
 6. **Tauri v2 API Compatibility**: Tauri v2 のグローバル API の構成（`window.__TAURI__.webviewWindow.getCurrentWebviewWindow`）に準拠させ、位置復元時のAPIを廃止された `setOuterPosition` から `setPosition` に最適化。
+7. **CI/CD & Editor Settings Automation**: `.editorconfig` と `.vscode/settings.json` の導入による開発環境の一貫性保証。および GitHub Actions 経由での Windows ビルド（MSVCツールチェーン）の自動パッケージングとリリースドラフトの作成。
+8. **Automated Dependency Maintenance**: Dependabot を適用し、バックエンド (Cargo) と CI ワークフローのセキュリティ更新およびメジャー/マイナーアップデートを自動で検知・Pull Request 化。
 
 ---
-**最終更新日**: 2026年6月24日
-**バージョン**: 1.2.2
-**内部バージョン**: 1.2.2.0
+**最終更新日**: 2026年6月26日
+**バージョン**: 1.2.3
+**内部バージョン**: 1.2.3.0

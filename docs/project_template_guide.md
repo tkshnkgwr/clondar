@@ -16,6 +16,14 @@ Google AI Studio や AntiGravity（Gem）と共同でデスクトップアプリ
 ├── .agents/                 # AI(Gem)向け指示書の格納先
 │   └── AGENTS.md            # ★AI用ルールブック（下記テンプレートを使用）
 │
+├── .github/                 # GitHub 関連の設定
+│   ├── dependabot.yml       # ★Dependabot 設定（自動アップデート）
+│   └── workflows/
+│       └── release.yml      # ★自動リリースワークフロー
+│
+├── .vscode/                 # VS Code 設定
+│   └── settings.json        # ★VS Code用共通設定
+│
 ├── docs/                    # 各種技術ドキュメント（ルートを汚さないため）
 │   ├── SPECIFICATION.md     # ★製品仕様書（バージョン・技術スタック記載）
 │   └── TEST_REPORT.md       # ★テストレポート（検証結果・Mermaid構成図記載）
@@ -32,6 +40,7 @@ Google AI Studio や AntiGravity（Gem）と共同でデスクトップアプリ
 ├── ui/                      # フロントエンド（React CDN / HTMLなど）
 │   └── index.html           # (※バージョンは直書きせずTauri APIから動的取得する)
 │
+├── .editorconfig            # ★エディタ用共通設定
 ├── .gitignore               # ★ルート一本化のGit除外設定
 ├── CHANGELOG.md             # 更新履歴（CHANGELOG）
 ├── LICENSE                  # ライセンス
@@ -135,6 +144,15 @@ AIがコードの変更、機能追加、リファクタリングなどを行う
   機能実装時やリファクタリング時にテスト（自動テスト・手動テスト）を実行した場合は、検証手順や結果を `docs/TEST_REPORT.md` に記録・更新すること。
 - **ドキュメントの整合性チェック**:
   タスク完了時には、コードと各種Markdownドキュメントの間に情報のズレが残っていないか必ずセルフチェックすること。
+
+## 7. 開発環境の統一とCI/CD
+- **エディタ設定の厳守**:
+  プロジェクトルートにある `.editorconfig` と `.vscode/settings.json` の設定を厳守すること。
+  特に PowerShell スクリプト（`*.ps1`）は文字化けを防ぐため、必ず「BOM付き UTF-8」かつ「CRLF」で保存すること。その他のファイルは「BOMなし UTF-8」かつ「LF」で保存すること。
+- **依存ライブラリの自動アップデート**:
+  `.github/dependabot.yml` が設定されており、Cargo 依存関係および GitHub Actions のアップデートが自動で監視・提案される。
+- **自動デプロイフロー**:
+  `v*` 形式の Git タグがプッシュされると、GitHub Actions が自動的にトリガーされ、Windows 用の Tauri アプリがビルドされ GitHub Releases にドラフトリリースとしてデプロイされる。タグ作成前に `scripts/bump-version.ps1` を用いてバージョンを一括更新すること。
 ```
 
 ---
@@ -248,4 +266,136 @@ if (Test-Path $testPath) {
 }
 
 Write-Host "Version bump completed successfully!"
+```
+
+---
+
+## 5. 新規プロジェクト用 `.editorconfig` テンプレート
+
+異なるエディタ間でのコーディング規約を統一するための設定です。リポジトリルートに `.editorconfig` として配置します。
+
+```ini
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.rs]
+indent_size = 4
+
+[*.ps1]
+end_of_line = crlf
+charset = utf-8-bom
+```
+
+---
+
+## 6. 新規プロジェクト用 `.vscode/settings.json` テンプレート
+
+VS Code で開発する際に、エディタ設定および `rust-analyzer` の連携を行うための設定です。リポジトリルートの `.vscode/settings.json` として配置します。
+
+```json
+{
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": true,
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "[rust]": {
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "rust-analyzer"
+  },
+  "[powershell]": {
+    "files.encoding": "utf8bom"
+  },
+  "rust-analyzer.linkedProjects": [
+    "src-tauri/Cargo.toml"
+  ]
+}
+```
+
+---
+
+## 7. 新規プロジェクト用 `.github/dependabot.yml` テンプレート
+
+依存ライブラリの自動更新（Dependabot）を有効化するための設定ファイルです。リポジトリルートの `.github/dependabot.yml` として配置します。
+
+```yaml
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Maintain dependencies for Cargo (Rust)
+  - package-ecosystem: "cargo"
+    directory: "/src-tauri"
+    schedule:
+      interval: "weekly"
+```
+
+---
+
+## 8. 新規プロジェクト用 `.github/workflows/release.yml` テンプレート
+
+`v*` タグがプッシュされた際に、Windows 環境（`windows-latest`）上で `@tauri-apps/cli` を用いて Windows 用の Tauri アプリケーションを自動的にビルドし、GitHub Releases にドラフトリリースとしてデプロイするワークフロー設定です。リポジトリルートの `.github/workflows/release.yml` として配置します。
+
+```yaml
+name: Release App
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Clondar Pro ${{ github.ref_name }}'
+          releaseBody: 'Please refer to CHANGELOG.md for details of this release.'
+          releaseDraft: true
+          prerelease: false
 ```

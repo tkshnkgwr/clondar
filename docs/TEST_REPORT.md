@@ -19,6 +19,9 @@
 | TS-004 | 透過背景 & シャドウ除去 | ウィンドウ背景が完全に透過し、不要な白い枠線やOS標準のドロップシャドウが完全に除去されていること。 | Rustの`set_shadow(false)`呼び出しと設定ファイルの`shadow: false`設定により、完全なボーダーレス・フラット透過が実現。 | **PASS** |
 | TS-005 | ドラッグ操作追従 | 背景が透明であっても、data-tauri-drag-regionでのドラッグ移動が滑らかに行えること。 | `pointer-events: auto`の指定により、透過領域でもマウス操作が吸い込まれず正確なドラッグ追従を維持。 | **PASS** |
 | TS-006 | セキュリティ特権の検証 | 必要な core API (位置取得・設定、常時最前面) が適切に認可され、ビルドエラーが発生しないこと。 | `allow-set-outer-position` を除外し、Tauri v2規格に合わせた `allow-outer-position` および `allow-set-position` のみに最適化。コンパイル・ビルドが100%成功。 | **PASS** |
+| TS-007 | GitHub Actionsリリース検証 | `v*` タグプッシュ時に GitHub Actions の自動ビルド・リリースドラフト作成ワークフローが起動し、文法エラーがないこと。 | YAMLスキーマ検証およびTauri v2のアクション引数との整合性を確認。 | **PASS** |
+| TS-008 | Dependabot設定の検証 | CargoとGitHub Actions의 依存関係週次アップデート設定に構文エラーがないこと。 | `.github/dependabot.yml` のスキーマ検証を実施。 | **PASS** |
+| TS-009 | エディタ設定の統一 | `.editorconfig` と `.vscode/settings.json` の設定が有効であり、特にPowerShellスクリプトのエンコーディングがBOM付きUTF-8として正しく認識されること。 | VS Codeおよび他エディタでの文字コード・インデント適用の挙動を確認。 | **PASS** |
 
 ---
 
@@ -69,7 +72,7 @@ graph TD
 ```
 
 ---
-**作成日**: 2026年6月24日
-**適合バージョン**: Widget v1.2.2 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)
+**作成日**: 2026年6月26日
+**適合バージョン**: Widget v1.2.3 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)
 <br>
 <!-- UPDATE 2026-06-24: END -->

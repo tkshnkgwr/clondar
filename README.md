@@ -2,6 +2,13 @@
 
 **English** | [日本語版](./README.ja.md)
 
+[![Build Status](https://github.com/tkshnkgwr/clondar/actions/workflows/release.yml/badge.svg)](https://github.com/tkshnkgwr/clondar/actions)
+[![Latest Release](https://img.shields.io/github/v/release/tkshnkgwr/clondar)](https://github.com/tkshnkgwr/clondar/releases)
+[![Rust Version](https://img.shields.io/badge/rust-1.96.0-orange.svg)](https://www.rust-lang.org/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D26.4.0-green.svg)](https://nodejs.org/)
+[![Tauri Version](https://img.shields.io/badge/tauri-v2-blue.svg)](https://v2.tauri.app/)
+[![License](https://img.shields.io/github/license/tkshnkgwr/clondar)](LICENSE)
+
 <!-- UPDATE 2026-06-21: Translated main README to English and linked to README.ja.md under multi-language structure. -->
 
 **Clondar** is a modern desktop widget-type clock & calendar application that strikes an ultra-minimal look with a transparent, borderless, and shadowless design blending natively into your Windows desktop.
@@ -33,8 +40,8 @@ Powered by Tauri v2, it operates with extremely low resource consumption, stays 
 ## 🛠️ Tech Stack
 
 - **Backend / Core Engine**: Rust ([Tauri v2](https://v2.tauri.app/))
-- **Frontend / Framework**: HTML5 (CDN React 18) / Tailwind CSS
-- **Animation**: [Framer Motion](https://www.framer.com/motion/) (CSS Transitions)
+- **Frontend / Framework**: React 18 (Vite / Local Bundled for complete offline operation) / Tailwind CSS v3
+- **Animation**: [Framer Motion](https://www.framer.com/motion/) (CSS Transitions & Animations)
 - **Styling**: Modern UI matching Fluent Design guidelines
 - **CI/CD & Automation**: GitHub Actions (Release compilation), Dependabot (Cargo & Workflows auto-update)
 - **Editor Standards**: EditorConfig, VS Code Workspace settings (.vscode)

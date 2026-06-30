@@ -1,9 +1,5 @@
-const html = window.htm.bind(window.React.createElement);
-const React = window.React;
-const fMotion = window.Motion || window.framerMotion;
-const motion = fMotion ? fMotion.motion : new Proxy({}, {
-  get: (target, prop) => (props) => React.createElement(prop, props)
-});
+import React from 'react';
+import { motion } from 'framer-motion';
 
 export const DigitalClock = ({ time, is24Hour, showSeconds }) => {
   const options = { 
@@ -17,26 +13,26 @@ export const DigitalClock = ({ time, is24Hour, showSeconds }) => {
   const mainTime = parts[0];
   const amPm = parts[1];
 
-  return html`
+  return (
     <div className="flex flex-col items-center justify-center select-none">
       <div className="h-8 flex items-center justify-center">
-        ${!is24Hour && amPm && html`
+        {!is24Hour && amPm && (
           <div className="text-xl font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
-            ${amPm}
+            {amPm}
           </div>
-        `}
+        )}
       </div>
       <div className="text-8xl font-normal text-blue-600 dark:text-white drop-shadow-md flex items-center justify-center min-w-[450px]" 
-           style=${{ fontFamily: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif', lineHeight: '1', letterSpacing: '0.02em' }}>
-        ${mainTime.split('').map((char, index) => html`
-          <span key=${index} className="inline-block text-center" style=${{ width: char === ':' ? '0.25em' : '0.7em', fontVariantNumeric: 'tabular-nums' }}>
-            ${char}
+           style={{ fontFamily: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif', lineHeight: '1', letterSpacing: '0.02em' }}>
+        {mainTime.split('').map((char, index) => (
+          <span key={index} className="inline-block text-center" style={{ width: char === ':' ? '0.25em' : '0.7em', fontVariantNumeric: 'tabular-nums' }}>
+            {char}
           </span>
-        `)}
+        ))}
       </div>
       <div className="h-8" />
     </div>
-  `;
+  );
 };
 
 export const AnalogClock = ({ time, showSeconds }) => {
@@ -44,15 +40,15 @@ export const AnalogClock = ({ time, showSeconds }) => {
   const minutes = time.getMinutes() + seconds / 60;
   const hours = (time.getHours() % 12) + minutes / 60;
 
-  return html`
+  return (
     <div className="relative w-56 h-56 rounded-full border-2 border-slate-200 dark:border-slate-700 bg-white/30 dark:bg-slate-800/30 glass shadow-inner flex items-center justify-center">
-      ${[...Array(12)].map((_, i) => {
+      {[...Array(12)].map((_, i) => {
         const isMain = i % 3 === 0;
         const h = isMain ? 16 : 12;
         const w = isMain ? 6 : 4;
-        return html`
-          <div key=${i} className=${`absolute rounded-full ${isMain ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-600'}`}
-            style=${{
+        return (
+          <div key={i} className={`absolute rounded-full ${isMain ? 'bg-blue-500' : 'bg-slate-400 dark:bg-slate-600'}`}
+            style={{
               width: `${w}px`, 
               height: `${h}px`, 
               top: '50%', 
@@ -62,12 +58,12 @@ export const AnalogClock = ({ time, showSeconds }) => {
               transform: `rotate(${i * 30}deg) translateY(-92px)`,
             }}
           />
-        `;
+        );
       })}
-      <${motion.div} className="absolute w-1.5 h-14 bg-slate-800 dark:bg-slate-100 rounded-full origin-bottom z-[3]" style=${{ bottom: '50%', rotate: `${hours * 30}deg` }} />
-      <${motion.div} className="absolute w-1 h-20 bg-slate-500 dark:bg-slate-400 rounded-full origin-bottom z-[2]" style=${{ bottom: '50%', rotate: `${minutes * 6}deg` }} />
-      ${showSeconds && html`<${motion.div} className="absolute w-0.5 h-24 bg-red-500 rounded-full origin-bottom z-[4]" style=${{ bottom: '50%', rotate: `${seconds * 6}deg` }} />`}
+      <motion.div className="absolute w-1.5 h-14 bg-slate-800 dark:bg-slate-100 rounded-full origin-bottom z-3" style={{ bottom: '50%', rotate: `${hours * 30}deg` }} />
+      <motion.div className="absolute w-1 h-20 bg-slate-500 dark:bg-slate-400 rounded-full origin-bottom z-2" style={{ bottom: '50%', rotate: `${minutes * 6}deg` }} />
+      {showSeconds && <motion.div className="absolute w-0.5 h-24 bg-red-500 rounded-full origin-bottom z-4" style={{ bottom: '50%', rotate: `${seconds * 6}deg` }} />}
       <div className="absolute w-3.5 h-3.5 bg-slate-800 dark:bg-slate-100 rounded-full z-10 shadow-sm border-2 border-white dark:border-slate-800" />
     </div>
-  `;
+  );
 };

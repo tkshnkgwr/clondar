@@ -1,12 +1,12 @@
-# Clondar Pro 開発者向けドキュメント (Buildless ESM Edition)
+# Clondar Pro 開発者向けドキュメント (Vite React Edition)
 
-本ドキュメントは、Clondar Pro の内部アーキテクチャ、ソースコード分割構成、システムトレイの実装、および外部祝日定義ファイルの構造について、技術的な詳細を解説する開発者用のガイドです。
+本ドキュメントは、Clondar Pro の内部アーキテクチャ、ソースコード構成、システムトレイの実装、および外部祝日定義ファイルの構造について、技術的な詳細を解説する開発者用のガイドです。
 
 ---
 
 ## 1. アーキテクチャの概要
 
-Clondar Pro は、Node.js がインストールされていない環境であっても即座にコンパイル・実行できるよう、**ビルドレス（Buildless）なフロントエンド構成**を採用しています。
+Clondar Pro は、PC が完全にオフライン状態でも動作するデスクトップウィジェットを実現するため、**Vite + React + Tailwind CSS によるローカルビルド構成**を採用しています。
 
 ```mermaid
 graph TD
@@ -16,101 +16,104 @@ graph TD
 
     subgraph Backend [Rust / Tauri v2]
         MainRS[main.rs]
-        Cargo[Cargo.toml: tray-icon]
+        Cargo[Cargo.toml: rust-version 1.96.0]
         Conf[tauri.conf.json]
     end
 
-    subgraph Frontend [React / ESM / htm]
+    subgraph Frontend [React / JSX / Vite]
         HTML[index.html]
-        AppJS[App.js]
-        ClockJS[components/Clock.js]
-        CalendarJS[components/Calendar.js]
+        AppJSX[App.jsx]
+        ClockJSX[components/Clock.jsx]
+        CalendarJSX[components/Calendar.jsx]
         HolidaysJS[utils/holidays.js]
         TauriJS[utils/tauri.js]
     end
 
     subgraph Config [Config File]
-        HolidaysJSON[config/holidays.json]
+        HolidaysJSON[public/config/holidays.json]
     end
 
     TrayAPI <--> MainRS
-    MainRS -- Event: always-on-top / reset --> AppJS
-    HTML --> AppJS
-    AppJS --> ClockJS
-    AppJS --> CalendarJS
-    CalendarJS --> HolidaysJS
+    MainRS -- Event: always-on-top / reset --> AppJSX
+    HTML --> AppJSX
+    AppJSX --> ClockJSX
+    AppJSX --> CalendarJSX
+    CalendarJSX --> HolidaysJS
     HolidaysJS -- Fetch --> HolidaysJSON
-    AppJS --> TauriJS
+    AppJSX --> TauriJS
 ```
 
-### ビルドレス構成の技術的選択
-* **ES Modules (ESM)**:
-  ブラウザ標準の `import` / `export` を使用してファイルを分割しています。Vite や Webpack 等によるバンドルステップを経ずに、WebView2 が直接ファイルをロードして解析します。
-* **`htm` (Hyperscript Tagged Markup)**:
-  JSX は通常ビルドステップ（Babel）によるトランスパイルが必要ですが、本プロジェクトでは CDN 経由の `htm` を使用することで、ビルドなしで `html`\`<div>...</div>\`` という JSX 同等の記法を実現しています。
-* **CDN 依存**:
-  React, Framer Motion, Tailwind CSS, htm は CDN からロードされます。そのため開発および実行にはインターネット環境が必要です。
+### 技術スタックの選択
+* **Vite / ESM**:
+  開発時には高速なホットモジュール置換（HMR）を提供し、ビルド時にはアセットを `ui/dist/` ディレクトリに自己完結型（ローカルバンドル）で書き出します。
+* **React & Tailwind CSS (v3)**:
+  コンポーネント化されたモダンな UI デザインと、ユーティリティファーストなスタイリングをローカルの `node_modules` に閉じた環境で実現します。これにより、完全にオフラインの状態でも Web 依存せず画面が即座に起動します。
+* **Tauri v2 JS API**:
+  `@tauri-apps/api` パッケージを介して、安全かつ型定義（TypeScript/JSDoc）に準拠した形で OS 連携（ウィンドウ状態保存、ピン留め、終了など）を呼び出します。
 
 ---
 
-## 2. フロントエンド構成・ファイル分割
+## 2. ディレクトリ構成
 
 フロントエンドは `ui/` ディレクトリの下に配置されており、以下のように役割ごとにモジュール化されています。
 
 ```
 ui/
-├── index.html           # エントリーHTML (CDNライブラリ、ESM main.js のロード)
-├── style.css            # グラスモーフィズム等のカスタムCSSユーティリティ
-├── config/
-│   └── holidays.json    # 外部祝日定義ファイル
+├── index.html           # エントリーHTML (Viteメイン)
+├── vite.config.js       # Vite 設定 (ビルド先: dist)
+├── tailwind.config.js   # Tailwind CSS v3 設定
+├── postcss.config.js    # CSSプロセッサ設定
+├── package.json         # フロントエンド依存関係定義
+├── public/
+│   └── config/
+│       └── holidays.json # 外部祝日定義ファイル (ビルド時に dist/config/ へコピー)
 └── src/
-    ├── main.js          # React のマウント処理
-    ├── App.js           # アプリケーション全体のレイアウト、状態管理、イベント購読
+    ├── main.jsx         # React のマウントエントリーポイント
+    ├── App.jsx          # アプリ全体のレイアウト、状態管理、トレイイベント購読
+    ├── index.css        # Tailwind directives + カスタムCSS
     ├── components/
-    │   ├── Clock.js     # デジタル・アナログ時計コンポーネント (htm)
-    │   └── Calendar.js  # 月間・年間カレンダー、祝日表示、ツールチップ (htm)
+    │   ├── Clock.jsx    # デジタル・アナログ時計コンポーネント
+    │   └── Calendar.jsx # 月間・年間カレンダー、祝日表示、ツールチップ
     └── utils/
-        ├── holidays.js  # holidays.json の読み込みと祝日計算ユーティリティ
-        └── tauri.js     # window.__TAURI__ を安全にラップした Tauri v2 API ラッパー
+        ├── holidays.js  # holidays.json の非同期ロードと祝日計算ロジック
+        └── tauri.js     # Tauri v2 API の安全なラッパー
 ```
 
-### `tauri.js` の設計
-Tauri API に直接依存する箇所（ウィンドウ位置復元、ピン留め、終了等）は全て `ui/src/utils/tauri.js` に集約しています。
-アプリが通常のブラウザ環境で起動された場合でも、エラーで画面がクラッシュしないよう、Tauri API の存在チェック (`isTauri()`) と安全なフォールバックを実装しています。
+---
+
+## 3. セットアップと起動方法
+
+本プロジェクトのビルドや開発には **Node.js (v26.4.0 以上推奨)** と **Rust (1.96.0 以上推奨)** が必要です。
+
+### 1. 依存関係のインストール
+プロジェクトのルートディレクトリで以下を実行します。
+```bash
+# フロントエンドの依存関係をインストール
+npm --prefix ui install
+```
+
+### 2. 開発モードでの起動
+`tauri.conf.json` にて、起動時に自動で Vite 開発サーバーが走るよう設定されています。
+```bash
+cargo tauri dev
+```
+ファイル変更を検知すると、Rust 側・フロントエンド側ともに自動的にホットリロードが実行されます。
+
+### 3. リリースビルド
+```bash
+cargo tauri build
+```
+Vite によるビルドが走り、`ui/dist` に静的ファイルがバンドルされた後、MSI / EXE インストーラーが自動生成されます。
 
 ---
 
-## 3. システムトレイ（タスクトレイ）常駐機能
+## 4. 技術的ハイライト
 
-ウィジェットの紛失や操作性の向上のため、Tauri v2 規格に準拠したシステムトレイメニューが Rust バックエンド（`main.rs`）で実装されています。
+### ① システムトレイ（タスクトレイ）常駐機能
+Rust 側 [main.rs](file:///c:/Users/632792/Documents/自作/clondar/src-tauri/src/main.rs) で `TrayIconBuilder` を使用しトレイアイコンを構築。
+右クリックメニューから「表示/非表示」「最前面表示の切替」「位置をリセット」「終了」が操作できます。
+最前面トグルや位置リセットは、Tauri のイベントバス (`always-on-top-toggled`, `position-reset`) を通じてフロントエンドの表示と即時連動します。
 
-### トレイメニュー項目と動作
-1. **表示 / 非表示 (`toggle`)**:
-   メインウィンドウの可視状態 (`is_visible`) を判定し、非表示の時は表示・フォーカス、表示中の時は非表示に切り替えます。
-2. **最前面表示の切替 (`always_on_top`)**:
-   ウィンドウの最前面表示状態を切り替えます。切り替え後、Rust 側からフロントエンドへ `always-on-top-toggled` イベントを `emit` し、フロントエンドのピン留め状態（UI表示）をリアルタイムに同期します。
-3. **位置をリセット (`reset_pos`)**:
-   ウィンドウを画面中央に移動させます。DPIスケーリングの異なるマルチモニター環境でウィジェットが画面外へ見失われた場合の救済機能です。中央配置後の絶対物理座標を取得し、フロントエンドに `position-reset` イベントを送信することで、次回起動時の記憶座標（`windowPosition`）を即座に更新します。
-4. **終了 (`quit`)**:
-   アプリケーションを安全に完全終了します。
-
----
-
-## 4. 外部祝日設定ファイル (`holidays.json`)
-
-日本の祝日計算ロジックを簡素化・外部化するため、`ui/config/holidays.json` に祝日の定義規則が定義されています。
-
-### 設定の構造
-* **`fixed`**:
-  毎年日付が固定されている祝日（例: `"01-01": "元日"`）。
-* **`happy_mondays`**:
-  ハッピーマンデー制度に対応する祝日。月・週（何番目の月曜日か）・祝日名・開始年を定義します。
-* **`happy_mondays_legacy`**:
-  ハッピーマンデーが適用される前の古い祝日制度（例: 1月15日の成人の日）や、移行期の定義。
-* **`emperor_birthdays`**:
-  歴代の天皇誕生日が適用される開始年と終了年、および日付。
-* **`custom_overrides`**:
-  2020年や2021年の東京オリンピック等に伴う「特定年限りの祝日移動」を制御するための日付単位の上書き設定。特定の祝日を削除する場合は `null` を指定します。
-
-### 法改正時の対応
-将来的に新しい祝日の新設や祝日の移動が行われた場合、ソースコード（JavaScript）を変更する必要はありません。`ui/config/holidays.json` を編集するだけで即座にカレンダーに反映されます。
+### ② 外部祝日設定ファイル (`holidays.json`)
+日本の祝日計算ルールを `ui/public/config/holidays.json` に集約。
+[holidays.js](file:///c:/Users/632792/Documents/自作/clondar/ui/src/utils/holidays.js) がアプリ起動時に非同期でフェッチし、固定祝日、ハッピーマンデー、天皇誕生日、オリンピック特例などの例外上書きを適用します。法改正時は JSON を更新するだけで、JavaScript のコードに手を加えることなくカレンダー表示を更新できます。

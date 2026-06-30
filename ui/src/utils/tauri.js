@@ -1,20 +1,16 @@
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getVersion as getTauriAppVersion } from '@tauri-apps/api/app';
+import { PhysicalPosition } from '@tauri-apps/api/dpi';
+
 export const isTauri = () => !!window.__TAURI__;
 
 export const getTauriWindow = () => {
-  try {
-    if (isTauri()) {
-      if (window.__TAURI__.webviewWindow && window.__TAURI__.webviewWindow.getCurrentWebviewWindow) {
-        return window.__TAURI__.webviewWindow.getCurrentWebviewWindow();
-      }
-      if (window.__TAURI__.window && window.__TAURI__.window.getCurrentWindow) {
-        return window.__TAURI__.window.getCurrentWindow();
-      }
-      if (window.__TAURI__.getCurrentWindow) {
-        return window.__TAURI__.getCurrentWindow();
-      }
+  if (isTauri()) {
+    try {
+      return getCurrentWindow();
+    } catch (e) {
+      console.error("Tauri API access error:", e);
     }
-  } catch (e) {
-    console.error("Tauri API access error:", e);
   }
   return null;
 };
@@ -31,14 +27,14 @@ export const setAlwaysOnTop = async (on) => {
 };
 
 export const getAppVersion = async () => {
-  if (isTauri() && window.__TAURI__.app && window.__TAURI__.app.getVersion) {
+  if (isTauri()) {
     try {
-      return await window.__TAURI__.app.getVersion();
+      return await getTauriAppVersion();
     } catch (e) {
       console.error("Failed to get version:", e);
     }
   }
-  return '1.2.3'; // fallback
+  return '1.3.0'; // fallback
 };
 
 export const closeWindow = async () => {
@@ -73,25 +69,15 @@ export const restoreWindowPosition = async (isRestoringRef) => {
     if (savedPos) {
       const pos = JSON.parse(savedPos);
       if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
-        // 起動直後の自動センター配置からスムーズに引き継ぐための適切な遅延時間（300ms）を確保
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        let positionObj = { x: pos.x, y: pos.y, type: pos.type || 'Physical' };
-        if (window.__TAURI__.dpi && window.__TAURI__.dpi.PhysicalPosition) {
-          positionObj = new window.__TAURI__.dpi.PhysicalPosition(pos.x, pos.y);
-        }
-
-        if (win.setPosition) {
-          await win.setPosition(positionObj);
-        } else if (win.setOuterPosition) {
-          await win.setOuterPosition(positionObj);
-        }
+        const positionObj = new PhysicalPosition(pos.x, pos.y);
+        await win.setPosition(positionObj);
       }
     }
   } catch (err) {
     console.error("Restore position failed:", err);
   } finally {
-    // 復元アニメーションやOSの座標決定が完全に落ち着いた1秒後に、ユーザーの手動移動の検知を開始させます。
     setTimeout(() => {
       if (isRestoringRef) isRestoringRef.current = false;
     }, 1000);

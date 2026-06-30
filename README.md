@@ -45,15 +45,18 @@ Powered by Tauri v2, it operates with extremely low resource consumption, stays 
 
 To run or compile this widget locally, you will need **Node.js** and **Rust** installed on your system.
 
-### 1. Clone the Repository
+### 1. Clone the Repository & Install Dependencies
 ```bash
 git clone https://github.com/tkshnkgwr/clondar.git
 cd clondar
+
+# Install frontend dependencies (Vite)
+npm --prefix ui install
 ```
 
 ### 2. Launch Dev server
 ```bash
-# Frontend is served using zero-dependency CDN delivery, so 'npm install' is NOT required.
+# Frontend Vite dev server and Tauri window will start simultaneously
 cargo tauri dev
 ```
 

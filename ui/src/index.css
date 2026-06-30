@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* グラスモーフィズムと透過背景の最適化 */
 .glass { 
   backdrop-filter: blur(16px); 

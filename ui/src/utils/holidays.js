@@ -119,8 +119,7 @@ const fallbackConfig = {
 export async function initHolidays() {
   if (config) return config;
   try {
-    // Relative path because we are running buildless in webviewDist (ui/)
-    const res = await fetch('config/holidays.json');
+    const res = await fetch('/config/holidays.json');
     if (!res.ok) throw new Error('Failed to fetch holidays config');
     config = await res.json();
   } catch (e) {
@@ -136,7 +135,6 @@ export function getHolidays(yearParam) {
   
   if (year < 1948) return {};
   
-  // Use config if loaded, otherwise fallback
   const activeConfig = config || fallbackConfig;
 
   const formatDate = (d) => `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;

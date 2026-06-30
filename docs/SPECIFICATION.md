@@ -22,12 +22,12 @@ graph TD
         Cap[capabilities/default.json: Permissions]
     end
     
-    subgraph Frontend_UI [React / ESM / htm]
+    subgraph Frontend_UI [React / Vite / JSX]
         HTML[index.html: Entrypoint]
-        CSS[style.css: Custom Styles]
-        AppJS[App.js: State & Event Listener]
-        ClockJS[Clock.js: Digital/Analog UI]
-        CalendarJS[Calendar.js: Month/Yearly UI]
+        CSS[src/index.css: Tailwind & Styles]
+        AppJSX[App.jsx: State & Event Listener]
+        ClockJSX[Clock.jsx: Digital/Analog UI]
+        CalendarJSX[Calendar.jsx: Month/Yearly UI]
     end
 
     subgraph Config_Data [Data Layer]
@@ -39,10 +39,10 @@ graph TD
     MainRS --- Conf
     Conf --- HTML
     Cap -- 権限付与 --> HTML
-    HTML --> AppJS
-    AppJS --> ClockJS
-    AppJS --> CalendarJS
-    CalendarJS --> HolidaysJSON
+    HTML --> AppJSX
+    AppJSX --> ClockJSX
+    AppJSX --> CalendarJSX
+    CalendarJSX --> HolidaysJSON
     HTML --> CSS
 ```
 
@@ -52,7 +52,7 @@ graph TD
 
 ### 3.1 ウィジェット動作 (Desktop Widget)
 * **透過ウィンドウ**: 背景を完全に透過させ、デスクトップ壁紙の上に直接表示。
-* **枠なし・影なし**: Windows 標準のタイトルバー、枠線、影をすべて物理的に除去。
+* **枠なし・影なし**: Windows 標準 of タイトルバー、枠線、影をすべて物理的に除去。
 * **常時最前面 (Always on Top)**: 他のウィンドウに隠れることなく、常に情報を確認可能。
 * **ドラッグ移動**: ウィンドウのほぼ全域をドラッグ可能領域 (`data-tauri-drag-region`) とし、自由な配置が可能。
 * **終了操作**: `Esc` キーまたは UI 内の `❌` ボタンによる即座な終了。
@@ -72,7 +72,7 @@ graph TD
 ### 3.3 カレンダー機能 (Calendar Section)
 * **表示安定性**: 月の長さに関わらず、常に **6週間 (42日間)** を固定表示。
 * **外部祝日設定のロード**:
-  - `ui/config/holidays.json` より祝日の定義ルールをロード。
+  - `ui/public/config/holidays.json` より祝日の定義ルールをロード。
   - 固定祝日、ハッピーマンデー、天皇誕生日、天文計算（春分・秋分）、カスタム上書き（オリンピック特例等）を自動計算し、カレンダー上に反映。
   - 法改正時は設定ファイルの編集のみで対応可能。
 * **年間表示**: 全画面の年間カレンダーモーダルを搭載（前年・翌年のナビゲーションに対応）。
@@ -107,8 +107,8 @@ graph TD
 
 ## 5. 技術スタック
 * **Backend**: Rust (Tauri v2)
-* **Frontend**: React 18 (CDN), Tailwind CSS (CDN), htm (CDN)
-* **Architecture**: Buildless ES Modules (ESM)
+* **Frontend**: React 18 (Vite), Tailwind CSS (v3)
+* **Architecture**: Local Bundled SPA (Offline Complete)
 * **Animation**: Framer Motion
 * **Permissions**: Tauri v2 Capabilities System
 * **CI/CD**: GitHub Actions (Automatic Release Build), Dependabot (Weekly updates)
@@ -116,14 +116,14 @@ graph TD
 ---
 
 ## 6. 特筆すべき実装
-1. **Buildless Module Division**:
-   Node.js (npm) 未導入環境でも動作するように、Vite等のバンドラを用いず、ブラウザの ES Modules 標準機能と `htm` ライブラリを使用してコードを機能ごとにクリーンに分割。
+1. **Local Bundled SPA (Offline Complete)**:
+   すべての依存ライブラリを Vite によってローカルパッケージとしてバンドル。これにより CDN やインターネット環境に一切依存せず、完全なオフライン状態でも起動・動作する堅牢なデスクトップアプリを実現。
 2. **System Tray Integration**:
    Rust 側のトレイメニューとフロントエンド React を Tauri のイベントバス (`emit` / `listen`) で接続し、最前面ピン留め状態や位置リセット座標の双方向同期を達成。
 3. **Shadow Removal**: Rust 側の `set_shadow(false)` と Config 側の `shadow: false` の二重設定により、透過時の「薄い枠」を完全に除去。
 4. **DPI-Aware Coordinate Restoration**: 座標復帰時に `type: pos.type || 'Physical'`（物理ピクセル座標）を保持・適用することで、DPIスケーリングの異なるマルチモニター環境へのポータビリティを確保。
 
 ---
-**最終更新日**: 2026年6月26日
+**最終更新日**: 2026年6月30日
 **バージョン**: 1.3.0
 **内部バージョン**: 1.3.0.0

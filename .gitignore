@@ -5,8 +5,8 @@
 **/*.rs.bk
 
 # Node.js (フロントエンド) 関連の除外
-/node_modules/
-/.pnpm-store/
+node_modules/
+.pnpm-store/
 .env
 .env.*
 !.env.example

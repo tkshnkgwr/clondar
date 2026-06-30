@@ -1,15 +1,9 @@
-const html = window.htm.bind(window.React.createElement);
-const { useState, useEffect, useRef } = window.React;
-const React = window.React;
-const fMotion = window.Motion || window.framerMotion;
-const motion = fMotion ? fMotion.motion : new Proxy({}, {
-  get: (target, prop) => (props) => React.createElement(prop, props)
-});
-const AnimatePresence = fMotion ? fMotion.AnimatePresence : ({children}) => React.createElement(React.Fragment, null, children);
-
-import { DigitalClock, AnalogClock } from './components/Clock.js';
-import { Calendar, YearlyView, Icon } from './components/Calendar.js';
-import { initHolidays } from './utils/holidays.js';
+import React, { useState, useEffect, useRef } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import { Clock as ClockIcon, Calendar as CalendarIcon, Sun, Moon, Pin, X } from 'lucide-react';
+import { DigitalClock, AnalogClock } from './components/Clock';
+import { Calendar, YearlyView } from './components/Calendar';
+import { initHolidays } from './utils/holidays';
 import { 
   isTauri, 
   setAlwaysOnTop, 
@@ -17,50 +11,50 @@ import {
   getAppVersion, 
   restoreWindowPosition, 
   listenToMove 
-} from './utils/tauri.js';
+} from './utils/tauri';
 
 const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version }) => {
-  return html`
+  return (
     <div 
-      className=${`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 w-[1060px] h-[560px] mx-auto ${isTransparent ? 'bg-white/30 dark:bg-slate-900/30 glass' : 'bg-slate-50 dark:bg-slate-950'}`}
+      className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 w-[1060px] h-[560px] mx-auto ${isTransparent ? 'bg-white/30 dark:bg-slate-900/30 glass' : 'bg-slate-50 dark:bg-slate-950'}`}
       data-tauri-drag-region
     >
       <div className="flex items-center justify-between px-4 py-2 bg-white/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 select-none" data-tauri-drag-region>
         <div className="flex items-center gap-2" data-tauri-drag-region>
           <div className="w-3 h-3 rounded-full bg-blue-500" />
           <div className="flex items-baseline gap-1.5" data-tauri-drag-region>
-            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-widest">${title}</span>
-            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-wider">${version ? `v${version}` : ''}</span>
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-widest">{title}</span>
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 tracking-wider">{version ? `v${version}` : ''}</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick=${() => { setIsPinned(!isPinned); setAlwaysOnTop(!isPinned); }} 
-            className=${`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isPinned ? 'text-blue-500' : 'text-slate-400'}`} 
+            onClick={() => { setIsPinned(!isPinned); setAlwaysOnTop(!isPinned); }} 
+            className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isPinned ? 'text-blue-500' : 'text-slate-400'}`} 
             title="最前面表示"
           >
-            <${Icon} name="pin" size=${14} />
+            <Pin size={14} />
           </button>
           <button 
-            onClick=${() => setIsTransparent(!isTransparent)} 
-            className=${`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isTransparent ? 'text-blue-500' : 'text-slate-400'}`} 
+            onClick={() => setIsTransparent(!isTransparent)} 
+            className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isTransparent ? 'text-blue-500' : 'text-slate-400'}`} 
             title="背景透過"
           >
-            <${Icon} name="sun" size=${14} />
+            <Sun size={14} />
           </button>
           <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 mx-1" />
           <button 
-            onClick=${closeWindow} 
+            onClick={closeWindow} 
             className="p-1 rounded hover:bg-red-500 hover:text-white text-slate-400 transition-colors"
             title="閉じる"
           >
-            <${Icon} name="x" size=${14} />
+            <X size={14} />
           </button>
         </div>
       </div>
-      <div className="flex-1 p-8">${children}</div>
+      <div className="flex-1 p-8">{children}</div>
     </div>
-  `;
+  );
 };
 
 export default function App() {
@@ -75,7 +69,7 @@ export default function App() {
   const [isPinned, setIsPinned] = useState(true);
   const [showYearly, setShowYearly] = useState(false);
   const [isTransparent, setIsTransparent] = useState(false);
-  const [version, setVersion] = useState('1.2.3');
+  const [version, setVersion] = useState('1.3.0');
 
   // 設定の読み込みと外部データの初期化
   useEffect(() => {
@@ -147,7 +141,7 @@ export default function App() {
     // フォールバック用の座標保存ポーリング
     const posTimer = setInterval(async () => {
       if (isRestoringRef.current || !isTauri()) return;
-      const win = getTauriWindow();
+      const win = window.__TAURI__?.webviewWindow?.getCurrentWebviewWindow?.() || window.__TAURI__?.window?.getCurrentWindow?.();
       if (win) {
         try {
           const pos = await win.outerPosition();
@@ -162,7 +156,7 @@ export default function App() {
 
     // Rust トレイメニューからの最前面切り替えイベントハンドラ
     let unlistenAlwaysOnTopPromise;
-    if (isTauri() && window.__TAURI__.event && window.__TAURI__.event.listen) {
+    if (isTauri() && window.__TAURI__?.event?.listen) {
       unlistenAlwaysOnTopPromise = window.__TAURI__.event.listen('always-on-top-toggled', (event) => {
         const value = event.payload;
         setIsPinned(value);
@@ -171,7 +165,7 @@ export default function App() {
 
     // Rust トレイメニューからの位置リセットイベントハンドラ
     let unlistenPositionResetPromise;
-    if (isTauri() && window.__TAURI__.event && window.__TAURI__.event.listen) {
+    if (isTauri() && window.__TAURI__?.event?.listen) {
       unlistenPositionResetPromise = window.__TAURI__.event.listen('position-reset', (event) => {
         const [x, y] = event.payload;
         localStorage.setItem('windowPosition', JSON.stringify({ x, y, type: 'Physical' }));
@@ -200,91 +194,72 @@ export default function App() {
   }, [loading]);
 
   if (loading) {
-    return html`
+    return (
       <div className="flex h-screen w-screen items-center justify-center bg-slate-900 text-slate-400 font-sans">
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           <div>Loading Clondar Pro...</div>
         </div>
       </div>
-    `;
+    );
   }
 
-  const getTauriWindow = () => {
-    try {
-      if (isTauri()) {
-        if (window.__TAURI__.webviewWindow && window.__TAURI__.webviewWindow.getCurrentWebviewWindow) {
-          return window.__TAURI__.webviewWindow.getCurrentWebviewWindow();
-        }
-        if (window.__TAURI__.window && window.__TAURI__.window.getCurrentWindow) {
-          return window.__TAURI__.window.getCurrentWindow();
-        }
-        if (window.__TAURI__.getCurrentWindow) {
-          return window.__TAURI__.getCurrentWindow();
-        }
-      }
-    } catch (e) {
-      console.error("Tauri API access error:", e);
-    }
-    return null;
-  };
-
-  return html`
+  return (
     <div className="h-full w-full flex items-center justify-center p-4 transition-colors duration-500 overflow-hidden relative" data-tauri-drag-region>
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/20 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-400/20 blur-[120px] rounded-full pointer-events-none" />
       
-      <${WindowFrame} 
+      <WindowFrame 
         title="Clondar Pro" 
-        isPinned=${isPinned} 
-        setIsPinned=${setIsPinned} 
-        isTransparent=${isTransparent} 
-        setIsTransparent=${setIsTransparent} 
-        version=${version}
+        isPinned={isPinned} 
+        setIsPinned={setIsPinned} 
+        isTransparent={isTransparent} 
+        setIsTransparent={setIsTransparent} 
+        version={version}
       >
         <div className="flex flex-row gap-12 items-start">
           <div className="flex flex-col items-center gap-8 w-[500px] flex-shrink-0 z-10">
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shadow-inner relative z-20">
               <button 
-                onClick=${() => setClockType('digital')} 
-                className=${`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${clockType === 'digital' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                onClick={() => setClockType('digital')} 
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${clockType === 'digital' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >
-                <${Icon} name="clock" size=${16} />DIGITAL
+                <ClockIcon size={16} />DIGITAL
               </button>
               <button 
-                onClick=${() => setClockType('analog')} 
-                className=${`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${clockType === 'analog' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                onClick={() => setClockType('analog')} 
+                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${clockType === 'analog' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >
-                <${Icon} name="clock" size=${16} />ANALOG
+                <ClockIcon size={16} />ANALOG
               </button>
             </div>
 
             <div className="flex-1 flex items-center justify-center min-h-[300px]">
-              ${clockType === 'digital' ? html`
-                <${DigitalClock} time=${time} is24Hour=${is24Hour} showSeconds=${showSeconds} />
-              ` : html`
-                <${AnalogClock} time=${time} showSeconds=${showSeconds} />
-              `}
+              {clockType === 'digital' ? (
+                <DigitalClock time={time} is24Hour={is24Hour} showSeconds={showSeconds} />
+              ) : (
+                <AnalogClock time={time} showSeconds={showSeconds} />
+              )}
             </div>
 
             <div className="flex items-center justify-center gap-3 mt-auto">
               <button 
-                onClick=${() => setIs24Hour(!is24Hour)} 
-                className=${`px-4 py-1.5 rounded-lg text-xs font-black transition-all shadow-sm ${is24Hour ? 'bg-blue-500 text-white shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}
+                onClick={() => setIs24Hour(!is24Hour)} 
+                className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all shadow-sm ${is24Hour ? 'bg-blue-500 text-white shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}
               >
-                ${is24Hour ? '24H' : '12H'}
+                {is24Hour ? '24H' : '12H'}
               </button>
               <button 
-                onClick=${() => setShowSeconds(!showSeconds)} 
-                className=${`px-4 py-1.5 rounded-lg text-xs font-black transition-all shadow-sm ${showSeconds ? 'bg-blue-500 text-white shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}
+                onClick={() => setShowSeconds(!showSeconds)} 
+                className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all shadow-sm ${showSeconds ? 'bg-blue-500 text-white shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}
               >
-                秒表示: ${showSeconds ? 'ON' : 'OFF'}
+                秒表示: {showSeconds ? 'ON' : 'OFF'}
               </button>
               <button 
-                onClick=${() => setIsDarkMode(!isDarkMode)} 
+                onClick={() => setIsDarkMode(!isDarkMode)} 
                 className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm animate-none"
               >
-                ${isDarkMode ? html`<${Icon} name="sun" size=${18} />` : html`<${Icon} name="moon" size=${18} />`}
+                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
             </div>
           </div>
@@ -293,27 +268,27 @@ export default function App() {
 
           <div className="flex-1 w-full flex flex-col gap-4">
             <div className="flex items-center gap-2 text-slate-400 mb-2">
-              <${Icon} name="calendar" size=${16} />
+              <CalendarIcon size={16} />
               <span className="text-xs font-bold uppercase tracking-widest">Calendar</span>
             </div>
-            <${Calendar} 
-              currentMonth=${currentMonth} 
-              setCurrentMonth=${setCurrentMonth} 
-              onShowYearly=${() => setShowYearly(true)} 
-              isTransparent=${isTransparent} 
+            <Calendar 
+              currentMonth={currentMonth} 
+              setCurrentMonth={setCurrentMonth} 
+              onShowYearly={() => setShowYearly(true)} 
+              isTransparent={isTransparent} 
             />
           </div>
         </div>
-      </${WindowFrame}>
+      </WindowFrame>
 
-      <${AnimatePresence}>
-        ${showYearly && html`
-          <${YearlyView} 
-            year=${currentMonth.getFullYear()} 
-            onClose=${() => setShowYearly(false)} 
+      <AnimatePresence>
+        {showYearly && (
+          <YearlyView 
+            year={currentMonth.getFullYear()} 
+            onClose={() => setShowYearly(false)} 
           />
-        `}
-      </${AnimatePresence}>
+        )}
+      </AnimatePresence>
     </div>
-  `;
+  );
 }

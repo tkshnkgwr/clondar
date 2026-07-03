@@ -19,6 +19,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      - name: Checkout common_lib
+        uses: actions/checkout@v7
+        with:
+          repository: tkshnkgwr/common_lib
+          path: ../common_lib
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:

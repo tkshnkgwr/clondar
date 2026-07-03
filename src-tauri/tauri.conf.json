@@ -13,7 +13,7 @@
       {
         "label": "main",
         "title": "Clondar Pro",
-        "width": 1100,
+        "width": 1180,
         "height": 600,
         "resizable": false,
         "decorations": false,
@@ -37,6 +37,15 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "languages": ["Japanese", "English"],
+        "displayLanguageSelector": true
+      },
+      "wix": {
+        "language": ["ja-JP", "en-US"]
+      }
+    }
   }
 }

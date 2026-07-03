@@ -1,7 +1,7 @@
 let config = null;
 
 // Built-in fallback config in case JSON load fails
-const fallbackConfig = {
+export const fallbackConfig = {
   fixed: {
     "01-01": "元日",
     "02-11": "建国記念の日",
@@ -118,6 +118,19 @@ const fallbackConfig = {
 
 export async function initHolidays() {
   if (config) return config;
+  
+  const isTauri = !!window.__TAURI__;
+  if (isTauri) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const jsonText = await invoke('load_holidays_json');
+      config = JSON.parse(jsonText);
+      return config;
+    } catch (e) {
+      console.error('Error invoking load_holidays_json, fallback to fetch:', e);
+    }
+  }
+
   try {
     const res = await fetch('/config/holidays.json');
     if (!res.ok) throw new Error('Failed to fetch holidays config');
@@ -127,6 +140,11 @@ export async function initHolidays() {
     config = fallbackConfig;
   }
   return config;
+}
+
+export function reloadHolidays() {
+  config = null;
+  return initHolidays();
 }
 
 export function getHolidays(yearParam) {

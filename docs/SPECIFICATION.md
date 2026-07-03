@@ -71,11 +71,17 @@ graph TD
 
 ### 3.3 カレンダー機能 (Calendar Section)
 * **表示安定性**: 月の長さに関わらず、常に **6週間 (42日間)** を固定表示。
-* **外部祝日設定のロード**:
-  - `ui/public/config/holidays.json` より祝日の定義ルールをロード。
+* **外部祝日設定のロードと保存 (永続化)**:
+  - アプリ起動時、ローカルデータ領域（`%LOCALAPPDATA%/com.clondar.pro/holidays.json`）から定義ファイルをロード（Tauri コマンド `load_holidays_json` を経由）。
+  - 設定ファイルが存在しない場合は、アプリ内蔵の標準定義を自動生成して保存・読み込みます（非Tauriブラウザ環境時は従来の `fetch` にフォールバック）。
   - 固定祝日、ハッピーマンデー、天皇誕生日、天文計算（春分・秋分）、カスタム上書き（オリンピック特例等）を自動計算し、カレンダー上に反映。
-  - 法改正時は設定ファイルの編集のみで対応可能。
+  - 法改正やユーザーのカスタム時は、アプリ内から自由に変更・保存可能。
 * **年間表示**: 全画面の年間カレンダーモーダルを搭載（前年・翌年のナビゲーションに対応）。
+* **祝日設定マネージャー (Holidays Manager)**:
+  - プロジェクト間共有クレート `common_lib` と連携。
+  - **ビジュアル編集機能**: 固定祝日の追加（日付・名称指定）および削除（ワンクリック削除）を画面上で行え、「保存して適用」ボタンでバックエンドコマンド `save_holidays_json` を介してローカルファイルを自動更新し、カレンダー表示を即時リロード。
+  - **差分表示**: アプリ内蔵のデフォルト祝日設定と、適用中の外部設定ファイル（`holidays.json`）の行単位差分を `common_lib::compute_diff` (LCSアルゴリズム) を用いて Rust バックエンド側で計算し、追加（緑）・削除（赤）を視覚的にカラーハイライト表示。
+  - **統計分析**: 祝日定義の統計情報を `common_lib::count_occurrences` でカウントし、特定キーワード（「の日」「天皇誕生日」「振替休日」「国民の休日」）の定義件数を表形式で表示。
 
 ### 3.4 永続化機能 (State Persistence)
 * **設定の保存**: 以下の設定を `localStorage` に保存し、次回起動時に復元。
@@ -106,7 +112,7 @@ graph TD
 ---
 
 ## 5. 技術スタック
-* **Backend**: Rust (Tauri v2)
+* **Backend**: Rust (Tauri v2), 共有クレート (common_lib) 統合
 * **Frontend**: React 18 (Vite), Tailwind CSS (v3)
 * **Architecture**: Local Bundled SPA (Offline Complete)
 * **Animation**: Framer Motion
@@ -122,8 +128,17 @@ graph TD
    Rust 側のトレイメニューとフロントエンド React を Tauri のイベントバス (`emit` / `listen`) で接続し、最前面ピン留め状態や位置リセット座標の双方向同期を達成。
 3. **Shadow Removal**: Rust 側の `set_shadow(false)` と Config 側の `shadow: false` の二重設定により、透過時の「薄い枠」を完全に除去。
 4. **DPI-Aware Coordinate Restoration**: 座標復帰時に `type: pos.type || 'Physical'`（物理ピクセル座標）を保持・適用することで、DPIスケーリングの異なるマルチモニター環境へのポータビリティを確保。
+5. **Shared Crate Integration (common_lib)**:
+   プロジェクト間で共通化された Rust ロジックを `common_lib` からインポートし、Tauri コマンド (`get_holidays_diff`, `get_word_count`) 経由で React UI と連携。これにより同一仕様の文字列処理ロジックを効率よく安全に再利用。
+
+## 7. パッケージング・配布仕様
+* **NSIS (EXE インストーラー)**:
+  - 英語と日本語の多言語（Multi-language）に対応。
+  - 起動時に言語選択ダイアログを表示し、システムロケールに基づく自動言語選択も連動。
+* **WiX (MSI インストーラー)**:
+  - 日本語（`ja-JP`）専用および英語（`en-US`）専用の個別の MSI パッケージを並行ビルド。
 
 ---
-**最終更新日**: 2026年6月30日
+**最終更新日**: 2026年7月3日
 **バージョン**: 1.3.0
 **内部バージョン**: 1.3.0.0

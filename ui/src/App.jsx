@@ -4,6 +4,7 @@ import { Clock as ClockIcon, Calendar as CalendarIcon, Sun, Moon, Pin, X } from 
 import { DigitalClock, AnalogClock } from './components/Clock';
 import { Calendar, YearlyView } from './components/Calendar';
 import { initHolidays } from './utils/holidays';
+import HolidaysManager from './components/HolidaysManager';
 import { 
   isTauri, 
   setAlwaysOnTop, 
@@ -16,7 +17,7 @@ import {
 const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version }) => {
   return (
     <div 
-      className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 w-[1060px] h-[560px] mx-auto ${isTransparent ? 'bg-white/30 dark:bg-slate-900/30 glass' : 'bg-slate-50 dark:bg-slate-950'}`}
+      className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 w-[1140px] h-[560px] mx-auto ${isTransparent ? 'bg-white/30 dark:bg-slate-900/30 glass' : 'bg-slate-50 dark:bg-slate-950'}`}
       data-tauri-drag-region
     >
       <div className="flex items-center justify-between px-4 py-2 bg-white/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 select-none" data-tauri-drag-region>
@@ -68,6 +69,8 @@ export default function App() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isPinned, setIsPinned] = useState(true);
   const [showYearly, setShowYearly] = useState(false);
+  const [showHolidaysManager, setShowHolidaysManager] = useState(false);
+  const [holidaysVersion, setHolidaysVersion] = useState(0);
   const [isTransparent, setIsTransparent] = useState(false);
   const [version, setVersion] = useState('1.3.0');
 
@@ -272,9 +275,11 @@ export default function App() {
               <span className="text-xs font-bold uppercase tracking-widest">Calendar</span>
             </div>
             <Calendar 
+              key={`calendar-${holidaysVersion}`}
               currentMonth={currentMonth} 
               setCurrentMonth={setCurrentMonth} 
               onShowYearly={() => setShowYearly(true)} 
+              onShowHolidays={() => setShowHolidaysManager(true)} 
               isTransparent={isTransparent} 
             />
           </div>
@@ -286,6 +291,12 @@ export default function App() {
           <YearlyView 
             year={currentMonth.getFullYear()} 
             onClose={() => setShowYearly(false)} 
+          />
+        )}
+        {showHolidaysManager && (
+          <HolidaysManager 
+            onClose={() => setShowHolidaysManager(false)} 
+            onSaved={() => setHolidaysVersion(v => v + 1)}
           />
         )}
       </AnimatePresence>

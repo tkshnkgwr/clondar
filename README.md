@@ -128,11 +128,11 @@ Due to disconnecting multi-monitors or accidental coordinate saving, the widget 
 ## 🛠️ Advanced Development & Maintenance
 
 ### 📅 Updating Japanese National Holidays (Legal Changes)
-If Japanese public holidays are amended by legislation, update the holiday calculation engine:
-1. Open [ui/index.html](./ui/index.html).
-2. Locate the `HolidayLogic` helper inside the React application scripts.
-3. Modify the date calculation routines inside `getHolidays(year)` to match the new legal requirements.
-4. Run `cargo tauri dev` to verify the rendering grid, and update [TEST_REPORT.md](./TEST_REPORT.md).
+If Japanese public holidays are amended by legislation, update the holiday definition file:
+1. Open [ui/public/config/holidays.json](./ui/public/config/holidays.json).
+2. Add or modify holiday dates and rules (fixed holidays, happy mondays, etc.) to match the new legal requirements.
+3. Open the "Holidays Manager" modal by clicking the "**Holidays Config**" (or "**祝日設定**") button on the widget to visually verify that modifications are correctly calculated and compared against the built-in defaults.
+4. After confirming correct operation, update [TEST_REPORT.md](./TEST_REPORT.md).
 
 ### ⚙️ Editor Configurations
 This project standardizes editor settings using `.editorconfig` and `.vscode/settings.json`.

@@ -24,6 +24,10 @@
 | TS-010 | システムトレイメニューの動作 | トレイアイコンの右クリックから、ウィンドウ表示切替、最前面切替、位置リセット、終了が機能すること。 | `tray-icon` フィーチャーを有効化し、`main.rs` で `TrayIconBuilder` とメニューイベントハンドラを実装。各項目が正常に動作し、イベントを介してフロントエンドと最前面・位置データが即時同期されることを検証。 | **PASS** |
 | TS-011 | 外部祝日の動的ロード | 外部 JSON から祝日の定義を読み込み、正しくカレンダーに描画されること。 | `public/config/holidays.json` をロードし、ハッピーマンデー、天皇誕生日、カスタム上書きを計算・解決してカレンダーに赤字およびツールチップで描画されることを確認。 | **PASS** |
 | TS-012 | ローカルビルド（Vite）整合性 | すべてのフロントエンド依存関係がローカルパッケージ化され、オフラインでも正常動作すること。 | `npm install` 実行後に Vite によるビルド（`npm run build`）を行い、オフライン状態でも React/Tailwind/Framer Motion 等の依存関係を含め、アプリが正常に起動・動作することを確認。 | **PASS** |
+| TS-013 | 共有クレート (common_lib) 統合 | `common_lib` への依存関係が正しく解決され、単体テストが完全に成功すること。 | `cargo test` の実行により、`it_works`, `test_compute_diff`, `test_count_occurrences` のすべてがパスすることを確認。 | **PASS** |
+| TS-014 | 祝日設定マネージャーの動作 | `fallbackConfig` と `holidays.json` の差分を Rust バックエンドで計算し、追加・削除をカラーハイライト表示すること。また統計カウントが正しく表示されること。 | Tauriコマンド `get_holidays_diff` および `get_word_count` が正常に呼び出され、UI 上で追加（緑背景・+）、削除（赤背景・-）、統計情報が正確に表示されることを検証。 | **PASS** |
+| TS-015 | 祝日のビジュアル編集（追加・削除） | 祝日設定マネージャー画面で、固定祝日の追加と削除が正常に行え、インメモリで一時保持されること。 | UI フォームに入力して追加、およびゴミ箱アイコンクリックでの削除がインメモリ状態で正確に機能することを確認。 | **PASS** |
+| TS-016 | 祝日データのローカル永続化（LocalAppData） | 保存時に `%LOCALAPPDATA%/com.clondar.pro/holidays.json` に正しく上書き保存され、次回起動時やカレンダー表示に即座に反映されること。 | 保存ボタンの押下時に `save_holidays_json` が走り、ファイルが書き換わると同時にカレンダーが即時リロードされ、再起動後も正しく設定が維持されていることを検証。 | **PASS** |
 
 ---
 
@@ -51,18 +55,20 @@ graph TD
             AppJSX["メインロジック (App.jsx)"]:::frontend
             ClockJSX["時計コンポーネント (Clock.jsx)"]:::frontend
             CalendarJSX["カレンダーコンポーネント (Calendar.jsx)"]:::frontend
+            HolidaysManager["祝日マネージャー (HolidaysManager.jsx)"]:::frontend
             TauriJS["Tauriラッパー (tauri.js)"]:::frontend
             LocalStorage["localStorage<br/>- windowPosition (Physical座標)<br/>- keepsAlwaysOnTop"]:::storage
         end
 
-        subgraph BackEnd [バックエンド領域 (Rust / Tauri Core)]
+        subgraph BackEnd [バックエンド領域 (Rust / Tauri Core / 共有クレート)]
             TauriConf["設定ファイル (tauri.conf.json)<br/>- shadow: false<br/>- transparent: true<br/>- decorations: false"]:::backend
             Capabilities["権限設定 (default.json)<br/>- allow-outer-position<br/>- allow-set-position<br/>- allow-close"]:::backend
             RustMain["Rust ロジック (main.rs)<br/>- System Tray Menu Builder<br/>- rust-version: 1.96.0"]:::backend
+            CommonLib["共有クレート (common_lib)<br/>- compute_diff<br/>- count_occurrences"]:::backend
         end
         
         subgraph ConfigLayer [設定データレイヤー]
-            HolidaysJSON["外部祝日設定 (holidays.json)"]:::config
+            HolidaysJSON["外部祝日設定 (LocalAppData/holidays.json)"]:::config
         end
     end
 
@@ -70,8 +76,12 @@ graph TD
     WebUI --> AppJSX
     AppJSX --> ClockJSX
     AppJSX --> CalendarJSX
-    AppJSX --> TauriJS
-    CalendarJSX -->|"祝日定義の取得"| HolidaysJSON
+    AppJSX --> HolidaysManager
+    CalendarJSX -->|"祝日定義のロード"| HolidaysJSON
+    HolidaysManager -->|"Tauri経由での読込・保存"| HolidaysJSON
+    HolidaysManager -->|"差分・統計計算コマンド"| TauriRuntime
+    TauriRuntime -->|"コマンド実行"| RustMain
+    RustMain -->|"共有ロジック呼び出し"| CommonLib
     
     AppJSX -->|"Window位置/最前面設定 復元"| LocalStorage
     TauriJS -->|"位置復元/最前面設定"| TauriRuntime
@@ -95,5 +105,5 @@ graph TD
 ```
 
 ---
-**作成日**: 2026年6月30日
+**作成日**: 2026年7月3日
 **適合バージョン**: Widget v1.3.0 (Vite React Local Bundled with Rust 1.96.0)

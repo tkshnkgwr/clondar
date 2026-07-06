@@ -16,7 +16,7 @@
 
 Tauri v2 を基盤としており、低リソース消費で動作し、常に最前面（Always on Top）に配置して日々のスケジュールと時刻をスマートに確認できます。
 
-![Clondar Showcase](https://picsum.photos/seed/clondar/1200/600?blur=1)
+![Clondar Showcase](./docs/assets/screenshot.png)
 
 ## ✨ 主な機能
 

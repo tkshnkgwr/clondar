@@ -16,7 +16,7 @@
 
 Powered by Tauri v2, it operates with extremely low resource consumption, stays "Always on Top" if desired, and lets you check your schedules and time in a beautiful, streamlined view.
 
-![Clondar Showcase](https://picsum.photos/seed/clondar/1200/600?blur=1)
+![Clondar Showcase](./docs/assets/screenshot.png)
 
 ## ✨ Core Features
 

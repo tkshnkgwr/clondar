@@ -34,7 +34,7 @@ export const getAppVersion = async () => {
       console.error("Failed to get version:", e);
     }
   }
-  return '1.3.3'; // fallback
+  return '1.3.4'; // fallback
 };
 
 export const closeWindow = async () => {

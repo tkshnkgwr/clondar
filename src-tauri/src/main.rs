@@ -1,14 +1,14 @@
 // Prevents additional console window on Windows in release, do not remove!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::{
-  menu::{Menu, MenuItem},
-  tray::TrayIconBuilder,
-  Emitter, Manager,
-};
-use std::sync::Mutex;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Mutex;
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::TrayIconBuilder,
+    Emitter, Manager,
+};
 
 struct QuittingState(Mutex<bool>);
 
@@ -128,140 +128,146 @@ const DEFAULT_HOLIDAYS_JSON: &str = r#"{
 }"#;
 
 fn get_holidays_file_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-  let mut path = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
-  if !path.exists() {
-    fs::create_dir_all(&path).map_err(|e| e.to_string())?;
-  }
-  path.push("holidays.json");
-  Ok(path)
+    let mut path = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    if !path.exists() {
+        fs::create_dir_all(&path).map_err(|e| e.to_string())?;
+    }
+    path.push("holidays.json");
+    Ok(path)
 }
 
 #[tauri::command]
 fn load_holidays_json(app: tauri::AppHandle) -> Result<String, String> {
-  let path = get_holidays_file_path(&app)?;
-  if path.exists() {
-    fs::read_to_string(&path).map_err(|e| e.to_string())
-  } else {
-    fs::write(&path, DEFAULT_HOLIDAYS_JSON).map_err(|e| e.to_string())?;
-    Ok(DEFAULT_HOLIDAYS_JSON.to_string())
-  }
+    let path = get_holidays_file_path(&app)?;
+    if path.exists() {
+        fs::read_to_string(&path).map_err(|e| e.to_string())
+    } else {
+        fs::write(&path, DEFAULT_HOLIDAYS_JSON).map_err(|e| e.to_string())?;
+        Ok(DEFAULT_HOLIDAYS_JSON.to_string())
+    }
 }
 
 #[tauri::command]
 fn save_holidays_json(app: tauri::AppHandle, json_content: String) -> Result<(), String> {
-  let _: serde_json::Value = serde_json::from_str(&json_content)
-    .map_err(|e| format!("JSONのフォーマットが正しくありません: {}", e))?;
-  let path = get_holidays_file_path(&app)?;
-  fs::write(&path, json_content).map_err(|e| e.to_string())?;
-  Ok(())
+    let _: serde_json::Value = serde_json::from_str(&json_content)
+        .map_err(|e| format!("JSONのフォーマットが正しくありません: {}", e))?;
+    let path = get_holidays_file_path(&app)?;
+    fs::write(&path, json_content).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
-fn get_holidays_diff(old_text: String, new_text: String) -> Result<Vec<common_lib::DiffPart>, String> {
-  Ok(common_lib::compute_diff(&old_text, &new_text))
+fn get_holidays_diff(
+    old_text: String,
+    new_text: String,
+) -> Result<Vec<common_lib::DiffPart>, String> {
+    Ok(common_lib::compute_diff(&old_text, &new_text))
 }
 
 #[tauri::command]
 fn get_word_count(text: String, word: String) -> Result<usize, String> {
-  Ok(common_lib::count_occurrences(&text, &word))
+    Ok(common_lib::count_occurrences(&text, &word))
 }
 
 fn main() {
-  tauri::Builder::default()
-    .manage(QuittingState(Mutex::new(false)))
-    .invoke_handler(tauri::generate_handler![
-      get_holidays_diff, 
-      get_word_count, 
-      load_holidays_json, 
-      save_holidays_json
-    ])
-    .setup(|app| {
-      // メインウィンドウを取得 (Tauri v2)
-      let window = app.get_webview_window("main").unwrap();
-      
-      // 強制的に枠を削除
-      window.set_decorations(false).unwrap();
-      
-      // 強制的に影を削除 (Windows)
-      window.set_shadow(false).unwrap();
-      
-      // 強制的に最前面に設定
-      window.set_always_on_top(true).unwrap();
+    tauri::Builder::default()
+        .manage(QuittingState(Mutex::new(false)))
+        .invoke_handler(tauri::generate_handler![
+            get_holidays_diff,
+            get_word_count,
+            load_holidays_json,
+            save_holidays_json
+        ])
+        .setup(|app| {
+            // メインウィンドウを取得 (Tauri v2)
+            let window = app.get_webview_window("main").unwrap();
 
-      // ウィンドウが閉じられようとしたときは、破棄せずに非表示にする (常駐化対策)
-      let app_handle = app.handle().clone();
-      let win_clone = window.clone();
-      window.on_window_event(move |event| {
-        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-          let quitting_state = app_handle.state::<QuittingState>();
-          let is_quitting = *quitting_state.0.lock().unwrap();
-          if !is_quitting {
-            api.prevent_close();
-            let _ = win_clone.hide();
-          }
-        }
-      });
+            // 強制的に枠を削除
+            window.set_decorations(false).unwrap();
 
-      // --- システムトレイメニューの構築 ---
-      let toggle = MenuItem::with_id(app, "toggle", "表示 / 非表示", true, None::<&str>).unwrap();
-      let always_on_top = MenuItem::with_id(app, "always_on_top", "最前面表示の切替", true, None::<&str>).unwrap();
-      let reset_pos = MenuItem::with_id(app, "reset_pos", "位置をリセット", true, None::<&str>).unwrap();
-      let quit = MenuItem::with_id(app, "quit", "終了", true, None::<&str>).unwrap();
+            // 強制的に影を削除 (Windows)
+            window.set_shadow(false).unwrap();
 
-      let menu = Menu::with_items(app, &[&toggle, &always_on_top, &reset_pos, &quit]).unwrap();
+            // 強制的に最前面に設定
+            window.set_always_on_top(true).unwrap();
 
-      let _tray = TrayIconBuilder::new()
-        // デフォルトのウィンドウアイコンを使用
-        .icon(app.default_window_icon().unwrap().clone())
-        .menu(&menu)
-        .on_menu_event(|app, event| {
-          match event.id.as_ref() {
-            "toggle" => {
-              if let Some(window) = app.get_webview_window("main") {
-                if let Ok(visible) = window.is_visible() {
-                  if visible {
-                    let _ = window.hide();
-                  } else {
-                    let _ = window.show();
-                    let _ = window.set_focus();
-                  }
+            // ウィンドウが閉じられようとしたときは、破棄せずに非表示にする (常駐化対策)
+            let app_handle = app.handle().clone();
+            let win_clone = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    let quitting_state = app_handle.state::<QuittingState>();
+                    let is_quitting = *quitting_state.0.lock().unwrap();
+                    if !is_quitting {
+                        api.prevent_close();
+                        let _ = win_clone.hide();
+                    }
                 }
-              }
-            }
-            "always_on_top" => {
-              if let Some(window) = app.get_webview_window("main") {
-                if let Ok(is_on_top) = window.is_always_on_top() {
-                  let new_state = !is_on_top;
-                  if window.set_always_on_top(new_state).is_ok() {
-                    let _ = window.emit("always-on-top-toggled", new_state);
-                  }
-                }
-              }
-            }
-            "reset_pos" => {
-              if let Some(window) = app.get_webview_window("main") {
-                if window.center().is_ok() {
-                  if let Ok(pos) = window.outer_position() {
-                    let _ = window.emit("position-reset", (pos.x, pos.y));
-                  }
-                }
-              }
-            }
-            "quit" => {
-              let quitting_state = app.state::<QuittingState>();
-              *quitting_state.0.lock().unwrap() = true;
-              for window in app.webview_windows().values() {
-                let _ = window.close();
-              }
-            }
-            _ => {}
-          }
+            });
+
+            // --- システムトレイメニューの構築 ---
+            let toggle =
+                MenuItem::with_id(app, "toggle", "表示 / 非表示", true, None::<&str>).unwrap();
+            let always_on_top =
+                MenuItem::with_id(app, "always_on_top", "最前面表示の切替", true, None::<&str>)
+                    .unwrap();
+            let reset_pos =
+                MenuItem::with_id(app, "reset_pos", "位置をリセット", true, None::<&str>).unwrap();
+            let quit = MenuItem::with_id(app, "quit", "終了", true, None::<&str>).unwrap();
+
+            let menu =
+                Menu::with_items(app, &[&toggle, &always_on_top, &reset_pos, &quit]).unwrap();
+
+            let _tray = TrayIconBuilder::new()
+                // デフォルトのウィンドウアイコンを使用
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "toggle" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            if let Ok(visible) = window.is_visible() {
+                                if visible {
+                                    let _ = window.hide();
+                                } else {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            }
+                        }
+                    }
+                    "always_on_top" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            if let Ok(is_on_top) = window.is_always_on_top() {
+                                let new_state = !is_on_top;
+                                if window.set_always_on_top(new_state).is_ok() {
+                                    let _ = window.emit("always-on-top-toggled", new_state);
+                                }
+                            }
+                        }
+                    }
+                    "reset_pos" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            if window.center().is_ok() {
+                                if let Ok(pos) = window.outer_position() {
+                                    let _ = window.emit("position-reset", (pos.x, pos.y));
+                                }
+                            }
+                        }
+                    }
+                    "quit" => {
+                        let quitting_state = app.state::<QuittingState>();
+                        *quitting_state.0.lock().unwrap() = true;
+                        for window in app.webview_windows().values() {
+                            let _ = window.close();
+                        }
+                    }
+                    _ => {}
+                })
+                .build(app)
+                .unwrap();
+
+            Ok(())
         })
-        .build(app)
-        .unwrap();
-      
-      Ok(())
-    })
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }

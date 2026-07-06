@@ -92,5 +92,38 @@ if (Test-Path $testPath) {
     Write-Warning "$testPath not found."
 }
 
+# 5. ui/package.json
+$packageJsonPath = "ui/package.json"
+if (Test-Path $packageJsonPath) {
+    Write-Host "Updating $packageJsonPath..."
+    $content = [System.IO.File]::ReadAllText($packageJsonPath, $utf8)
+    $content = $content -replace '"version"\s*:\s*"[^"]+"', "`"version`": `"$NewVersion`""
+    [System.IO.File]::WriteAllText($packageJsonPath, $content, $utf8)
+} else {
+    Write-Warning "$packageJsonPath not found."
+}
+
+# 6. ui/src/App.jsx
+$appJsxPath = "ui/src/App.jsx"
+if (Test-Path $appJsxPath) {
+    Write-Host "Updating $appJsxPath..."
+    $content = [System.IO.File]::ReadAllText($appJsxPath, $utf8)
+    $content = $content -replace "setVersion\('[^']+'\)", "setVersion('$NewVersion')"
+    [System.IO.File]::WriteAllText($appJsxPath, $content, $utf8)
+} else {
+    Write-Warning "$appJsxPath not found."
+}
+
+# 7. ui/src/utils/tauri.js
+$tauriJsPath = "ui/src/utils/tauri.js"
+if (Test-Path $tauriJsPath) {
+    Write-Host "Updating $tauriJsPath..."
+    $content = [System.IO.File]::ReadAllText($tauriJsPath, $utf8)
+    $content = $content -replace "return '[^']+'\s*;\s*//\s*fallback", "return '$NewVersion'; // fallback"
+    [System.IO.File]::WriteAllText($tauriJsPath, $content, $utf8)
+} else {
+    Write-Warning "$tauriJsPath not found."
+}
+
 Write-Host "Version bump completed successfully!"
 

@@ -2,6 +2,7 @@
 
 [English Version](./README.md) | **日本語版**
 
+[![CI Status](https://github.com/tkshnkgwr/clondar/actions/workflows/ci.yml/badge.svg)](https://github.com/tkshnkgwr/clondar/actions)
 [![Build Status](https://github.com/tkshnkgwr/clondar/actions/workflows/release.yml/badge.svg)](https://github.com/tkshnkgwr/clondar/actions)
 [![Latest Release](https://img.shields.io/github/v/release/tkshnkgwr/clondar)](https://github.com/tkshnkgwr/clondar/releases)
 [![Rust Version](https://img.shields.io/badge/rust-1.96.0-orange.svg)](https://www.rust-lang.org/)

@@ -197,7 +197,7 @@ export default function HolidaysManager({ onClose, onSaved }) {
                   {stats.map(({ word, count }) => (
                     <div
                       key={word}
-                      className="p-3 bg-white dark:bg-slate-850 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex items-center justify-between shadow-sm"
+                      className="p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-800/60 rounded-2xl flex items-center justify-between shadow-sm"
                     >
                       <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
                         「{word}」の定義数
@@ -282,12 +282,12 @@ export default function HolidaysManager({ onClose, onSaved }) {
                   <div className="flex flex-col md:flex-row gap-6 h-full min-h-[300px]">
                     {/* 左半分：固定祝日リスト */}
                     <div className="flex-1 flex flex-col border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-                      <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500">
+                      <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-500">
                         現在の固定祝日一覧 ({holidaysConfig?.fixed ? Object.keys(holidaysConfig.fixed).length : 0}件)
                       </div>
                       <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 max-h-[220px]">
                         {holidaysConfig?.fixed && Object.entries(holidaysConfig.fixed).map(([date, name]) => (
-                          <div key={date} className="px-4 py-2 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition-colors">
+                          <div key={date} className="px-4 py-2 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
                             <div className="flex items-center gap-3">
                               <span className="font-mono text-xs font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-md">
                                 {date}

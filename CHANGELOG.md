@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.1] - 2026-07-06
+### Added
+- **自動リリース・バージョンバンプワークフローの追加**: `tkshnkgwr/MiSysMon` と同様に、`main` ブランチへのプッシュ時に自動的にパッチバージョンを上げてタグ付け・プッシュを行う `bump-version.yml` ワークフローを導入。
+- **リリースビルド最適化設定の追加**: `src-tauri/Cargo.toml` に `[profile.release]` の最適化設定（LTO、シンボルストリップ等）を追加し、ビルドバイナリの軽量化を実現。
+
+### Changed
+- **共有ライブラリ `common_lib` 参照設定の変更**: `src-tauri/Cargo.toml` 内の `common_lib` の参照を Git 依存からローカルパス依存に戻し、CI/CD (`ci.yml`, `release.yml`) 側で `common_lib` を並行してチェックアウトしてビルドする方式へ移行。これに伴い、ローカルオーバーライド用の一時ファイル `src-tauri/.cargo/config.toml` を削除。
+
+### Fixed
+- **ダークモード時の祝日設定画面の配色修正**:
+  - 定義数カード（「の日」等の統計ボックス）および祝日一覧のタイトルヘッダーで、Tailwindの無効なカラークラス `slate-850` が指定されていた箇所を `slate-800` に修正。これにより、ダークモード適用時にこれらの要素が白色（または明るい色）のままになる問題を解消。
+  - 祝日リストアイテムのホバー背景クラスを `dark:hover:bg-slate-850/50` から `dark:hover:bg-slate-800/50` へ修正。
+
 ## [1.3.0] - 2026-07-03
 ### Added
 - **祝日設定マネージャーへのビジュアル編集・保存機能の追加**: アプリ上の「祝日設定」画面で、直接固定祝日の「追加」や「削除」を行える編集フォームを追加。編集内容は Tauri コマンド経由で OS のユーザーローカルデータ領域（LocalAppData）へ安全に永続化保存され、カレンダー表示へ即時反映されるようにアップデート。
@@ -22,6 +35,11 @@
 - **インストーラーの日本語化対応 (Windows)**: NSIS インストーラーでの日本語・英語多言語対応（インストール時の言語選択画面表示機能付き）、および WiX (MSI) での日本語専用（ja-JP）と英語専用（en-US）パッケージ of 並行ビルド設定を導入。
 
 ### Changed
+- **GitHub Actions および Dependabot 連携の修正とCIの新規導入 (2026-07-06)**:
+  - Dependabot で発生していた `common_lib` パス依存関係のエラー（`path_dependencies_not_reachable`）を解消するため、`Cargo.toml` の `common_lib` を Git 依存関係に変更。
+  - ローカル開発での利便性を損なわないよう、`.cargo/config.toml` によるローカルパス（`../../common_lib`）へのオーバーライドを導入し、`.gitignore` に除外設定を追加。
+  - リリースワークフロー（`release.yml`）内のアクションの非推奨バージョンを安定版（`checkout@v4`, `action-gh-release@v2`）に修正し、ジョブレベルの作業ディレクトリ指定（`clondar`）およびリリースアセットの出力先パス指定を正確に設定。
+  - プッシュ・プルリクエスト時にコード品質を自動検証（`cargo fmt`, `cargo clippy`, `cargo test`）する CI ワークフロー（`ci.yml`）を新規導入。
 - **フロントエンドのモジュール分割と JSX 移行**: UI コンポーネントを `Clock.jsx`, `Calendar.jsx`, `App.jsx`, `main.jsx` に機能別にクリーンに分割し、標準的な React/JSX 記法で記述。
 - **ビルドコマンドの自動化**: `tauri.conf.json` での `beforeDevCommand`, `beforeBuildCommand` の設定を Vite 用に再適用し、Tauri 起動時に自動でコンパイルされるよう修正（Tauri CLI が `frontendDist` に基づき自動的に `ui/` ディレクトリを作業ディレクトリとして扱うため、標準的な `npm run dev` / `npm run build` のまま動作します）。
 - **環境バージョンの最新整合**: Rust バージョン要件を `1.96.0` に、Tauri 依存関係の表記を実際のビルドバージョン（tauri `2.11.3`, tauri-build `2.6.3`）と整合。

@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "1.3.0"
+version = "1.3.1"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -25,3 +25,10 @@ tauri = { version = "2.11.3", features = ["tray-icon"] }
 tauri-plugin-log = "2"
 # 2026-07-03: 共有ライブラリの参照追加
 common_lib = { path = "../../common_lib" }
+
+[profile.release]
+opt-level = 'z'     # サイズ最適化
+lto = true          # リンク時最適化
+codegen-units = 1   # コンパイル単位を1にして最適化を最大化
+panic = 'abort'     # パニック時の巻き戻しを無効化して軽量化
+strip = true        # シンボル情報を削除（サイズ大幅削減）

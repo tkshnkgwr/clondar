@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: clondar
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          path: clondar
+
+      - name: Checkout common_lib
+        uses: actions/checkout@v4
+        with:
+          repository: tkshnkgwr/common_lib
+          path: common_lib
+          token: ${{ secrets.PAT || github.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: 'clondar/src-tauri -> clondar/src-tauri/target'
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: clondar/ui
+
+      - name: Cargo fmt
+        run: cargo fmt --check
+        working-directory: clondar/src-tauri
+
+      - name: Cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
+        working-directory: clondar/src-tauri
+
+      - name: Cargo test
+        run: cargo test
+        working-directory: clondar/src-tauri

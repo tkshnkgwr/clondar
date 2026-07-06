@@ -60,5 +60,5 @@ AIがコードの変更、機能追加、リファクタリングなどを行う
 - **依存ライブラリの自動アップデート**:
   `.github/dependabot.yml` が設定されており、Cargo 依存関係および GitHub Actions のアップデートが自動で監視・提案される。
 - **自動デプロイフロー**:
-  `v*` 形式の Git タグがプッシュされると、GitHub Actions が自動的にトリガーされ、Windows 用の Tauri アプリがビルドされ GitHub Releases にドラフトリリースとしてデプロイされる。タグ作成前に `scripts/bump-version.ps1` を用いてバージョンを一括更新すること。
+  `main` ブランチにコミットがプッシュされると、GitHub Actions（Auto Bump Version）が自動的にパッチバージョンを上げてタグ付けし、それに伴って自動デプロイフロー（Release App）がトリガーされて、Windows 用の Tauri アプリがビルドされ GitHub Releases にドラフトリリースとしてデプロイされる。手動で特定のバージョンを指定して更新したい場合は、`scripts/bump-version.ps1` を実行する。
 

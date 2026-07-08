@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Calendar as CalendarIcon, AlertCircle, FileText, CheckCircle2, Trash2, Plus, Save } from 'lucide-react';
 import { isTauri } from '../utils/tauri';
-import { fallbackConfig } from '../utils/holidays';
+import { fallbackConfig, reloadHolidays } from '../utils/holidays';
+import { invoke } from '@tauri-apps/api/core';
 
 export default function HolidaysManager({ onClose, onSaved }) {
   const [loading, setLoading] = useState(true);
@@ -26,7 +27,6 @@ export default function HolidaysManager({ onClose, onSaved }) {
       let currentJson = '';
       
       if (isTauri()) {
-        const { invoke } = await import('@tauri-apps/api/core');
         currentJson = await invoke('load_holidays_json');
       } else {
         // Webブラウザ環境用のフォールバック読み込み
@@ -53,7 +53,6 @@ export default function HolidaysManager({ onClose, onSaved }) {
       for (const word of keywords) {
         let count = 0;
         if (isTauri()) {
-          const { invoke } = await import('@tauri-apps/api/core');
           count = await invoke('get_word_count', { text: currentJson, word });
         } else {
           const regex = new RegExp(word, 'gi');
@@ -65,7 +64,6 @@ export default function HolidaysManager({ onClose, onSaved }) {
 
       // 3. 差分の取得
       if (isTauri()) {
-        const { invoke } = await import('@tauri-apps/api/core');
         const diff = await invoke('get_holidays_diff', {
           oldText: fallbackJson,
           newText: currentJson,
@@ -123,7 +121,6 @@ export default function HolidaysManager({ onClose, onSaved }) {
       const jsonContent = JSON.stringify(holidaysConfig, null, 2);
 
       if (isTauri()) {
-        const { invoke } = await import('@tauri-apps/api/core');
         await invoke('save_holidays_json', { jsonContent });
       } else {
         console.log("Mock Save (Browser environment):", jsonContent);
@@ -131,7 +128,6 @@ export default function HolidaysManager({ onClose, onSaved }) {
       }
 
       // キャッシュのリロード
-      const { reloadHolidays } = await import('../utils/holidays');
       await reloadHolidays();
 
       if (onSaved) onSaved();

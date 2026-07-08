@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- **Viteビルド時の動的インポート警告の解消**:
+  - `HolidaysManager.jsx` と `holidays.js` において、`@tauri-apps/api/core` や `reloadHolidays` が一部の関数内で動的インポート (`await import(...)`) されていたため、Viteビルド時にチャンク分割できないという警告が発生していた問題を、ファイル上部での静的インポート (`import`) に統一することで解消。
+
 ### Changed
 - **README ドキュメントのプレースホルダー画像をローカルスクリーンショットに置き換え**: ダミー画像のプレースホルダーを、ブラウザ上で実際に動作させたアプリ UI のキャプチャ画像 (`docs/assets/screenshot.png`) に置き換え、ドキュメントのビジュアルを最適化。
 

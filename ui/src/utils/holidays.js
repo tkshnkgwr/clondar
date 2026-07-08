@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/core';
+
 let config = null;
 
 // Built-in fallback config in case JSON load fails
@@ -122,7 +124,6 @@ export async function initHolidays() {
   const isTauri = !!window.__TAURI__;
   if (isTauri) {
     try {
-      const { invoke } = await import('@tauri-apps/api/core');
       const jsonText = await invoke('load_holidays_json');
       config = JSON.parse(jsonText);
       return config;

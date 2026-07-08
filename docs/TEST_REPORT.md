@@ -32,6 +32,7 @@
 | TS-018 | 共有ライブラリのパス依存解決 | `Cargo.toml` において `common_lib` を Git 依存からローカルパス依存に戻し、ローカルで正常にコンパイル・テストが通ること。 | `cargo test --manifest-path src-tauri/Cargo.toml` により、ローカルパス参照が正しく解決されテストが完全にパスすることを確認。 | **PASS** |
 | TS-019 | 自動バンプワークフローの構成 | `bump-version.yml` により、GitHub Actions 側で自動的にパッチバージョンがバンプされてコミット・タグ付けされること。 | 新規作成したワークフローの YAML スキーマが正しく、動作前提となるパス設定（`src-tauri/Cargo.toml`）に適合していることを検証。 | **PASS** |
 | TS-020 | リリースビルドのサイズ最適化 | `[profile.release]` の最適化オプション（LTO、シンボル削除等）を追加し、ビルドエラーが発生しないこと。 | `cargo build --release --manifest-path src-tauri/Cargo.toml` にて、最適化オプションを適用した状態でコンパイル・リンクが成功することを確認。 | **PASS** |
+| TS-021 | Viteビルド時の警告解消 | `npm run build` 実行時に `@tauri-apps/api/core` などの動的インポートによる「Viteチャンク分割不能警告」が発生しないこと。 | `HolidaysManager.jsx` と `holidays.js` で動的インポートされていた箇所を、すべてファイル上部での静的インポートに修正。ビルド実行時に警告が一切出力されず、クリーンにビルドが成功することを確認。 | **PASS** |
 
 ---
 
@@ -110,4 +111,4 @@ graph TD
 
 ---
 **作成日**: 2026年7月6日
-**適合バージョン**: Widget v1.3.1 (Vite React Local Bundled with Rust 1.96.0)
+**適合バージョン**: Widget v1.3.4 (Vite React Local Bundled with Rust 1.96.0)

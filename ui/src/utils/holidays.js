@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 let config = null;
 
-// Built-in fallback config in case JSON load fails
+// JSONロードに失敗した場合の内蔵フォールバック設定
 export const fallbackConfig = {
   fixed: {
     "01-01": "元日",

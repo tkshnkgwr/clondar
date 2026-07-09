@@ -1,4 +1,4 @@
-// Prevents additional console window on Windows in release, do not remove!!
+// リリースビルド時にWindowsで追加のコンソールウィンドウが表示されるのを防ぎます。削除しないでください！
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::fs;

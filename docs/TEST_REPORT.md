@@ -30,9 +30,10 @@
 | TS-016 | 祝日データのローカル永続化（LocalAppData） | 保存時に `%LOCALAPPDATA%/com.clondar.pro/holidays.json` に正しく上書き保存され、次回起動時やカレンダー表示に即座に反映されること。 | 保存ボタンの押下時に `save_holidays_json` が走り、ファイルが書き換わると同時にカレンダーが即時リロードされ、再起動後も正しく設定が維持されていることを検証。 | **PASS** |
 | TS-017 | 祝日設定マネージャーのダークモード配色 | ダークモード時に、定義数カードやタイトルヘッダー、「現在の固定祝日一覧」の背景やタイトルが白色にならず、ダークモードに適合した配色になっていること。 | Tailwindの無効なカラークラス `slate-850` を標準の `slate-800` に修正。ダークモードの適用時に正常に暗色（`slate-800`）背景およびホバー色が機能することを確認。 | **PASS** |
 | TS-018 | 共有ライブラリのパス依存解決 | `Cargo.toml` において `common_lib` を Git 依存からローカルパス依存に戻し、ローカルで正常にコンパイル・テストが通ること。 | `cargo test --manifest-path src-tauri/Cargo.toml` により、ローカルパス参照が正しく解決されテストが完全にパスすることを確認。 | **PASS** |
-| TS-019 | 自動バンプワークフローの構成 | `bump-version.yml` により、GitHub Actions 側で自動的にパッチバージョンがバンプされてコミット・タグ付けされること。 | 新規作成したワークフローの YAML スキーマが正しく、動作前提となるパス設定（`src-tauri/Cargo.toml`）に適合していることを検証。 | **PASS** |
+| TS-019 | 手動バンプ＆タグリリース構成 | `bump-version.yml` を削除し、手動で `scripts/bump-version.ps1` を実行した後に Git タグ（`v*`）をプッシュしてリリースをビルド・デプロイする構成に変更すること。 | 自動バンプワークフローを削除。手動実行スクリプト `bump-version.ps1` がローカルで正常に機能し、また `release.yml` がタグプッシュでのみリリースビルドを起動することを確認。 | **PASS** |
 | TS-020 | リリースビルドのサイズ最適化 | `[profile.release]` の最適化オプション（LTO、シンボル削除等）を追加し、ビルドエラーが発生しないこと。 | `cargo build --release --manifest-path src-tauri/Cargo.toml` にて、最適化オプションを適用した状態でコンパイル・リンクが成功することを確認。 | **PASS** |
 | TS-021 | Viteビルド時の警告解消 | `npm run build` 実行時に `@tauri-apps/api/core` などの動的インポートによる「Viteチャンク分割不能警告」が発生しないこと。 | `HolidaysManager.jsx` と `holidays.js` で動的インポートされていた箇所を、すべてファイル上部での静的インポートに修正。ビルド実行時に警告が一切出力されず、クリーンにビルドが成功することを確認。 | **PASS** |
+| TS-022 | コメントの日本語化検証 | ソースコード（Rust、JS）内の英語コメントが分かりやすい日本語に翻訳され、ビルドが正常に通ること。 | `src-tauri/src/main.rs`、`ui/src/utils/holidays.js`、`ui/src/utils/tauri.js` の英語コメントを日本語に修正し、フロントエンドのビルド（`npm run build`）およびバックエンドのコードチェック（`cargo clippy`）がエラーなく成功することを確認。 | **PASS** |
 
 ---
 
@@ -110,5 +111,5 @@ graph TD
 ```
 
 ---
-**作成日**: 2026年7月6日
+**作成日**: 2026年7月9日
 **適合バージョン**: Widget v1.3.4 (Vite React Local Bundled with Rust 1.96.0)

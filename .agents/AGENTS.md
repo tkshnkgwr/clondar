@@ -59,6 +59,6 @@ AIがコードの変更、機能追加、リファクタリングなどを行う
   特に PowerShell スクリプト（`*.ps1`）は文字化けを防ぐため、必ず「BOM付き UTF-8」かつ「CRLF」で保存すること。その他のファイルは「BOMなし UTF-8」かつ「LF」で保存すること。
 - **依存ライブラリの自動アップデート**:
   `.github/dependabot.yml` が設定されており、Cargo 依存関係および GitHub Actions のアップデートが自動で監視・提案される。
-- **自動デプロイフロー**:
-  `main` ブランチにコミットがプッシュされると、GitHub Actions（Auto Bump Version）が自動的にパッチバージョンを上げてタグ付けし、それに伴って自動デプロイフロー（Release App）がトリガーされて、Windows 用の Tauri アプリがビルドされ GitHub Releases にドラフトリリースとしてデプロイされる。手動で特定のバージョンを指定して更新したい場合は、`scripts/bump-version.ps1` を実行する。
+- **手動リリース・自動デプロイフロー**:
+  普段の Push では自動的にバージョンは上がりません。リリースする際は、ローカルで `scripts/bump-version.ps1` を実行してバージョンを更新・コミットし、バージョンタグ（例: `v1.3.5`）を作成してプッシュします。GitHub 側でタグのプッシュを検知すると、自動デプロイフロー（Release App）がトリガーされて、Windows 用の Tauri アプリがビルドされ GitHub Releases にドラフトリリースとしてデプロイされます。
 

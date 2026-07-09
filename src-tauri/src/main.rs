@@ -1,4 +1,4 @@
-// Prevents additional console window on Windows in release, do not remove!!
+// リリースビルド時にWindowsで追加のコンソールウィンドウが表示されるのを防ぎます。削除しないでください！
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::fs;
@@ -170,6 +170,12 @@ fn get_word_count(text: String, word: String) -> Result<usize, String> {
 }
 
 fn main() {
+    // 名前付き Mutex を用いた二重起動チェック
+    if let Err(e) = common_lib::check_single_instance("com.clondar.pro.mutex", "Clondar") {
+        eprintln!("起動失敗: {}", e);
+        std::process::exit(0);
+    }
+
     tauri::Builder::default()
         .manage(QuittingState(Mutex::new(false)))
         .invoke_handler(tauri::generate_handler![

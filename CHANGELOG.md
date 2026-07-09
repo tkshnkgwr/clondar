@@ -7,6 +7,11 @@
 
 ### Changed
 - **README ドキュメントのプレースホルダー画像をローカルスクリーンショットに置き換え**: ダミー画像のプレースホルダーを、ブラウザ上で実際に動作させたアプリ UI のキャプチャ画像 (`docs/assets/screenshot.png`) に置き換え、ドキュメントのビジュアルを最適化。
+- **ソースコード内コメントの日本語化**:
+  - `src-tauri/src/main.rs`、`ui/src/utils/holidays.js`、`ui/src/utils/tauri.js` に存在していた一部の英語コメントを、分かりやすい日本語コメントに翻訳・修正。
+- **手動リリース運用への移行と自動バンプの廃止**:
+  - `main` ブランチへのプッシュ時に自動でバージョンを上げてコミット・タグプッシュを行っていた `bump-version.yml` ワークフローを削除。
+  - 今後はローカルで `scripts/bump-version.ps1` を実行してバージョンを更新し、Git タグ（`v*`）を作成・プッシュした時のみ自動リリースビルド（`release.yml`）が走るよう運用を変更（SnippetFlowと同様の方式）。
 
 ## [1.3.1] - 2026-07-06
 ### Added
@@ -45,6 +50,9 @@
 - **インストーラーの日本語化対応 (Windows)**: NSIS インストーラーでの日本語・英語多言語対応（インストール時の言語選択画面表示機能付き）、および WiX (MSI) での日本語専用（ja-JP）と英語専用（en-US）パッケージ of 並行ビルド設定を導入。
 
 ### Changed
+- **共有ライブラリの二重起動防止機能（Named Mutex）の組み込み (2026-07-10)**:
+  - `common_lib::check_single_instance` の API 設計変更（Result を返す仕様）に合わせて、`clondar` 起動時に Named Mutex を用いた二重起動チェックを実装。
+  - 既に別インスタンスが起動している場合は、エラーを出力して安全にプロセスを終了（`std::process::exit(0)`）する処理をメインプロセスの初期化フェーズへ統合。
 - **GitHub Actions および Dependabot 連携の修正とCIの新規導入 (2026-07-06)**:
   - Dependabot で発生していた `common_lib` パス依存関係のエラー（`path_dependencies_not_reachable`）を解消するため、`Cargo.toml` の `common_lib` を Git 依存関係に変更。
   - ローカル開発での利便性を損なわないよう、`.cargo/config.toml` によるローカルパス（`../../common_lib`）へのオーバーライドを導入し、`.gitignore` に除外設定を追加。

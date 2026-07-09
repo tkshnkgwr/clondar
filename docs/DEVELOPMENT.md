@@ -84,7 +84,22 @@ ui/
 ## 3. セットアップと起動方法
 
 本プロジェクトのビルドや開発には **Node.js (v26.4.0 以上推奨)** と **Rust (1.96.0 以上推奨)** が必要です。
-また、ビルドの依存関係としてプロジェクトの1階層上のディレクトリに共通ライブラリ `common_lib` が配置されている必要があります（`src-tauri/Cargo.toml` から `{ path = "../../common_lib" }` として参照されます）。
+
+また、ビルドの依存関係として共通ライブラリ `common_lib` を使用します。
+
+### 共通ライブラリ `common_lib` の依存解決について
+本プロジェクトは、外部共有ライブラリ `common_lib` に依存しています。GitHub Actions や Dependabot でのビルドおよびパッケージ自動更新を正常に通過させるため、リポジトリ内の `src-tauri/Cargo.toml` では以下のように Git リポジトリへの直接参照が設定されています。
+```toml
+common_lib = { git = "https://github.com/tkshnkgwr/common_lib" }
+```
+
+ローカル開発環境で親ディレクトリにある `common_lib` （`../../common_lib`）の変更を即座に適用しながら開発する際は、`src-tauri/.cargo/config.toml` にてローカルパスを優先させるオーバーライド設定を行います。
+
+開発前に、`src-tauri/.cargo/config.toml` を作成して以下の内容を記述してください（このファイルは `.gitignore` に追加されており、Git管理対象外となっています）。
+```toml
+paths = ["../../common_lib"]
+```
+
 
 ### 1. 依存関係のインストール
 プロジェクトのルートディレクトリで以下を実行します。

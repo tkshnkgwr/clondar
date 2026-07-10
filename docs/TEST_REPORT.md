@@ -29,13 +29,20 @@
 | TS-015 | 祝日のビジュアル編集（追加・削除） | 祝日設定マネージャー画面で、固定祝日の追加と削除が正常に行え、インメモリで一時保持されること。 | UI フォームに入力して追加、およびゴミ箱アイコンクリックでの削除がインメモリ状態で正確に機能することを確認。 | **PASS** |
 | TS-016 | 祝日データのローカル永続化（LocalAppData） | 保存時に `%LOCALAPPDATA%/com.clondar.pro/holidays.json` に正しく上書き保存され、次回起動時やカレンダー表示に即座に反映されること。 | 保存ボタンの押下時に `save_holidays_json` が走り、ファイルが書き換わると同時にカレンダーが即時リロードされ、再起動後も正しく設定が維持されていることを検証。 | **PASS** |
 | TS-017 | 祝日設定マネージャーのダークモード配色 | ダークモード時に、定義数カードやタイトルヘッダー、「現在の固定祝日一覧」の背景やタイトルが白色にならず、ダークモードに適合した配色になっていること。 | Tailwindの無効なカラークラス `slate-850` を標準の `slate-800` に修正。ダークモードの適用時に正常に暗色（`slate-800`）背景およびホバー色が機能することを確認。 | **PASS** |
+<<<<<<< HEAD
 | TS-018 | 共有ライブラリの依存解決 | `Cargo.toml` で `common_lib` を Git 依存にしつつ、ローカル開発時には `.cargo/config.toml` を用いてローカルパスを優先させ、正常にコンパイル・テストが通ること。 | `Cargo.toml` での Git 依存設定、および `.cargo/config.toml` のオーバーライド設定により、ローカルの `common_lib` 参照が正しく機能し、ローカルでの `cargo fmt --check`、`cargo clippy`、`cargo test` が完全に成功することを確認。 | **PASS** |
+=======
+| TS-018 | 共有ライブラリのパス依存解決 | `Cargo.toml` において `common_lib` を Git 依存からローカルパス依存に戻し、ローカルで正常にコンパイル・テストが通ること。 | `cargo test --manifest-path src-tauri/Cargo.toml` により、ローカルパス参照が正しく解決されテストが完全にパスすることを確認。 | **PASS** |
+>>>>>>> 9e2ca1f53d6fe6b982721f512c8e55bfafe0927a
 | TS-019 | 手動バンプ＆タグリリース構成 | `bump-version.yml` を削除し、手動で `scripts/bump-version.ps1` を実行した後に Git タグ（`v*`）をプッシュしてリリースをビルド・デプロイする構成に変更すること。 | 自動バンプワークフローを削除。手動実行スクリプト `bump-version.ps1` がローカルで正常に機能し、また `release.yml` がタグプッシュでのみリリースビルドを起動することを確認。 | **PASS** |
 | TS-020 | リリースビルドのサイズ最適化 | `[profile.release]` の最適化オプション（LTO、シンボル削除等）を追加し、ビルドエラーが発生しないこと。 | `cargo build --release --manifest-path src-tauri/Cargo.toml` にて、最適化オプションを適用した状態でコンパイル・リンクが成功することを確認。 | **PASS** |
 | TS-021 | Viteビルド時の警告解消 | `npm run build` 実行時に `@tauri-apps/api/core` などの動的インポートによる「Viteチャンク分割不能警告」が発生しないこと。 | `HolidaysManager.jsx` と `holidays.js` で動的インポートされていた箇所を、すべてファイル上部での静的インポートに修正。ビルド実行時に警告が一切出力されず、クリーンにビルドが成功することを確認。 | **PASS** |
 | TS-022 | コメントの日本語化検証 | ソースコード（Rust、JS）内の英語コメントが分かりやすい日本語に翻訳され、ビルドが正常に通ること。 | `src-tauri/src/main.rs`、`ui/src/utils/holidays.js`、`ui/src/utils/tauri.js` の英語コメントを日本語に修正し、フロントエンドのビルド（`npm run build`）およびバックエンドのコードチェック（`cargo clippy`）がエラーなく成功することを確認。 | **PASS** |
+<<<<<<< HEAD
 | TS-023 | GitHub Actions CIワークフロー検証 | プッシュやプルリクエスト時に `ci.yml` がトリガーされ、`cargo fmt`、`cargo clippy`、`cargo test` が自動検証されること。 | `ci.yml` のスキーマ定義が正しく、ジョブレベルの作業ディレクトリ指定（`clondar`）や `git config insteadOf` の認証トークン設定を含め、GitHub Actions上で正常に実行可能な構造であることを検証。 | **PASS** |
 | TS-024 | 二重起動防止機能の検証 | 二重起動防止の Named Mutex が正しく働き、多重起動時に2つ目のプロセスが安全に即座に終了すること。 | `common_lib::check_single_instance` の API 設計変更（Result を返す仕様）に合わせて組み込み、すでにインスタンスが存在する時に 2 つ目のアプリが起動せずに即座に終了することを確認。 | **PASS** |
+=======
+>>>>>>> 9e2ca1f53d6fe6b982721f512c8e55bfafe0927a
 
 ---
 
@@ -113,5 +120,10 @@ graph TD
 ```
 
 ---
+<<<<<<< HEAD
 **作成日**: 2026年7月10日
 **適合バージョン**: Widget v1.3.0 (Vite React Local Bundled with Rust 1.96.0)
+=======
+**作成日**: 2026年7月9日
+**適合バージョン**: Widget v1.3.4 (Vite React Local Bundled with Rust 1.96.0)
+>>>>>>> 9e2ca1f53d6fe6b982721f512c8e55bfafe0927a

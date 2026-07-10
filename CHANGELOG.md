@@ -6,6 +6,10 @@
   - `HolidaysManager.jsx` と `holidays.js` において、`@tauri-apps/api/core` や `reloadHolidays` が一部の関数内で動的インポート (`await import(...)`) されていたため、Viteビルド時にチャンク分割できないという警告が発生していた問題を、ファイル上部での静的インポート (`import`) に統一することで解消。
 
 ### Changed
+- **バージョン管理の一元化とバンプスクリプトの修正**:
+  - `src-tauri/tauri.conf.json` をアプリバージョンの「唯一の正のソース (SSOT)」とし、フロントエンド（`App.jsx`）でのバージョン表記は起動時に Tauri API を通じて動的に取得するように変更。
+  - これに伴い、バージョンアップ時に書き換えるファイルを `tauri.conf.json` と `Cargo.toml` の2ファイルに限定。
+  - 自動バージョンアップスクリプト (`scripts/bump-version.ps1`) を、上記2ファイルのみを確実に更新するシンプルな処理にリファクタリングし、置換エラーなどのバグを防止。
 - **README ドキュメントのプレースホルダー画像をローカルスクリーンショットに置き換え**: ダミー画像のプレースホルダーを、ブラウザ上で実際に動作させたアプリ UI のキャプチャ画像 (`docs/assets/screenshot.png`) に置き換え、ドキュメントのビジュアルを最適化。
 - **ソースコード内コメントの日本語化**:
   - `src-tauri/src/main.rs`、`ui/src/utils/holidays.js`、`ui/src/utils/tauri.js` に存在していた一部の英語コメントを、分かりやすい日本語コメントに翻訳・修正。

@@ -34,7 +34,7 @@ export const getAppVersion = async () => {
       console.error("Failed to get version:", e);
     }
   }
-  return '1.3.4'; // フォールバック
+  return '0.0.0-dev'; // フォールバック
 };
 
 export const closeWindow = async () => {

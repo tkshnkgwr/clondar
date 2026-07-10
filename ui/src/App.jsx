@@ -72,7 +72,7 @@ export default function App() {
   const [showHolidaysManager, setShowHolidaysManager] = useState(false);
   const [holidaysVersion, setHolidaysVersion] = useState(0);
   const [isTransparent, setIsTransparent] = useState(false);
-  const [version, setVersion] = useState('1.3.1');
+  const [version, setVersion] = useState('');
 
   // 設定の読み込みと外部データの初期化
   useEffect(() => {

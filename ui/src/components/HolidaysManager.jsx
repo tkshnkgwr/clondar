@@ -5,6 +5,16 @@ import { isTauri } from '../utils/tauri';
 import { fallbackConfig, reloadHolidays } from '../utils/holidays';
 import { invoke } from '@tauri-apps/api/core';
 
+/**
+ * 祝日設定マネージャーコンポーネント（モーダル形式）。
+ * ユーザー定義の固定祝日の追加・削除、内蔵設定との差分表示、
+ * および JSON 生データの編集・保存機能を提供します。
+ *
+ * @param {Object} props - コンポーネントのプロパティ
+ * @param {Function} props.onClose - モーダルを閉じるためのコールバック関数
+ * @param {Function} props.onSaved - 保存成功時に親コンポーネントで再レンダリングをトリガーするためのコールバック関数
+ * @returns {JSX.Element} HolidaysManager コンポーネント
+ */
 export default function HolidaysManager({ onClose, onSaved }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -21,6 +31,11 @@ export default function HolidaysManager({ onClose, onSaved }) {
 
   const keywords = ['の日', '天皇誕生日', '振替休日', '国民の休日'];
 
+  /**
+   * 祝日設定データをロードし、初期化します。
+   * Tauri 環境では Rust 側のコマンドを呼び出し、ブラウザ環境ではフォールバック設定を読み込みます。
+   * また、設定の統計情報とデフォルトとの差分を算出します。
+   */
   const loadData = async () => {
     try {
       setLoading(true);
@@ -88,6 +103,12 @@ export default function HolidaysManager({ onClose, onSaved }) {
   }, []);
 
   // 固定祝日の追加
+  /**
+   * 新しい固定祝日をリストに追加します（メモリ上のみ、保存は別途必要）。
+   * 日付フォーマットのバリデーション（MM-DD）を行います。
+   *
+   * @param {React.FormEvent} e - フォーム送信イベント
+   */
   const handleAddFixedHoliday = (e) => {
     e.preventDefault();
     if (!newFixedDate || !newFixedName) return;
@@ -106,6 +127,11 @@ export default function HolidaysManager({ onClose, onSaved }) {
   };
 
   // 固定祝日の削除
+  /**
+   * 指定された日付キーの固定祝日をリストから削除します（メモリ上のみ）。
+   *
+   * @param {string} dateKey - 削除対象の日付キー (例: "07-07")
+   */
   const handleRemoveFixedHoliday = (dateKey) => {
     setHolidaysConfig(prev => {
       const nextFixed = { ...prev.fixed };
@@ -115,6 +141,11 @@ export default function HolidaysManager({ onClose, onSaved }) {
   };
 
   // データの保存
+  /**
+   * 編集した祝日設定データを JSON 文字列として保存します。
+   * Tauri 環境ではファイルに保存し、ブラウザ環境では LocalStorage に保存します。
+   * 保存完了後、メモリキャッシュをリロードしてダイアログを閉じます。
+   */
   const handleSave = async () => {
     try {
       setSaving(true);

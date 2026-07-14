@@ -3,6 +3,10 @@ import { invoke } from '@tauri-apps/api/core';
 let config = null;
 
 // JSONロードに失敗した場合の内蔵フォールバック設定
+/**
+ * 祝日設定のデフォルト（内蔵フォールバック）定義。
+ * 外部ファイルの読み込みに失敗した場合や初期起動時に使用されます。
+ */
 export const fallbackConfig = {
   fixed: {
     "01-01": "元日",
@@ -118,6 +122,14 @@ export const fallbackConfig = {
   }
 };
 
+/**
+ * 祝日設定データを初期化して読み込みます。
+ * Tauri 環境下であれば Rust の `load_holidays_json` コマンドを通じて読み込み、
+ * それ以外（ブラウザ等）であれば `/config/holidays.json` からフェッチします。
+ * いずれも失敗した場合は内蔵の `fallbackConfig` を返します。
+ *
+ * @returns {Promise<Object>} ロードされた祝日設定オブジェクト
+ */
 export async function initHolidays() {
   if (config) return config;
   
@@ -143,11 +155,23 @@ export async function initHolidays() {
   return config;
 }
 
+/**
+ * 祝日設定データのキャッシュをクリアし、再ロードを実行します。
+ *
+ * @returns {Promise<Object>} 再ロードされた祝日設定オブジェクト
+ */
 export function reloadHolidays() {
   config = null;
   return initHolidays();
 }
 
+/**
+ * 指定された年（西暦）の日本の祝日一覧（振替休日、国民の休日、ハッピーマンデー、
+ * 天皇誕生日、春分/秋分の日、および特定年のカスタム上書きを含む）を計算して取得します。
+ *
+ * @param {number|string} yearParam - 祝日を算出する対象の西暦年
+ * @returns {Object} 日付文字列 (例: "2026-01-01") をキー、祝日名を値とするオブジェクト
+ */
 export function getHolidays(yearParam) {
   const year = parseInt(yearParam);
   const holidays = {};

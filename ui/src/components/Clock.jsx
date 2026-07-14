@@ -1,6 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+/**
+ * デジタル時計コンポーネント。
+ * 指定された日時オブジェクトに基づいて、時間（AM/PMを含む）をデジタル表示します。
+ *
+ * @param {Object} props - コンポーネントのプロパティ
+ * @param {Date} props.time - 表示する現在時刻の Date オブジェクト
+ * @param {boolean} props.is24Hour - 24時間表記にするかどうか（false の場合は 12時間表記）
+ * @param {boolean} props.showSeconds - 秒表示を有効にするかどうか
+ * @returns {JSX.Element} DigitalClock コンポーネント
+ */
 export const DigitalClock = ({ time, is24Hour, showSeconds }) => {
   const options = { 
     hour: '2-digit', 
@@ -35,6 +45,15 @@ export const DigitalClock = ({ time, is24Hour, showSeconds }) => {
   );
 };
 
+/**
+ * アナログ時計コンポーネント。
+ * 指定された日時オブジェクトに基づいて、時針・分針・秒針をアニメーション表示します。
+ *
+ * @param {Object} props - コンポーネントのプロパティ
+ * @param {Date} props.time - 表示する現在時刻の Date オブジェクト
+ * @param {boolean} props.showSeconds - 秒針を表示するかどうか
+ * @returns {JSX.Element} AnalogClock コンポーネント
+ */
 export const AnalogClock = ({ time, showSeconds }) => {
   const seconds = time.getSeconds() + time.getMilliseconds() / 1000;
   const minutes = time.getMinutes() + seconds / 60;

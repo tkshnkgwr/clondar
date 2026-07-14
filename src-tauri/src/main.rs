@@ -1,3 +1,7 @@
+//! Clondar アプリケーションのメインエントリポイント。
+//! ウィンドウの枠なし・最前面表示・透過処理のセットアップ、システムトレイメニューの制御、
+//! および祝日設定データのロード・保存などのコマンドを提供します。
+
 // リリースビルド時にWindowsで追加のコンソールウィンドウが表示されるのを防ぎます。削除しないでください！
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -10,8 +14,14 @@ use tauri::{
     Emitter, Manager,
 };
 
+/// アプリケーションが明示的な終了処理中（トレイメニューの終了ボタン等）であるかどうかを管理する状態。
+///
+/// ウィンドウの `CloseRequested` イベント時にこのフラグを確認し、
+/// `false` の場合はアプリ終了をインターセプトして非表示（常駐状態）にします。
 struct QuittingState(Mutex<bool>);
 
+/// アプリケーションに内蔵されているデフォルトの祝日設定（JSON形式）。
+/// 祝日設定ファイルが存在しない場合にこの文字列から初期設定ファイルが生成されます。
 const DEFAULT_HOLIDAYS_JSON: &str = r#"{
   "fixed": {
     "01-01": "元日",
@@ -127,6 +137,14 @@ const DEFAULT_HOLIDAYS_JSON: &str = r#"{
   }
 }"#;
 
+/// 祝日設定ファイルの保存先となる絶対パスを取得します。
+/// アプリケーションデータディレクトリが存在しない場合は自動で作成します。
+///
+/// # 引数
+/// * `app` - Tauri アプリケーションのハンドル
+///
+/// # 戻り値
+/// 祝日設定ファイル (`holidays.json`) へのパスを含む `Result`
 fn get_holidays_file_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let mut path = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     if !path.exists() {
@@ -136,6 +154,14 @@ fn get_holidays_file_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+/// 祝日設定の JSON ファイルの内容をロードします。
+/// ファイルが存在しない場合は、内蔵のデフォルトの祝日設定をファイルに書き込んで初期化します。
+///
+/// # 引数
+/// * `app` - Tauri アプリケーションのハンドル
+///
+/// # 戻り値
+/// 祝日設定ファイルの JSON 文字列を含む `Result`
 #[tauri::command]
 fn load_holidays_json(app: tauri::AppHandle) -> Result<String, String> {
     let path = get_holidays_file_path(&app)?;
@@ -147,6 +173,15 @@ fn load_holidays_json(app: tauri::AppHandle) -> Result<String, String> {
     }
 }
 
+/// 祝日設定の JSON 文字列をファイルに保存します。
+/// 保存前に JSON の形式が正しいかをチェックし、不正な場合はエラーを返します。
+///
+/// # 引数
+/// * `app` - Tauri アプリケーションのハンドル
+/// * `json_content` - 保存する JSON 文字列
+///
+/// # 戻り値
+/// 保存処理の結果を含む `Result`
 #[tauri::command]
 fn save_holidays_json(app: tauri::AppHandle, json_content: String) -> Result<(), String> {
     let _: serde_json::Value = serde_json::from_str(&json_content)
@@ -156,6 +191,15 @@ fn save_holidays_json(app: tauri::AppHandle, json_content: String) -> Result<(),
     Ok(())
 }
 
+/// 2つのテキスト（古い設定と新しい設定）の間の差分（Diff）を計算します。
+/// 共通ライブラリ `common_lib::compute_diff` を使用します。
+///
+/// # 引数
+/// * `old_text` - 変更前の設定テキスト
+/// * `new_text` - 変更後の設定テキスト
+///
+/// # 戻り値
+/// 差分パーツのリストを含む `Result`
 #[tauri::command]
 fn get_holidays_diff(
     old_text: String,
@@ -164,11 +208,24 @@ fn get_holidays_diff(
     Ok(common_lib::compute_diff(&old_text, &new_text))
 }
 
+/// テキストデータ中において、指定された単語（祝日の名称など）が出現する回数をカウントします。
+/// 共通ライブラリ `common_lib::count_occurrences` を使用します。
+///
+/// # 引数
+/// * `text` - 検索対象のテキスト全体
+/// * `word` - カウント対象の単語
+///
+/// # 戻り値
+/// 出現回数を含む `Result`
 #[tauri::command]
 fn get_word_count(text: String, word: String) -> Result<usize, String> {
     Ok(common_lib::count_occurrences(&text, &word))
 }
 
+/// アプリケーションのメインエントリーポイント。
+/// 多重起動のチェックを行い、Tauri アプリケーションのビルド、
+/// 各種ウィンドウ設定（枠なし、最前面表示、影なし、常駐化など）、
+/// およびシステムトレイメニューの設定を行います。
 fn main() {
     // 名前付き Mutex を用いた二重起動チェック
     if let Err(e) = common_lib::check_single_instance("com.clondar.pro.mutex", "Clondar") {
@@ -275,5 +332,5 @@ fn main() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("Tauri アプリケーションの実行中にエラーが発生しました");
 }

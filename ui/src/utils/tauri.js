@@ -2,8 +2,18 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getVersion as getTauriAppVersion } from '@tauri-apps/api/app';
 import { PhysicalPosition } from '@tauri-apps/api/dpi';
 
+/**
+ * アプリケーションが Tauri 環境で動作しているかどうかを判定します。
+ *
+ * @returns {boolean} Tauri 環境である場合は true、それ以外は false
+ */
 export const isTauri = () => !!window.__TAURI__;
 
+/**
+ * 現在の Tauri ウィンドウインスタンスを取得します。
+ *
+ * @returns {Object|null} WebviewWindow インスタンス、または取得に失敗/非Tauri環境の場合は null
+ */
 export const getTauriWindow = () => {
   if (isTauri()) {
     try {
@@ -15,6 +25,11 @@ export const getTauriWindow = () => {
   return null;
 };
 
+/**
+ * ウィンドウの最前面表示（Always-On-Top）の状態を設定します。
+ *
+ * @param {boolean} on - 最前面表示を有効にする場合は true、解除する場合は false
+ */
 export const setAlwaysOnTop = async (on) => {
   const win = getTauriWindow();
   if (win) {
@@ -26,6 +41,11 @@ export const setAlwaysOnTop = async (on) => {
   }
 };
 
+/**
+ * アプリケーションのバージョン情報を取得します。
+ *
+ * @returns {Promise<string>} バージョン文字列 (例: "1.3.7")
+ */
 export const getAppVersion = async () => {
   if (isTauri()) {
     try {
@@ -37,6 +57,10 @@ export const getAppVersion = async () => {
   return '0.0.0-dev'; // フォールバック
 };
 
+/**
+ * 現在のウィンドウを閉じます。
+ * ウィンドウが閉じられる前に、現在のウィンドウ位置を LocalStorage に保存します。
+ */
 export const closeWindow = async () => {
   const win = getTauriWindow();
   if (win) {
@@ -54,10 +78,15 @@ export const closeWindow = async () => {
       console.error("Failed to close window:", e);
     }
   } else {
-    console.log("Mock Close: Window closed.");
+    console.log("モック終了: ウィンドウが閉じられました。");
   }
 };
 
+/**
+ * LocalStorage から保存されたウィンドウ位置を読み込み、ウィンドウ位置を復元します。
+ *
+ * @param {React.MutableRefObject<boolean>} isRestoringRef - 復元処理中フラグの Ref
+ */
 export const restoreWindowPosition = async (isRestoringRef) => {
   const win = getTauriWindow();
   if (!win) {
@@ -84,6 +113,14 @@ export const restoreWindowPosition = async (isRestoringRef) => {
   }
 };
 
+/**
+ * ウィンドウの移動イベント (`tauri://move`) を購読し、
+ * 移動が完了した時点でのウィンドウ位置を LocalStorage に保存します。
+ *
+ * @param {React.MutableRefObject<boolean>} isRestoringRef - 復元処理中フラグの Ref
+ * @param {Function} [callback] - 移動完了時に呼び出されるコールバック関数（位置情報を引数に取る）
+ * @returns {Promise<Function|null>} イベントの購読解除用関数（Unlisten）、非Tauri環境時は null
+ */
 export const listenToMove = async (isRestoringRef, callback) => {
   const win = getTauriWindow();
   if (win && win.listen) {

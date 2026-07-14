@@ -13,7 +13,20 @@ import {
   restoreWindowPosition, 
   listenToMove 
 } from './utils/tauri';
-
+/**
+ * カスタムウィンドウフレームコンポーネント。
+ * 最前面ピン留め、背景透過、ウィンドウ終了などのタイトルバー機能を提供します。
+ *
+ * @param {Object} props - コンポーネントのプロパティ
+ * @param {React.ReactNode} props.children - ウィンドウのメインコンテンツ
+ * @param {string} props.title - ウィンドウのタイトル
+ * @param {boolean} props.isPinned - 最前面表示が有効かどうか
+ * @param {Function} props.setIsPinned - 最前面表示状態を切り替える関数
+ * @param {boolean} props.isTransparent - 背景が透過状態かどうか
+ * @param {Function} props.setIsTransparent - 背景透過状態を切り替える関数
+ * @param {string} props.version - アプリケーションのバージョン
+ * @returns {JSX.Element} WindowFrame コンポーネント
+ */
 const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version }) => {
   return (
     <div 
@@ -58,6 +71,13 @@ const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, se
   );
 };
 
+/**
+ * メインのアプリケーションコンポーネント。
+ * アプリケーション設定のロード・保存、タイマー同期、ウィンドウ制御イベントのハンドリング、
+ * および時計表示とカレンダー表示のレンダリングを行います。
+ *
+ * @returns {JSX.Element} App コンポーネント
+ */
 export default function App() {
   const isRestoringRef = useRef(true);
   const [loading, setLoading] = useState(true);

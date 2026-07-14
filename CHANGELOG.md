@@ -1,6 +1,17 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- **コード全体へのドキュメントコメント（RustDoc/JSDoc）追加**:
+  - Rust 側 (`lib.rs` / `main.rs`) に RustDoc コメントを追加。
+  - フロントエンド React 側 (`main.jsx` / `App.jsx` / 各コンポーネント / ユーティリティ) に JSDoc コメントを追加し、引数 (`@param`) や戻り値 (`@returns`) のドキュメンテーションを整備。
+- **ガイドラインへのドキュメンテーション同期ルールの追加**:
+  - `.agents/AGENTS.md` に「9. ドキュメントコメント（RustDoc/JSDoc）の作成と同期」のセクションを追加。今後の仕様変更時にドキュメントコメントを同期して更新すること、またコメントの日本語表記を原則とすることをルール化。
+
+### Changed
+- **エラーメッセージおよびログ出力等の日本語化**:
+  - `lib.rs` や `main.rs` 内の `expect` エラーメッセージ、`tauri.js` 内のデバッグログメッセージなどを日本語に翻訳・統一。
+
 ### Fixed
 - **Viteビルド時の動的インポート警告の解消**:
   - `HolidaysManager.jsx` と `holidays.js` において、`@tauri-apps/api/core` や `reloadHolidays` が一部の関数内で動的インポート (`await import(...)`) されていたため、Viteビルド時にチャンク分割できないという警告が発生していた問題を、ファイル上部での静的インポート (`import`) に統一することで解消。

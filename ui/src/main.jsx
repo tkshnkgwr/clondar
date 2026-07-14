@@ -1,3 +1,8 @@
+/**
+ * @file アプリケーションのフロントエンド エントリーポイント。
+ * React アプリケーションを初期化し、DOM にマウントします。
+ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';

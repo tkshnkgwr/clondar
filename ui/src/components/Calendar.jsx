@@ -3,6 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { getHolidays } from '../utils/holidays';
 
+/**
+ * カレンダー表示コンポーネント。
+ * 月ごとのカレンダーをグリッド表示し、祝日のツールチップ表示や設定画面の呼び出しを行います。
+ *
+ * @param {Object} props - コンポーネントのプロパティ
+ * @param {Date} props.currentMonth - 現在表示している月を表す Date オブジェクト
+ * @param {Function} props.setCurrentMonth - 表示する月を更新する状態設定関数
+ * @param {Function} props.onShowYearly - 年間カレンダービューを表示するためのコールバック関数
+ * @param {Function} props.onShowHolidays - 祝日設定マネージャーを表示するためのコールバック関数
+ * @param {boolean} props.isTransparent - ウィンドウが背景透過モードであるかどうか
+ * @returns {JSX.Element} Calendar コンポーネント
+ */
 export const Calendar = ({ currentMonth, setCurrentMonth, onShowYearly, onShowHolidays, isTransparent }) => {
   const year = currentMonth.getFullYear();
   const holidays = useMemo(() => getHolidays(year), [year]);
@@ -94,6 +106,15 @@ export const Calendar = ({ currentMonth, setCurrentMonth, onShowYearly, onShowHo
   );
 };
 
+/**
+ * 年間カレンダー表示コンポーネント（モーダル形式）。
+ * 指定された年の 12ヶ月分のカレンダーをグリッド表示し、祝日の簡易確認機能を提供します。
+ *
+ * @param {Object} props - コンポーネントのプロパティ
+ * @param {number} props.year - 初期表示する年 (例: 2026)
+ * @param {Function} props.onClose - モーダルを閉じるためのコールバック関数
+ * @returns {JSX.Element} YearlyView コンポーネント
+ */
 export const YearlyView = ({ year: initialYear, onClose }) => {
   const [currentYear, setCurrentYear] = useState(initialYear);
   const months = Array.from({ length: 12 }, (_, i) => i);

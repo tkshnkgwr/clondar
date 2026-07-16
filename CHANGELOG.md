@@ -91,7 +91,7 @@
 - **エディタ設定の統一**: `.editorconfig` および `.vscode/settings.json` を追加し、文字コード（BOMなし/あり UTF-8）、改行コード（LF/CRLF）、インデント（スペース2/4）などの設定を統一。
 
 ### Changed
-- **プロジェクトテンプレートガイドの更新**: `docs/project_template_guide.md` に新設したエディタ設定や GitHub Actions、Dependabot のテンプレートと解説を追記。
+- **プロジェクトテンプレートガイドの更新**: `docs/PROJECT_TEMPLATE_GUIDE.md` に新設したエディタ設定や GitHub Actions、Dependabot のテンプレートと解説を追記。
 - **開発ガイドラインの更新**: `.agents/AGENTS.md` にエディタ設定の遵守や自動リリース・自動アップデートに関するルールを追記。
 
 ## [1.2.2] - 2026-06-24

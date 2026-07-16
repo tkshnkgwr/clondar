@@ -1,4 +1,4 @@
-# Clondar Pro 開発 Todo リスト (Todo.md)
+# Clondar Pro 開発 Todo リスト (TODO.md)
 
 本ドキュメントは、Clondar Pro の開発における現在の実装状況、直近のタスク、および今後の機能提案（バックログ）を管理するための Todo リストです。
 

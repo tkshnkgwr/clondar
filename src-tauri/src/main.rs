@@ -334,3 +334,40 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("Tauri アプリケーションの実行中にエラーが発生しました");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 内蔵されているデフォルトの祝日設定 (`DEFAULT_HOLIDAYS_JSON`) が
+    /// 正しい JSON 構造をしており、必要なフィールドがすべて揃っているかをテストします。
+    #[test]
+    fn test_default_holidays_json_validity() {
+        let parsed: serde_json::Value = serde_json::from_str(DEFAULT_HOLIDAYS_JSON)
+            .expect("デフォルトの祝日 JSON 文字列のパースに失敗しました");
+
+        // ルートがオブジェクトであることを確認
+        assert!(parsed.is_object(), "JSON のルートはオブジェクトである必要があります");
+
+        let obj = parsed.as_object().unwrap();
+
+        // 必要なキーが存在するかチェック
+        assert!(obj.contains_key("fixed"), "fixed キーが存在しません");
+        assert!(obj.contains_key("happy_mondays"), "happy_mondays キーが存在しません");
+        assert!(obj.contains_key("happy_mondays_legacy"), "happy_mondays_legacy キーが存在しません");
+        assert!(obj.contains_key("emperor_birthdays"), "emperor_birthdays キーが存在しません");
+        assert!(obj.contains_key("custom_overrides"), "custom_overrides キーが存在しません");
+
+        // fixed がオブジェクトであることを確認
+        assert!(parsed["fixed"].is_object(), "fixed はオブジェクトである必要があります");
+
+        // 各配列キーが配列であることを確認
+        assert!(parsed["happy_mondays"].is_array(), "happy_mondays は配列である必要があります");
+        assert!(parsed["happy_mondays_legacy"].is_array(), "happy_mondays_legacy は配列である必要があります");
+        assert!(parsed["emperor_birthdays"].is_array(), "emperor_birthdays は配列である必要があります");
+
+        // custom_overrides がオブジェクトであることを確認
+        assert!(parsed["custom_overrides"].is_object(), "custom_overrides はオブジェクトである必要があります");
+    }
+}
+

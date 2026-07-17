@@ -140,25 +140,97 @@ export default function HolidaysManager({ onClose, onSaved }) {
     });
   };
 
-  // データの保存
+  // データの保存と検証
+  /**
+   * 表示するタブを切り替えます。「設定生データ」タブから切り替える際は、JSON の構文・構造検証を行います。
+   *
+   * @param {string} tab - 切り替え先のタブ名 ('edit' | 'diff' | 'raw')
+   */
+  const handleTabChange = (tab) => {
+    if (activeTab === 'raw' && tab !== 'raw') {
+      try {
+        const parsed = JSON.parse(rawJsonText);
+        if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+          alert("JSONオブジェクトである必要があります。");
+          return;
+        }
+        setHolidaysConfig(parsed);
+      } catch (err) {
+        alert("JSONの構文にエラーがあるため、他のタブへ切り替えられません。\n" + err.message);
+        return;
+      }
+    } else if (tab === 'raw' && activeTab !== 'raw') {
+      setRawJsonText(JSON.stringify(holidaysConfig, null, 2));
+    }
+    setActiveTab(tab);
+  };
+
   /**
    * 編集した祝日設定データを JSON 文字列として保存します。
+   * 保存前に JSON の形式が正しいかをチェックし、不正な場合はエラーを表示して中断します。
    * Tauri 環境ではファイルに保存し、ブラウザ環境では LocalStorage に保存します。
    * 保存完了後、メモリキャッシュをリロードしてダイアログを閉じます。
    */
   const handleSave = async () => {
     try {
       setSaving(true);
-      const jsonContent = JSON.stringify(holidaysConfig, null, 2);
+      let jsonContent = '';
+
+      if (activeTab === 'raw') {
+        try {
+          const parsed = JSON.parse(rawJsonText);
+          
+          if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+            alert("保存失敗: 設定データはJSONオブジェクトである必要があります。");
+            setSaving(false);
+            return;
+          }
+
+          if (parsed.fixed && (typeof parsed.fixed !== 'object' || Array.isArray(parsed.fixed))) {
+            alert("保存失敗: 'fixed' はオブジェクトである必要があります。");
+            setSaving(false);
+            return;
+          }
+          if (parsed.happy_mondays && !Array.isArray(parsed.happy_mondays)) {
+            alert("保存失敗: 'happy_mondays' は配列である必要があります。");
+            setSaving(false);
+            return;
+          }
+          if (parsed.happy_mondays_legacy && !Array.isArray(parsed.happy_mondays_legacy)) {
+            alert("保存失敗: 'happy_mondays_legacy' は配列である必要があります。");
+            setSaving(false);
+            return;
+          }
+          if (parsed.emperor_birthdays && !Array.isArray(parsed.emperor_birthdays)) {
+            alert("保存失敗: 'emperor_birthdays' は配列である必要があります。");
+            setSaving(false);
+            return;
+          }
+          if (parsed.custom_overrides && (typeof parsed.custom_overrides !== 'object' || Array.isArray(parsed.custom_overrides))) {
+            alert("保存失敗: 'custom_overrides' はオブジェクトである必要があります。");
+            setSaving(false);
+            return;
+          }
+
+          setHolidaysConfig(parsed);
+          jsonContent = JSON.stringify(parsed, null, 2);
+        } catch (parseErr) {
+          alert("保存失敗: JSONの構文エラーがあります。\n" + parseErr.message);
+          setSaving(false);
+          return;
+        }
+      } else {
+        jsonContent = JSON.stringify(holidaysConfig, null, 2);
+        setRawJsonText(jsonContent);
+      }
 
       if (isTauri()) {
         await invoke('save_holidays_json', { jsonContent });
       } else {
-        console.log("Mock Save (Browser environment):", jsonContent);
+        console.log("疑似保存 (ブラウザ環境):", jsonContent);
         localStorage.setItem('mock_holidays_json', jsonContent);
       }
 
-      // キャッシュのリロード
       await reloadHolidays();
 
       if (onSaved) onSaved();
@@ -261,7 +333,7 @@ export default function HolidaysManager({ onClose, onSaved }) {
               <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between flex-shrink-0">
                 <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shadow-inner">
                   <button
-                    onClick={() => setActiveTab('edit')}
+                    onClick={() => handleTabChange('edit')}
                     className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       activeTab === 'edit'
                         ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400'
@@ -271,7 +343,7 @@ export default function HolidaysManager({ onClose, onSaved }) {
                     祝日の編集
                   </button>
                   <button
-                    onClick={() => setActiveTab('diff')}
+                    onClick={() => handleTabChange('diff')}
                     className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       activeTab === 'diff'
                         ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400'
@@ -281,7 +353,7 @@ export default function HolidaysManager({ onClose, onSaved }) {
                     変更差分 (Diff)
                   </button>
                   <button
-                    onClick={() => setActiveTab('raw')}
+                    onClick={() => handleTabChange('raw')}
                     className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       activeTab === 'raw'
                         ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400'
@@ -402,9 +474,12 @@ export default function HolidaysManager({ onClose, onSaved }) {
                     )}
                   </div>
                 ) : (
-                  <pre className="text-slate-600 dark:text-slate-300 font-mono text-[11px]">
-                    {rawJsonText}
-                  </pre>
+                  <textarea
+                    value={rawJsonText}
+                    onChange={(e) => setRawJsonText(e.target.value)}
+                    className="w-full h-full min-h-[300px] p-4 bg-slate-950 text-slate-100 font-mono text-[11px] rounded-2xl border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 resize-none"
+                    spellCheck="false"
+                  />
                 )}
               </div>
             </div>

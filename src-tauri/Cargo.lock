@@ -447,7 +447,7 @@ dependencies = [
 
 [[package]]
 name = "common_lib"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "serde",
  "windows 0.62.2",

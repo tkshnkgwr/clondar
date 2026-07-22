@@ -1,5 +1,7 @@
 # Clondar Pro リリース手順書 (GitHub Actions Automation)
 
+[English Version](../en/RELEASE.md) | **日本語版**
+
 本ドキュメントは、Clondar Pro のバージョン更新方法、リリースビルドの実行手順、および GitHub Actions による自動リリースフローについて解説するガイドラインです。
 
 ---
@@ -44,7 +46,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.3.1
 - **スクリプトの動作**:
   - `src-tauri/Cargo.toml` の `version = "..."` を更新。
   - `src-tauri/tauri.conf.json` の `version` （および Windows 用内部バージョン表記）を更新。
-  - `docs/TEST_REPORT.md` 内の適合バージョン表記を更新。
+  - `docs/ja/TEST_REPORT.md` 内の適合バージョン表記を更新。
   - バージョン変更を Git ステージング領域に追加（`git add`）。
 
 ---

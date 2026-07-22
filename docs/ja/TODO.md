@@ -1,5 +1,7 @@
 # Clondar Pro 開発 Todo リスト (TODO.md)
 
+[English Version](../en/TODO.md) | **日本語版**
+
 本ドキュメントは、Clondar Pro の開発における現在の実装状況、直近のタスク、および今後の機能提案（バックログ）を管理するための Todo リストです。
 
 ---
@@ -39,7 +41,7 @@
 ## 2. 直近のタスク (In Progress / Todo)
 
 - [ ] **`common_lib` 参照方法の整合性修正**
-  - **現状の課題**: `DEVELOPMENT.md` や `AGENTS.md` の開発ガイドラインでは、CIビルドエラーを防ぐため `Cargo.toml` の `common_lib` 依存を Git 参照にし、ローカル開発時のみ `.cargo/config.toml` の `paths` でオーバーライドすることになっている。しかし、現在 `src-tauri/Cargo.toml` に相対パス `{ path = "../../common_lib" }` が直接記述されており、不整合が発生している。
+  - **現状の課題**: `docs/ja/DEVELOPMENT.md` や `.agents/AGENTS.md` の開発ガイドラインでは、CIビルドエラーを防ぐため `Cargo.toml` の `common_lib` 依存を Git 参照にし、ローカル開発時のみ `.cargo/config.toml` の `paths` でオーバーライドすることになっている。しかし、現在 `src-tauri/Cargo.toml` に相対パス `{ path = "../../common_lib" }` が直接記述されており、不整合が発生している。
   - **対応策**: `Cargo.toml` を Git 参照に戻し、ローカル開発環境での動作には `.cargo/config.toml` によるパス上書きを徹底させる。
 - [x] **フロントエンド側での JSON 簡易バリデーションの実装**
   - **現状の課題**: 祝日データの保存時、Rustバックエンドの `serde_json` による検証のみに依存しており、万が一フロントエンド側で壊れた JSON を送信しようとするとバックエンドエラーが発生する。

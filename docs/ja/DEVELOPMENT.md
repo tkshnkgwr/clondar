@@ -1,5 +1,7 @@
 # Clondar Pro 開発者向けドキュメント (Vite React Edition)
 
+[English Version](../en/DEVELOPMENT.md) | **日本語版**
+
 本ドキュメントは、Clondar Pro の内部アーキテクチャ、ソースコード構成、システムトレイの実装、および外部祝日定義ファイルの構造について、技術的な詳細を解説する開発者用のガイドです。
 
 ---

@@ -1,6 +1,8 @@
 # Clondar Pro アーキテクチャ設計書 (Tauri v2 Edition)
 
-本ドキュメントは, Clondar Pro のシステムアーキテクチャ、プロセス構造、プロセス間通信（IPC）、データの状態管理、および外部ライブラリとの連携について、技術的な詳細を解説する設計書です。
+[English Version](../en/ARCHITECTURE.md) | **日本語版**
+
+本ドキュメントは、Clondar Pro のシステムアーキテクチャ、プロセス構造、プロセス間通信（IPC）、データの状態管理、および外部ライブラリとの連携について、技術的な詳細を解説する設計書です。
 
 ---
 
@@ -47,10 +49,16 @@ clondar/ (プロジェクトルート)
 │   └── AGENTS.md               # 開発における「黄金ルール」
 ├── .github/                    # CI/CD自動化定義（GitHub Actions）
 ├── docs/                       # 設計書、仕様書、運用ガイドラインなどのドキュメント
-│   ├── ARCHITECTURE.md         # アーキテクチャ設計書 (本ファイル)
-│   ├── SPECIFICATION.md        # 最終製品仕様書
-│   ├── USER_GUIDE.md           # ユーザー操作マニュアル
-│   └── DEVELOPMENT.md          # 開発者向けセットアップ・ビルドガイド
+│   ├── ja/                     # 日本語版ドキュメント
+│   │   ├── ARCHITECTURE.md     # アーキテクチャ設計書 (本ファイル)
+│   │   ├── SPECIFICATION.md    # 最終製品仕様書
+│   │   ├── USER_GUIDE.md       # ユーザー操作マニュアル
+│   │   └── DEVELOPMENT.md      # 開発者向けセットアップ・ビルドガイド
+│   └── en/                     # 英語版ドキュメント
+│       ├── ARCHITECTURE.md     # Architecture Design Document
+│       ├── SPECIFICATION.md    # Product Specification
+│       ├── USER_GUIDE.md       # User Guide
+│       └── DEVELOPMENT.md      # Developer Setup & Build Guide
 ├── scripts/                    # バージョン更新等を行うためのPowerShell補助スクリプト
 ├── src-tauri/                  # Tauriバックエンド（Rust）
 │   ├── capabilities/           # Tauri v2用の実行権限定義
@@ -79,7 +87,7 @@ clondar/ (プロジェクトルート)
     └── vite.config.js          # Viteのビルド設定ファイル
 ```
 
-### 構造設計 of 意図
+### 構造設計の意図
 1. **`src-tauri` と `ui` の分離**: フロントエンド開発とバックエンド開発を完全に独立させ、モックでのブラウザ確認やホットリロードの恩恵を最大化。
 2. **`capabilities` によるセキュアな分離**: Tauri v2 のポリシーに従い、フロントエンドから勝手にOSの任意機能へ触れられないようにし、明示的に許可した権限（移動、終了、最前面等）のみを `default.json` で宣言。
 3. **`ui/src/utils` への Tauri API 隠蔽**: フロントエンドのビューコード（`Clock.jsx` や `Calendar.jsx`）が直接 Tauri 特有の API に依存するのを防ぎ、`tauri.js` というラッパーを介すことでブラウザでのモック動作やテストが容易になるように設計。
@@ -122,7 +130,7 @@ graph TD
 
 ### 4.3 システムトレイ（常駐化）
 - ウィンドウを閉じる操作（❌ボタンや Escキー）が発生した際、ウィンドウを破棄せず「非表示（Hide）」にするフック処理を Rust 側で実装しています。
-- アプリケーションの終了は、システムトレイの右クリックメニューの「終了」からのみ実行可能としており、WebView2 終了時の Win32 エラー（Error 1412）を防ぐために、ウィンドウのクローズフローと終了ステ態（`QuittingState`）を安全に同期しています。
+- アプリケーションの終了は、システムトレイの右クリックメニューの「終了」からのみ実行可能としており、WebView2 終了時の Win32 エラー（Error 1412）を防ぐために、ウィンドウのクローズフローと終了状態（`QuittingState`）を安全に同期しています。
 
 ### 4.4 二重起動防止機能 (Named Mutex)
 - OS 上でのアプリケーションの重複起動を防止するため、メインプロセス起動（`main` 関数の最初期フェーズ）において名前付きミューテックス（Named Mutex）を使用した二重起動判定を行っています。

@@ -1,5 +1,7 @@
 # Tauri v2 デスクトップアプリ開発：新規プロジェクト用雛形ガイドライン
 
+[English Version](../en/PROJECT_TEMPLATE_GUIDE.md) | **日本語版**
+
 Google AI Studio や AntiGravity（Gem）と共同でデスクトップアプリを開発する際、初期設定や文字コード問題で躓かないための「黄金構成」と「AI指示書（AGENTS.md）」のテンプレートです。
 
 次回以降のプロジェクト作成時は、この構成をコピー＆ペーストすることで、安全かつ綺麗な状態でスムーズに開発をスタートできます。
@@ -24,9 +26,15 @@ Google AI Studio や AntiGravity（Gem）と共同でデスクトップアプリ
 ├── .vscode/                 # VS Code 設定
 │   └── settings.json        # ★VS Code用共通設定
 │
-├── docs/                    # 各種技術ドキュメント（ルートを汚さないため）
-│   ├── SPECIFICATION.md     # ★製品仕様書（バージョン・技術スタック記載）
-│   └── TEST_REPORT.md       # ★テストレポート（検証結果・Mermaid構成図記載）
+├── docs/                    # 各種技術ドキュメント
+│   ├── ja/                  # 日本語版ドキュメント
+│   │   ├── SPECIFICATION.md # ★製品仕様書（バージョン・技術スタック記載）
+│   │   ├── TEST_REPORT.md   # ★テストレポート（検証結果・Mermaid構成図記載）
+│   │   └── ...
+│   └── en/                  # 英語版ドキュメント
+│       ├── SPECIFICATION.md # ★製品仕様書（英語版）
+│       ├── TEST_REPORT.md   # ★テストレポート（英語版）
+│       └── ...
 │
 ├── scripts/                 # 自動化スクリプト
 │   └── bump-version.ps1     # ★文字コード対策済・バージョン一括更新スクリプト
@@ -37,15 +45,15 @@ Google AI Studio や AntiGravity（Gem）と共同でデスクトップアプリ
 │   └── capabilities/
 │       └── default.json
 │
-├── ui/                      # フロントエンド（React CDN / HTMLなど）
+├── ui/                      # フロントエンド（React / SPA）
 │   └── index.html           # (※バージョンは直書きせずTauri APIから動的取得する)
 │
 ├── .editorconfig            # ★エディタ用共通設定
 ├── .gitignore               # ★ルート一本化のGit除外設定
-├── CHANGELOG.md             # 更新履歴（CHANGELOG）
+├── CHANGELOG.md             # 更新履歴（CHANGELOG、各言語への案内リンク）
 ├── LICENSE                  # ライセンス
-├── README.md                # メイン説明（英語推奨、多言語なら上部リンク）
-└── README.ja.md             # 日本語説明（README.mdから分離）
+├── README.md                # メイン説明（英語、日本語版README_JA.mdへのリンク）
+└── README_JA.md             # 日本語説明
 ```
 
 ---
@@ -86,7 +94,7 @@ Thumbs.db
 
 ## 3. ひな形 `.agents/AGENTS.md` (AI向けカスタムルール)
 
-プロジェクト作成時にこれを `.agents/AGENTS.md` に配置することで、AIがTauri v2の特性や各種ドキュメントの自動更新ルールを最初から理解して動くようになります。
+プロジェクト作成時にこれを `.agents/AGENTS.md` に配置することで、AIがTauri v2の特性や多言語ドキュメント構成、自動更新ルールを最初から理解して動くようになります。
 
 ```markdown
 # Tauri v2 デスクトップウィジェット開発ガイドライン
@@ -135,13 +143,13 @@ if (window.__TAURI__) {
 AIがコードの変更、機能追加、リファクタリングなどを行う際は、必ず以下のドキュメントをセットで更新または作成すること。
 
 - **`CHANGELOG.md` の自動更新**:
-  ソースコードに変更を加えた場合は、作業完了前に必ず変更内容や目的を `CHANGELOG.md` の最新セクションに自動追記すること。
-- **`docs/SPECIFICATION.md`（仕様書）の更新**:
+  ソースコードに変更を加えた場合は、作業完了前に必ず変更内容や目的を `docs/ja/CHANGELOG.md` および `docs/en/CHANGELOG.md` の最新セクションに追記すること（ルートの `CHANGELOG.md` は案内リンクのみとする）。
+- **`docs/ja/SPECIFICATION.md` / `docs/en/SPECIFICATION.md` の更新**:
   新しい機能を追加したり、既存のデータ構造や仕様を変更した場合は、必ず仕様書と整合性をとり、最新の状態に更新すること。
-- **`README.md` / `README.ja.md` の更新**:
+- **`README.md` / `README_JA.md` の更新**:
   環境構築手順や依存ライブラリの追加、起動コマンド、設定手順に変更があった場合は、必ずドキュメントに反映すること。
-- **`docs/TEST_REPORT.md` の更新**:
-  機能実装時やリファクタリング時にテスト（自動テスト・手動テスト）を実行した場合は、検証手順や結果を `docs/TEST_REPORT.md` に記録・更新すること。
+- **`docs/ja/TEST_REPORT.md` / `docs/en/TEST_REPORT.md` の更新**:
+  機能実装時やリファクタリング時にテスト（自動テスト・手動テスト）を実行した場合は、検証手順や結果を記録・更新すること。
 - **ドキュメントの整合性チェック**:
   タスク完了時には、コードと各種Markdownドキュメントの間に情報のズレが残っていないか必ずセルフチェックすること。
 
@@ -213,8 +221,8 @@ if (Test-Path $tauriPath) {
     Write-Warning "$tauriPath not found."
 }
 
-# 3. docs/SPECIFICATION.md の更新 (バージョンおよび内部バージョンの動的置換・挿入)
-$specPath = "docs/SPECIFICATION.md"
+# 3. docs/ja/SPECIFICATION.md の更新
+$specPath = "docs/ja/SPECIFICATION.md"
 if (Test-Path $specPath) {
     Write-Host "Updating $specPath..."
     $lines = [System.IO.File]::ReadAllLines($specPath, $utf8)
@@ -248,14 +256,13 @@ if (Test-Path $specPath) {
     Write-Warning "$specPath not found."
 }
 
-# 4. docs/TEST_REPORT.md の更新
-$testPath = "docs/TEST_REPORT.md"
+# 4. docs/ja/TEST_REPORT.md の更新
+$testPath = "docs/ja/TEST_REPORT.md"
 if (Test-Path $testPath) {
     Write-Host "Updating $testPath..."
     $lines = [System.IO.File]::ReadAllLines($testPath, $utf8)
     for ($i = 0; $i -lt $lines.Length; $i++) {
         if ($lines[$i] -match "\*\*$suitableLabel\*\*") {
-            # 適合バージョン行を更新 (文言はプロジェクトに合わせて微調整可能)
             $lines[$i] = "**$suitableLabel**: Widget v$NewVersion (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)"
             break
         }
@@ -346,7 +353,7 @@ updates:
 
 ## 8. 新規プロジェクト用 `.github/workflows/release.yml` テンプレート
 
-`v*` タグがプッシュされた際に、Windows 環境（`windows-latest`）上で `@tauri-apps/cli` を用いて Windows 用の Tauri アプリケーションを自動的にビルドし、GitHub Releases にドラフトリリースとしてデプロイするワークフロー設定です。リポジトリルートの `.github/workflows/release.yml` として配置します。
+`v*` タグがプッシュされた際に、Windows 環境（`windows-latest`）上で `@tauri-apps/cli` を用いて Windows 用の Tauri アブケーションを自動的にビルドし、GitHub Releases にドラフトリリースとしてデプロイするワークフロー設定です。リポジトリルートの `.github/workflows/release.yml` として配置します。
 
 ```yaml
 name: Release App

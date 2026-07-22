@@ -1,5 +1,7 @@
 # セルフテストレポート & システム構成図 (Obsidian連携)
 
+[English Version](../en/TEST_REPORT.md) | **日本語版**
+
 ## 1. セルフテスト結果 (Self-Test Report)
 
 ### テスト環境
@@ -114,4 +116,4 @@ graph TD
 
 ---
 **作成日**: 2026年7月10日
-**適合バージョン**: Widget v1.3.7 (Vite React Local Bundled with Rust 1.96.0)
+**適合バージョン**: Widget v1.3.7 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)

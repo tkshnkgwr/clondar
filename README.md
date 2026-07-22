@@ -1,6 +1,6 @@
 # 🕒 Clondar
 
-**English** | [日本語版](./README.ja.md)
+**English** | [日本語版](./README_JA.md)
 
 [![CI Status](https://github.com/tkshnkgwr/clondar/actions/workflows/ci.yml/badge.svg)](https://github.com/tkshnkgwr/clondar/actions)
 [![Build Status](https://github.com/tkshnkgwr/clondar/actions/workflows/release.yml/badge.svg)](https://github.com/tkshnkgwr/clondar/actions)
@@ -133,7 +133,7 @@ If Japanese public holidays are amended by legislation, update the holiday defin
 1. Open [ui/public/config/holidays.json](./ui/public/config/holidays.json).
 2. Add or modify holiday dates and rules (fixed holidays, happy mondays, etc.) to match the new legal requirements.
 3. Open the "Holidays Manager" modal by clicking the "**Holidays Config**" (or "**祝日設定**") button on the widget to visually verify that modifications are correctly calculated and compared against the built-in defaults.
-4. After confirming correct operation, update [TEST_REPORT.md](./TEST_REPORT.md).
+4. After confirming correct operation, update [TEST_REPORT.md](./docs/en/TEST_REPORT.md).
 
 ### ⚙️ Editor Configurations
 This project standardizes editor settings using `.editorconfig` and `.vscode/settings.json`.
@@ -158,7 +158,7 @@ Before packaging a new release, verify you have executed the following steps:
    * Provide a source image (512x512px+) and run `npx tauri icon /path/to/icon.png`.
    * Make sure to run `cargo clean` to ensure Tauri updates system cache files.
 3. **Log Changes**:
-   * Append your version notes into [CHANGELOG.md](./CHANGELOG.md).
+   * Append your version notes into [CHANGELOG.md](./docs/en/CHANGELOG.md).
 4. **Trigger Automated Build & Release**:
    * Push a Git tag matching your version (e.g., `git tag v1.2.3` and `git push origin v1.2.3`). GitHub Actions will handle the build and create a draft release.
 

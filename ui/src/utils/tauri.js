@@ -84,6 +84,7 @@ export const closeWindow = async () => {
 
 /**
  * LocalStorage から保存されたウィンドウ位置を読み込み、ウィンドウ位置を復元します。
+ * 位置移動の完了後にウィンドウを表示 (show) することで、起動時の画面チラつき（ジャンプ）を防ぎます。
  *
  * @param {React.MutableRefObject<boolean>} isRestoringRef - 復元処理中フラグの Ref
  */
@@ -98,15 +99,25 @@ export const restoreWindowPosition = async (isRestoringRef) => {
     if (savedPos) {
       const pos = JSON.parse(savedPos);
       if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
         const positionObj = new PhysicalPosition(pos.x, pos.y);
         await win.setPosition(positionObj);
+      } else {
+        await win.center();
       }
+    } else {
+      await win.center();
     }
   } catch (err) {
     console.error("Restore position failed:", err);
+    try {
+      await win.center();
+    } catch (_) {}
   } finally {
+    try {
+      await win.show();
+    } catch (e) {
+      console.error("Failed to show window:", e);
+    }
     setTimeout(() => {
       if (isRestoringRef) isRestoringRef.current = false;
     }, 1000);

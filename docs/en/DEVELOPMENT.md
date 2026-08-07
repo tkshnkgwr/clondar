@@ -128,13 +128,13 @@ Vite compiles and packages frontend files into `ui/dist`, followed by Tauri crea
 ## 4. Technical Highlights
 
 ### ① System Tray Residence
-The Rust backend [main.rs](file:///c:/Users/632792/Documents/自作/clondar/src-tauri/src/main.rs) uses `TrayIconBuilder` to configure a system tray icon.
+The Rust backend [main.rs](../../src-tauri/src/main.rs) uses `TrayIconBuilder` to configure a system tray icon.
 Users can right-click the icon to control visibility, toggle Always on Top, reset coordinates, or terminate the application.
 Always on Top toggles and coordinate resets instantly dispatch events through Tauri's event bus (`always-on-top-toggled`, `position-reset`) to sync frontend states.
 
 ### ② External Holiday Configuration (`holidays.json`)
 Calculations for Japanese national holidays are configured inside `ui/public/config/holidays.json`.
-[holidays.js](file:///c:/Users/632792/Documents/自作/clondar/ui/src/utils/holidays.js) fetches this dynamically during boot, applying calculations for fixed dates, Happy Mondays, Emperors' birthdays, and Olympic special schedule modifications. Adjusting dates inside the JSON updates the calendar without modifying React application code.
+[holidays.js](../../ui/src/utils/holidays.js) fetches this dynamically during boot, applying calculations for fixed dates, Happy Mondays, Emperors' birthdays, and Olympic special schedule modifications. Adjusting dates inside the JSON updates the calendar without modifying React application code.
 
 ---
 

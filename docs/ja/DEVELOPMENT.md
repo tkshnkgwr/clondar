@@ -128,13 +128,13 @@ Vite によるビルドが走り、`ui/dist` に静的ファイルがバンド�
 ## 4. 技術的ハイライト
 
 ### ① システムトレイ（タスクトレイ）常駐機能
-Rust 側 [main.rs](file:///c:/Users/632792/Documents/自作/clondar/src-tauri/src/main.rs) で `TrayIconBuilder` を使用しトレイアイコンを構築。
+Rust 側 [main.rs](../../src-tauri/src/main.rs) で `TrayIconBuilder` を使用しトレイアイコンを構築。
 右クリックメニューから「表示/非表示」「最前面表示の切替」「位置をリセット」「終了」が操作できます。
 最前面トグルや位置リセットは、Tauri のイベントバス (`always-on-top-toggled`, `position-reset`) を通じてフロントエンドの表示と即時連動します。
 
 ### ② 外部祝日設定ファイル (`holidays.json`)
 日本の祝日計算ルールを `ui/public/config/holidays.json` に集約。
-[holidays.js](file:///c:/Users/632792/Documents/自作/clondar/ui/src/utils/holidays.js) がアプリ起動時に非同期でフェッチし、固定祝日、ハッピーマンデー、天皇誕生日、オリンピック特例などの例外上書きを適用します。法改正時は JSON を更新するだけで、JavaScript のコードに手を加えることなくカレンダー表示を更新できます。
+[holidays.js](../../ui/src/utils/holidays.js) がアプリ起動時に非同期でフェッチし、固定祝日、ハッピーマンデー、天皇誕生日、オリンピック特例などの例外上書きを適用します。法改正時は JSON を更新するだけで、JavaScript のコードに手を加えることなくカレンダー表示を更新できます。
 
 ---
 

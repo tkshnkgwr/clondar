@@ -35,6 +35,10 @@ This document manages development progress, current tasks, and future feature ba
 - [x] **Compilation & Distribution Packages**
   - [x] Compiled multi-language NSIS EXE installers.
   - [x] Compiled separate WiX MSI packages for Japanese and English system locales.
+- [x] **Performance Optimization & Document Standardization (v1.3.8)**
+  - [x] Optimized clock update timer interval dynamically based on display mode (reducing idle CPU & power consumption).
+  - [x] Memoized calendar date grid array (`calendarDays`) using `useMemo` to eliminate unnecessary recalculations.
+  - [x] Standardized all documentation across CommonMark / GFM markdown syntax and vertically aligned tables.
 
 ---
 

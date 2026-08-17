@@ -254,6 +254,9 @@ fn main() {
             // 強制的に最前面に設定
             window.set_always_on_top(true).unwrap();
 
+            // ウィンドウを確実に表示
+            let _ = window.show();
+
             // ウィンドウが閉じられようとしたときは、破棄せずに非表示にする (常駐化対策)
             let app_handle = app.handle().clone();
             let win_clone = window.clone();

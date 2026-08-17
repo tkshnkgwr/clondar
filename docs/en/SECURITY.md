@@ -24,9 +24,9 @@ This document outlines the security policies, design principles, and vulnerabili
 
 Security updates are actively supplied for the following release targets:
 
-| Version | Support Status |
-| :--- | :---: |
-| Latest Release (v1.3.x) | ✅ Supported |
+| Version                            | Support Status |
+| :--------------------------------- | :------------: |
+| Latest Release (v1.3.x)            |  ✅ Supported  |
 | Outdated Releases (v1.2.x & older) | ❌ Unsupported |
 
 ---

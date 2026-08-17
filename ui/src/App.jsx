@@ -30,7 +30,7 @@ import {
 const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version }) => {
   return (
     <div 
-      className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 w-[1140px] h-[560px] mx-auto ${isTransparent ? 'bg-white/30 dark:bg-slate-900/30 glass' : 'bg-slate-50 dark:bg-slate-950'}`}
+      className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 w-full h-full ${isTransparent ? 'bg-white/30 dark:bg-slate-900/30 glass' : 'bg-slate-50 dark:bg-slate-950'}`}
       data-tauri-drag-region
     >
       <div className="flex items-center justify-between px-4 py-2 bg-white/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 select-none" data-tauri-drag-region>
@@ -134,6 +134,17 @@ export default function App() {
     loadSettings();
   }, []);
 
+  // 時計の定期アップデート（表示モードに応じた最適なインターバルで負荷を低減）
+  useEffect(() => {
+    if (loading) return;
+
+    // アナログ時計のスイープ運針時は100ms、デジタル秒表示時は250ms、秒非表示時は1000msに設定
+    const intervalMs = showSeconds ? (clockType === 'analog' ? 100 : 250) : 1000;
+    const timer = setInterval(() => setTime(new Date()), intervalMs);
+
+    return () => clearInterval(timer);
+  }, [loading, showSeconds, clockType]);
+
   // 設定の保存
   useEffect(() => {
     if (loading) return;
@@ -151,13 +162,10 @@ export default function App() {
     else document.documentElement.classList.remove('dark');
   }, [isDarkMode]);
 
-  // イベント購読、タイマーなどのライフサイクル
+  // イベント購読、リスナーなどのライフサイクル
   useEffect(() => {
     if (loading) return;
 
-    // 時計のアップデート
-    const timer = setInterval(() => setTime(new Date()), 100);
-    
     // ウィンドウの移動イベント購読
     let unlistenMovePromise = listenToMove(isRestoringRef);
 
@@ -207,7 +215,6 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      clearInterval(timer);
       clearInterval(posTimer);
       unlistenMovePromise.then(unlisten => unlisten && unlisten());
       if (unlistenAlwaysOnTopPromise) unlistenAlwaysOnTopPromise.then(unlisten => unlisten());
@@ -228,10 +235,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-full w-full flex items-center justify-center p-4 transition-colors duration-500 overflow-hidden relative" data-tauri-drag-region>
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-400/20 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-400/20 blur-[120px] rounded-full pointer-events-none" />
-      
+    <div className="h-full w-full overflow-hidden relative select-none" data-tauri-drag-region>
       <WindowFrame 
         title="Clondar Pro" 
         isPinned={isPinned} 

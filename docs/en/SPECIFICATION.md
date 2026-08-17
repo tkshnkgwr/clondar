@@ -133,7 +133,10 @@ graph TD
 5. **Shared Crate Integration (common_lib)**:
    Imports text matching and LCS processing algorithms from `common_lib` to power Tauri command systems (`get_holidays_diff`, `get_word_count`), avoiding code duplication.
 
+---
+
 ## 7. Package Compilation Specifications
+
 * **NSIS (EXE Installer)**:
   - Multi-language installer support for English and Japanese.
   - Prompts language selections during execution, parsing system locales automatically.
@@ -141,6 +144,8 @@ graph TD
   - Parallel compilation workflow generating distinct packages for Japanese (`ja-JP`) and English (`en-US`).
 
 ---
-**Last Updated**: July 14, 2026
-**Version**: 1.3.7
+
+**Last Updated**: July 14, 2026  
+**Version**: 1.3.7  
 **Internal Version**: 1.3.7.0
+

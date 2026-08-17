@@ -19,17 +19,20 @@ export const Calendar = ({ currentMonth, setCurrentMonth, onShowYearly, onShowHo
   const year = currentMonth.getFullYear();
   const holidays = useMemo(() => getHolidays(year), [year]);
   
-  const monthStart = new Date(year, currentMonth.getMonth(), 1);
-  const startDay = monthStart.getDay();
-  const startDate = new Date(monthStart);
-  startDate.setDate(startDate.getDate() - startDay);
-  
-  const calendarDays = [];
-  let curr = new Date(startDate);
-  for (let i = 0; i < 42; i++) { 
-    calendarDays.push(new Date(curr)); 
-    curr.setDate(curr.getDate() + 1); 
-  }
+  const calendarDays = useMemo(() => {
+    const monthStart = new Date(year, currentMonth.getMonth(), 1);
+    const startDay = monthStart.getDay();
+    const startDate = new Date(monthStart);
+    startDate.setDate(startDate.getDate() - startDay);
+    
+    const days = [];
+    let curr = new Date(startDate);
+    for (let i = 0; i < 42; i++) { 
+      days.push(new Date(curr)); 
+      curr.setDate(curr.getDate() + 1); 
+    }
+    return days;
+  }, [year, currentMonth.getMonth()]);
 
   const [hoveredHoliday, setHoveredHoliday] = useState(null);
 

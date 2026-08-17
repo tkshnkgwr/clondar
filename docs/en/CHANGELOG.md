@@ -3,6 +3,13 @@
 **English** | [日本語版](../ja/CHANGELOG.md)
 
 ## [Unreleased]
+### Performance & Optimization
+- **Optimized clock update interval**: Tuned `App.jsx` from a static 100ms interval to dynamic intervals based on active display modes (1000ms when seconds are hidden, 250ms for digital clock seconds, 100ms for analog clock sweep seconds), cutting idle CPU load and power consumption.
+- **Memoized calendar date array generation**: Applied `useMemo` to the 42-day array allocation (`calendarDays`) inside `Calendar.jsx`, eliminating redundant object allocations across renders.
+
+### Documentation
+- **Standardized CommonMark / GFM markdown syntax & vertically aligned tables**: Updated all documents (English, Japanese, and root level) for full compliance with CommonMark/GFM formatting and vertically aligned tables according to `RULES.md`.
+
 ### Added
 - **Unit tests for holiday calculation logic in the frontend (Vitest)**: Created unit tests in `ui/src/utils/holidays.test.js` to verify calculations for fixed holidays, old/new Happy Mondays, astronomical calculations (Vernal/Autumnal Equinox), substitute holidays, national press holidays, and custom overrides for specific years (e.g., Olympic specials).
 - **Validation test for default JSON in the backend**: Implemented a unit test in `src-tauri/src/main.rs` to ensure the built-in default holidays JSON (`DEFAULT_HOLIDAYS_JSON`) parses correctly and contains all mandatory fields.

@@ -13,13 +13,13 @@
       {
         "label": "main",
         "title": "Clondar Pro",
-        "width": 1180,
-        "height": 600,
+        "width": 1140,
+        "height": 560,
         "resizable": false,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
-        "visible": false,
+        "visible": true,
         "center": false,
         "skipTaskbar": true,
         "shadow": false

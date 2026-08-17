@@ -20,12 +20,12 @@ This document records binary sizes, memory footprint resources, and compiler per
 
 ### 2.1 Binary & Package Sizes
 
-| Build Type / Asset Name | Size | Notes |
-| :--- | :---: | :--- |
-| `clondar.exe` (Debug) | ~ 45 - 60 MB | Contains debug symbols and verbose log pipelines |
-| `clondar.exe` (Release) | ~ 10 - 15 MB | LTO and symbol stripping configurations active |
-| NSIS Installer (`.exe`) | ~ 5.0 - 7.5 MB | Compressed single silent installer executable |
-| WiX Installer (`.msi`) | ~ 4.5 - 6.5 MB | Isolated regional localized MSI packages |
+| Build Type / Asset Name |      Size       | Notes                                            |
+| :---------------------- | :-------------: | :----------------------------------------------- |
+| `clondar.exe` (Debug)   |  ~ 45 - 60 MB   | Contains debug symbols and verbose log pipelines |
+| `clondar.exe` (Release) |  ~ 10 - 15 MB   | LTO and symbol stripping configurations active   |
+| NSIS Installer (`.exe`) | ~ 5.0 - 7.5 MB  | Compressed single silent installer executable    |
+| WiX Installer (`.msi`)  | ~ 4.5 - 6.5 MB  | Isolated regional localized MSI packages         |
 
 > **Highlights**: By utilizing OS-native WebView2 runtimes as shared platform dependencies rather than embedding whole chromium platforms (like Electron shells which exceed 100MB+ raw binary size), Clondar Pro achieves an incredibly lightweight package footprint.
 
@@ -50,9 +50,9 @@ To maximize binary size reductions and regulate runtime resource footprint overh
 
 ```toml
 [profile.release]
-opt-level = 3        # Optimize for speed
-lto = true           # Enable Link-Time Optimization
-codegen-units = 1    # Reduce compilation units for better optimizations
-panic = "abort"      # Omit panic call stack tracing to trim binary size
-strip = true         # Strip symbol tables and debug entries
+opt-level = 'z'     # Optimize for size
+lto = true          # Enable Link-Time Optimization
+codegen-units = 1   # Reduce compilation units for better optimizations
+panic = 'abort'     # Omit panic call stack tracing to trim binary size
+strip = true        # Strip symbol tables and debug entries
 ```

@@ -3,6 +3,8 @@
 **English** | [日本語版](../ja/CHANGELOG.md)
 
 ## [Unreleased]
+
+## [1.3.8] - 2026-08-17
 ### Performance & Optimization
 - **Optimized clock update interval**: Tuned `App.jsx` from a static 100ms interval to dynamic intervals based on active display modes (1000ms when seconds are hidden, 250ms for digital clock seconds, 100ms for analog clock sweep seconds), cutting idle CPU load and power consumption.
 - **Memoized calendar date array generation**: Applied `useMemo` to the 42-day array allocation (`calendarDays`) inside `Calendar.jsx`, eliminating redundant object allocations across renders.

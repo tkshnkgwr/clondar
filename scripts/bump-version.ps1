@@ -1,4 +1,4 @@
-﻿param (
+param (
     [Parameter(Mandatory=$true)]
     [string]$NewVersion
 )
@@ -44,6 +44,17 @@ if (Test-Path $tauriPath) {
     [System.IO.File]::WriteAllText($tauriPath, $content, $utf8)
 } else {
     Write-Warning "$tauriPath not found."
+}
+
+# 2.1 ui/package.json
+$pkgPath = "ui/package.json"
+if (Test-Path $pkgPath) {
+    Write-Host "Updating $pkgPath..."
+    $content = [System.IO.File]::ReadAllText($pkgPath, $utf8)
+    $content = $content -replace '"version"\s*:\s*"[^"]+"', "`"version`": `"$NewVersion`""
+    [System.IO.File]::WriteAllText($pkgPath, $content, $utf8)
+} else {
+    Write-Warning "$pkgPath not found."
 }
 
 # 3. docs/ja/SPECIFICATION.md & docs/en/SPECIFICATION.md の更新

@@ -2,7 +2,7 @@
 
 **English** | [日本語版](../ja/CHANGELOG.md)
 
-## [Unreleased]
+## [1.4.0] - 2026-09-01
 ### Added
 - **Rust-based Holiday Engine and Schema Validation (`holidays.rs`)**:
   - Created `src-tauri/src/holidays.rs` module to migrate Japanese holiday calculations (fixed holidays, new/old Happy Mondays, Emperor birthdays, Vernal/Autumnal equinoxes, substitute holidays, national bridge holidays, and custom overrides) to the Rust backend.

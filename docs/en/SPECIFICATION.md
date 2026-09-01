@@ -148,6 +148,6 @@ graph TD
 ---
 
 **Last Updated**: September 1, 2026  
-**Version**: 1.3.8  
-**Internal Version**: 1.3.8.0
+**Version**: 1.4.0
+**Internal Version**: 1.4.0.0
 

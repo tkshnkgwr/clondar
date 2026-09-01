@@ -1,10 +1,27 @@
-//! Clondar アプリケーションのメインエントリポイント。
-//! ウィンドウの枠なし・最前面表示・透過処理のセットアップ、システムトレイメニューの制御、
-//! および祝日設定データのロード・保存などのコマンドを提供します。
+//! # Clondar Pro メイン実行モジュール (main.rs)
+//!
+//! Windows デスクトップ専用のウィジェット型時計＆カレンダーアプリケーションのメインプロセスです。
+//!
+//! ## 責務とアーキテクチャ
+//! - **多重起動防止**: 名前付きミューテックス（Named Mutex）を用いてプロセスの重複実行を遮断します。
+//! - **OSネイティブウィンドウ装飾制御**:
+//!   - タイトルバー・枠線の除去（ボーダレス: `decorations = false`）
+//!   - OS標準ドロップシャドウの物理的無効化（`set_shadow(false)`）
+//!   - 透過背景のサポートおよび常時最前面（Always on Top）表示
+//!   - クローズ要求のインターセプトによる非表示（常駐トレイ化）
+//! - **システムトレイ（Task Tray）**: 右クリックメニューからの表示切替、最前面ピン留め、位置リセット、完全終了の制御。
+//! - **IPC コマンド群**:
+//!   - [`get_holidays`][]: 日本の祝日定義に基づき、指定西暦年の祝日一覧を高速・型安全に算出。
+//!   - [`load_holidays_json`][]: ローカル AppData から祝日定義を読み込み（存在しない場合は内蔵デフォルトで初期化生成）。
+//!   - [`save_holidays_json`][]: 厳格なスキーマおよび範囲検証を行った上で祝日定義ファイルを安全に上書き保存。
+//!   - [`reset_holidays_json`][]: 祝日定義を内蔵の初期デフォルト設定で安全に強制上書き復元。
+//!   - [`get_holidays_diff`][]: 共有ライブラリ `common_lib` の LCS Diff アルゴリズムを用いた設定差分の計算。
+//!   - [`get_word_count`][]: 共有ライブラリ `common_lib` による特定キーワードの出現回数集計。
 
 // リリースビルド時にWindowsで追加のコンソールウィンドウが表示されるのを防ぎます。削除しないでください！
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -14,19 +31,33 @@ use tauri::{
     Emitter, Manager,
 };
 
-/// アプリケーションが明示的な終了処理中（トレイメニューの終了ボタン等）であるかどうかを管理する状態。
+mod holidays;
+
+/// アプリケーションが明示的な終了処理中（システムトレイメニューの「終了」選択時など）であるかを管理する共有状態。
 ///
-/// ウィンドウの `CloseRequested` イベント時にこのフラグを確認し、
-/// `false` の場合はアプリ終了をインターセプトして非表示（常駐状態）にします。
+/// ## 仕組みと役割
+/// 通常のウィンドウクローズイベント（❌ボタンや `Esc` キー押下）が発生した際、
+/// アプリケーションを終了させずにトレイ常駐（非表示状態）にするため、このフラグを確認します。
+/// - `false`: ウィンドウの破棄をキャンセル（`prevent_close`）し、非表示（`hide`）にします。
+/// - `true`: トレイメニューから明示的に終了が指示された状態であり、全ウィンドウの破棄とプロセスの正規終了を許可します。
 struct QuittingState(Mutex<bool>);
 
-/// アプリケーションに内蔵されているデフォルトの祝日設定（JSON形式）。
-/// 祝日設定ファイルが存在しない場合にこの文字列から初期設定ファイルが生成されます。
+/// アプリケーションに組み込まれている内蔵標準の祝日設定データ（JSON形式）。
+///
+/// ## 特徴
+/// 外部祝日設定ファイル（`%LOCALAPPDATA%/com.clondar.pro/holidays.json`）が存在しない初期起動時、
+/// またはファイルが削除された場合に、本文字列から新規設定ファイルが自動生成されます。
+///
+/// ## 含まれるセクション
+/// - `fixed`: 年月日が固定された日本の祝日（元日、建国記念の日、こどもの日等）
+/// - `happy_mondays`: 2000年以降のハッピーマンデー制度（成人の日、海の日、敬老の日、スポーツの日）
+/// - `happy_mondays_legacy`: 1999年以前の旧祝日制度（1月15日成人の日、10月10日体育の日等）
+/// - `emperor_birthdays`: 歴代天皇誕生日の期間定義
+/// - `custom_overrides`: 東京オリンピック等の特定年限定の祝日移動・特例措置
 const DEFAULT_HOLIDAYS_JSON: &str = r#"{
   "fixed": {
     "01-01": "元日",
     "02-11": "建国記念の日",
-    "02-23": "天皇誕生日",
     "04-29": "昭和の日",
     "05-03": "憲法記念日",
     "05-04": "みどりの日",
@@ -137,14 +168,19 @@ const DEFAULT_HOLIDAYS_JSON: &str = r#"{
   }
 }"#;
 
-/// 祝日設定ファイルの保存先となる絶対パスを取得します。
-/// アプリケーションデータディレクトリが存在しない場合は自動で作成します。
+/// 祝日設定ファイル（`holidays.json`）の保存先となるローカルデータ領域の絶対パスを取得します。
+///
+/// ## 動作仕様
+/// 1. OSのユーザー固有ローカルデータ領域（Windowsでは `%LOCALAPPDATA%/com.clondar.pro/`）のパスを解決します。
+/// 2. 対象ディレクトリが存在しない場合は、自動的に親ディレクトリを含めて新規作成します。
+/// 3. ファイル名 `holidays.json` を付与した絶対パスを返します。
 ///
 /// # 引数
-/// * `app` - Tauri アプリケーションのハンドル
+/// * `app` - Tauri アプリケーションの管理ハンドル（OSパス解決に使用）
 ///
 /// # 戻り値
-/// 祝日設定ファイル (`holidays.json`) へのパスを含む `Result`
+/// * `Ok(PathBuf)` - 祝日設定ファイルへの完全なファイルパス
+/// * `Err(String)` - ディレクトリの取得または作成に失敗した場合のエラーメッセージ
 fn get_holidays_file_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let mut path = app.path().app_local_data_dir().map_err(|e| e.to_string())?;
     if !path.exists() {
@@ -154,14 +190,19 @@ fn get_holidays_file_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-/// 祝日設定の JSON ファイルの内容をロードします。
-/// ファイルが存在しない場合は、内蔵のデフォルトの祝日設定をファイルに書き込んで初期化します。
+/// 祝日設定ファイル（`holidays.json`）の内容を文字列としてロードする IPC コマンド。
+///
+/// ## 処理フロー
+/// 1. [`get_holidays_file_path`] で保存先パスを取得します。
+/// 2. ファイルが既に存在する場合は、その内容を読み取って返します。
+/// 3. ファイルが存在しない場合は、内蔵の標準定義 [`DEFAULT_HOLIDAYS_JSON`] をファイルに書き出して初期化し、その内容を返却します。
 ///
 /// # 引数
-/// * `app` - Tauri アプリケーションのハンドル
+/// * `app` - Tauri アプリケーションの管理ハンドル
 ///
 /// # 戻り値
-/// 祝日設定ファイルの JSON 文字列を含む `Result`
+/// * `Ok(String)` - 祝日設定の JSON 文字列
+/// * `Err(String)` - ファイルの読み込みまたは初期生成時の書き込みに失敗した場合のエラーメッセージ
 #[tauri::command]
 fn load_holidays_json(app: tauri::AppHandle) -> Result<String, String> {
     let path = get_holidays_file_path(&app)?;
@@ -173,33 +214,77 @@ fn load_holidays_json(app: tauri::AppHandle) -> Result<String, String> {
     }
 }
 
-/// 祝日設定の JSON 文字列をファイルに保存します。
-/// 保存前に JSON の形式が正しいかをチェックし、不正な場合はエラーを返します。
+/// 祝日設定を内蔵の初期デフォルト設定で強制上書き復元（リセット）する IPC コマンド。
 ///
 /// # 引数
-/// * `app` - Tauri アプリケーションのハンドル
-/// * `json_content` - 保存する JSON 文字列
+/// * `app` - Tauri アプリケーションの管理ハンドル
 ///
 /// # 戻り値
-/// 保存処理の結果を含む `Result`
+/// * `Ok(String)` - 復元されたデフォルト JSON 文字列
+/// * `Err(String)` - ファイル書き込みエラー時のメッセージ
+#[tauri::command]
+fn reset_holidays_json(app: tauri::AppHandle) -> Result<String, String> {
+    let path = get_holidays_file_path(&app)?;
+    fs::write(&path, DEFAULT_HOLIDAYS_JSON).map_err(|e| e.to_string())?;
+    Ok(DEFAULT_HOLIDAYS_JSON.to_string())
+}
+
+/// 指定された西暦年の日本の祝日マップ（日付文字列 => 祝日名称）を計算して返却する IPC コマンド。
+///
+/// ## 処理フロー
+/// 1. 設定ファイルから現在の祝日定義をロードし、Serde 構造体にパース。
+/// 2. `holidays::calculate_holidays` を用いて、固定祝日、ハッピーマンデー、天文計算、振替休日、
+///    国民の休日、および特定年の上書きを高速一括計算。
+///
+/// # 引数
+/// * `app` - Tauri アプリケーションの管理ハンドル
+/// * `year` - 対象の西暦年 (例: 2026)
+///
+/// # 戻り値
+/// * `Ok(HashMap<String, String>)` - 日付文字列をキー、祝日名称を値とするマップ
+/// * `Err(String)` - 設定読み込みまたはパース失敗時のエラーメッセージ
+#[tauri::command]
+fn get_holidays(app: tauri::AppHandle, year: u32) -> Result<HashMap<String, String>, String> {
+    let json_text = load_holidays_json(app)?;
+    let config = holidays::validate_and_parse_config(&json_text)?;
+    Ok(holidays::calculate_holidays(year, &config))
+}
+
+/// フロントエンドから送信された祝日設定の JSON 文字列をファイルに保存する IPC コマンド。
+///
+/// ## 堅牢性と安全設計
+/// ファイルへの書き込みを行う前に、[`holidays::validate_and_parse_config`] を用いて
+/// スキーマおよび月・日・週番号の範囲妥当性チェックを実施します。
+/// 不正な構文や無効なデータが検出された場合は保存を行わず、詳細なエラーを返却して
+/// 設定ファイルの破損を未然に防止します。
+///
+/// # 引数
+/// * `app` - Tauri アプリケーションの管理ハンドル
+/// * `json_content` - 保存対象の JSON 文字列
+///
+/// # 戻り値
+/// * `Ok(())` - 保存が正常に完了した場合
+/// * `Err(String)` - JSON構文エラーまたはディスク書き込みエラー時のメッセージ
 #[tauri::command]
 fn save_holidays_json(app: tauri::AppHandle, json_content: String) -> Result<(), String> {
-    let _: serde_json::Value = serde_json::from_str(&json_content)
-        .map_err(|e| format!("JSONのフォーマットが正しくありません: {}", e))?;
+    let _ = holidays::validate_and_parse_config(&json_content)?;
     let path = get_holidays_file_path(&app)?;
     fs::write(&path, json_content).map_err(|e| e.to_string())?;
     Ok(())
 }
 
-/// 2つのテキスト（古い設定と新しい設定）の間の差分（Diff）を計算します。
-/// 共通ライブラリ `common_lib::compute_diff` を使用します。
+/// 2つのテキスト（内蔵デフォルト設定と現在適用中の設定）間のテキスト行単位差分を計算する IPC コマンド。
+///
+/// ## 連携
+/// 共通ライブラリ `common_lib::compute_diff` (最長共通部分列: LCS アルゴリズム) を呼び出し、
+/// 高速に追加行・削除行・変更なし行を判定・分類します。
 ///
 /// # 引数
-/// * `old_text` - 変更前の設定テキスト
-/// * `new_text` - 変更後の設定テキスト
+/// * `old_text` - 比較元テキスト（内蔵デフォルトの祝日 JSON など）
+/// * `new_text` - 比較先テキスト（ユーザーがカスタマイズした祝日 JSON など）
 ///
 /// # 戻り値
-/// 差分パーツのリストを含む `Result`
+/// * `Ok(Vec<common_lib::DiffPart>)` - 追加・削除・変更なしの差分パーツ配列
 #[tauri::command]
 fn get_holidays_diff(
     old_text: String,
@@ -208,24 +293,44 @@ fn get_holidays_diff(
     Ok(common_lib::compute_diff(&old_text, &new_text))
 }
 
-/// テキストデータ中において、指定された単語（祝日の名称など）が出現する回数をカウントします。
-/// 共通ライブラリ `common_lib::count_occurrences` を使用します。
+/// 指定されたテキスト全体の中から、特定の単語（祝日名称やキーワード）の出現回数を集計する IPC コマンド。
+///
+/// ## 連携
+/// 共通ライブラリ `common_lib::count_occurrences` を呼び出して集計します。
+/// 祝日設定マネージャー画面における統計情報（「の日」の件数など）の表示に使用されます。
 ///
 /// # 引数
-/// * `text` - 検索対象のテキスト全体
-/// * `word` - カウント対象の単語
+/// * `text` - 検索対象となるテキスト全体（JSON 文字列など）
+/// * `word` - カウントする検索キーワード（例: "の日", "天皇誕生日"）
 ///
 /// # 戻り値
-/// 出現回数を含む `Result`
+/// * `Ok(usize)` - キーワードの出現回数（件数）
 #[tauri::command]
 fn get_word_count(text: String, word: String) -> Result<usize, String> {
     Ok(common_lib::count_occurrences(&text, &word))
 }
 
-/// アプリケーションのメインエントリーポイント。
-/// 多重起動のチェックを行い、Tauri アプリケーションのビルド、
-/// 各種ウィンドウ設定（枠なし、最前面表示、影なし、常駐化など）、
-/// およびシステムトレイメニューの設定を行います。
+/// アプリケーションのエントリーポイント。
+///
+/// ## 実行ライフサイクル
+/// 1. **二重起動防止チェック**:
+///    `common_lib::check_single_instance` を呼び出し、同一マシン上で既に Clondar が起動している場合は
+///    メッセージを出力して直ちにプロセスを安全終了（`std::process::exit(0)`）します。
+/// 2. **Tauri ビルダーの初期化**:
+///    - `QuittingState`（終了フラグ）をマネージドステートとして登録します。
+///    - IPC コマンドハンドラー（祝日計算、差分計算、単語集計、祝日ロード・保存・リセット）を登録します。
+/// 3. **メインウィンドウのネイティブ装飾・挙動セットアップ (`setup` フック)**:
+///    - `window.set_decorations(false)`: OS標準のタイトルバーと境界枠線を完全に消去。
+///    - `window.set_shadow(false)`: Windows 11 等で透過時に生じる薄い枠やOS標準の影を消去。
+///    - `window.set_always_on_top(true)`: 初期状態として最前面表示を設定。
+///    - `window.on_window_event`: ウィンドウのクローズ要求を傍受し、明示的な終了指示でない場合は破棄せず非表示（Hide）化。
+/// 4. **システムトレイ（タスクトレイ）メニューの構築**:
+///    - 「表示 / 非表示」「最前面表示の切替」「位置をリセット」「終了」メニュー項目を作成。
+///    - メニューイベント発生時、Tauri イベントバス（`always-on-top-toggled`, `position-reset`）を通じて
+///      フロントエンド（React）へ状態変更を即時通知。
+///
+/// # パニック
+/// * Tauri アプリケーションの初期化または実行ループ中に回復不能なエラーが発生した場合にパニックします。
 fn main() {
     // 名前付き Mutex を用いた二重起動チェック
     if let Err(e) = common_lib::check_single_instance("com.clondar.pro.mutex", "Clondar") {
@@ -236,9 +341,11 @@ fn main() {
     tauri::Builder::default()
         .manage(QuittingState(Mutex::new(false)))
         .invoke_handler(tauri::generate_handler![
+            get_holidays,
             get_holidays_diff,
             get_word_count,
             load_holidays_json,
+            reset_holidays_json,
             save_holidays_json
         ])
         .setup(|app| {
@@ -343,63 +450,39 @@ mod tests {
     use super::*;
 
     /// 内蔵されているデフォルトの祝日設定 (`DEFAULT_HOLIDAYS_JSON`) が
-    /// 正しい JSON 構造をしており、必要なフィールドがすべて揃っているかをテストします。
+    /// `holidays::validate_and_parse_config` の厳格なバリデーションを完全に通過することをテストします。
     #[test]
     fn test_default_holidays_json_validity() {
-        let parsed: serde_json::Value = serde_json::from_str(DEFAULT_HOLIDAYS_JSON)
-            .expect("デフォルトの祝日 JSON 文字列のパースに失敗しました");
+        let config = holidays::validate_and_parse_config(DEFAULT_HOLIDAYS_JSON)
+            .expect("デフォルトの祝日 JSON のバリデーションに失敗しました");
 
-        // ルートがオブジェクトであることを確認
-        assert!(
-            parsed.is_object(),
-            "JSON のルートはオブジェクトである必要があります"
+        assert_eq!(
+            config.fixed.len(),
+            9,
+            "固定祝日数は9件（天皇誕生日はemperor_birthdaysで動的制御）である必要があります"
         );
-
-        let obj = parsed.as_object().unwrap();
-
-        // 必要なキーが存在するかチェック
-        assert!(obj.contains_key("fixed"), "fixed キーが存在しません");
-        assert!(
-            obj.contains_key("happy_mondays"),
-            "happy_mondays キーが存在しません"
+        assert_eq!(
+            config.happy_mondays.len(),
+            4,
+            "ハッピーマンデーは4件である必要があります"
         );
-        assert!(
-            obj.contains_key("happy_mondays_legacy"),
-            "happy_mondays_legacy キーが存在しません"
+        assert_eq!(
+            config.happy_mondays_legacy.len(),
+            5,
+            "旧ハッピーマンデーは5件である必要があります"
         );
-        assert!(
-            obj.contains_key("emperor_birthdays"),
-            "emperor_birthdays キーが存在しません"
+        assert_eq!(
+            config.emperor_birthdays.len(),
+            3,
+            "天皇誕生日の定義は3件である必要があります"
         );
         assert!(
-            obj.contains_key("custom_overrides"),
-            "custom_overrides キーが存在しません"
-        );
-
-        // fixed がオブジェクトであることを確認
-        assert!(
-            parsed["fixed"].is_object(),
-            "fixed はオブジェクトである必要があります"
-        );
-
-        // 各配列キーが配列であることを確認
-        assert!(
-            parsed["happy_mondays"].is_array(),
-            "happy_mondays は配列である必要があります"
+            config.custom_overrides.contains_key("2020"),
+            "2020年の上書き設定が必要です"
         );
         assert!(
-            parsed["happy_mondays_legacy"].is_array(),
-            "happy_mondays_legacy は配列である必要があります"
-        );
-        assert!(
-            parsed["emperor_birthdays"].is_array(),
-            "emperor_birthdays は配列である必要があります"
-        );
-
-        // custom_overrides がオブジェクトであることを確認
-        assert!(
-            parsed["custom_overrides"].is_object(),
-            "custom_overrides はオブジェクトである必要があります"
+            config.custom_overrides.contains_key("2021"),
+            "2021年の上書き設定が必要です"
         );
     }
 }

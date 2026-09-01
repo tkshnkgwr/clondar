@@ -1,14 +1,29 @@
+/**
+ * @fileoverview 時計表示コンポーネントモジュール。
+ *
+ * 等幅数字フォントによる揺れのないデジタル時計（12H/24H、秒表示ON/OFF）および
+ * スムーズなスイープ運針アニメーションを備えたアナログ時計を提供します。
+ */
+
 import React from 'react';
 import { motion } from 'framer-motion';
 
 /**
+ * デジタル時計のプロパティ型定義。
+ * @typedef {Object} DigitalClockProps
+ * @property {Date} time - 表示対象の現在時刻を表す Date オブジェクト
+ * @property {boolean} is24Hour - 24時間表記を有効にするか（false 時は 12時間表記 + AM/PM）
+ * @property {boolean} showSeconds - 秒表示サブ時計を有効にするかどうか
+ */
+
+/**
  * デジタル時計コンポーネント。
- * 指定された日時オブジェクトに基づいて、時間（AM/PMを含む）をデジタル表示します。
  *
- * @param {Object} props - コンポーネントのプロパティ
- * @param {Date} props.time - 表示する現在時刻の Date オブジェクト
- * @param {boolean} props.is24Hour - 24時間表記にするかどうか（false の場合は 12時間表記）
- * @param {boolean} props.showSeconds - 秒表示を有効にするかどうか
+ * ## 特徴
+ * - `Impact` 系フォントおよび `tabular-nums`（等幅数字）設定により、秒針の更新によるレイアウトの揺れを防止。
+ * - 12時間表示時は上部に AM/PM インジケーターをスマートに配置。
+ *
+ * @param {DigitalClockProps} props - コンポーネントのプロパティ
  * @returns {JSX.Element} DigitalClock コンポーネント
  */
 export const DigitalClock = ({ time, is24Hour, showSeconds }) => {
@@ -46,12 +61,20 @@ export const DigitalClock = ({ time, is24Hour, showSeconds }) => {
 };
 
 /**
+ * アナログ時計のプロパティ型定義。
+ * @typedef {Object} AnalogClockProps
+ * @property {Date} time - 表示対象の現在時刻を表す Date オブジェクト
+ * @property {boolean} showSeconds - 秒針を表示するかどうか
+ */
+
+/**
  * アナログ時計コンポーネント。
- * 指定された日時オブジェクトに基づいて、時針・分針・秒針をアニメーション表示します。
  *
- * @param {Object} props - コンポーネントのプロパティ
- * @param {Date} props.time - 表示する現在時刻の Date オブジェクト
- * @param {boolean} props.showSeconds - 秒針を表示するかどうか
+ * ## 特徴
+ * - ミリ秒単位の角度計算により、秒針の滑らかなスイープ運針アニメーションを実現。
+ * - ダークモードおよびグラスモーフィズムに最適化されたミニマル文字盤デザイン。
+ *
+ * @param {AnalogClockProps} props - コンポーネントのプロパティ
  * @returns {JSX.Element} AnalogClock コンポーネント
  */
 export const AnalogClock = ({ time, showSeconds }) => {
@@ -86,3 +109,4 @@ export const AnalogClock = ({ time, showSeconds }) => {
     </div>
   );
 };
+

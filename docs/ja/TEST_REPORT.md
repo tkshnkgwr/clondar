@@ -38,6 +38,13 @@
 | TS-022       | コメントの日本語化検証                      | ソースコード（Rust、JS）内の英語コメントが分かりやすい日本語に翻訳され、ビルドが正常に通ること。                                         | `src-tauri/src/main.rs`、`ui/src/utils/holidays.js`、`ui/src/utils/tauri.js` の英語コメントを日本語に修正し、フロントエンドのビルド（`npm run build`）およびバックエンドのコードチェック（`cargo clippy`）がエラーなく成功することを確認。 | **PASS** |
 | TS-023       | GitHub Actions CIワークフロー検証           | プッシュやプルリクエスト時に `ci.yml` がトリガーされ、`cargo fmt`、`cargo clippy`、`cargo test` が自動検証されること。                   | `ci.yml` のスキーマ定義が正しく、ジョブレベルの作業ディレクトリ指定（`clondar`）や `git config insteadOf` の認証トークン設定を含め、GitHub Actions上で正常に実行可能な構造であることを検証。             | **PASS** |
 | TS-024       | 二重起動防止機能の検証                      | 二重起動防止の Named Mutex が正しく働き、多重起動時に2つ目のプロセスが安全に即座に終了すること。                                       | `common_lib::check_single_instance` の API 設計変更（Result を返す仕様）に合わせて組み込み、すでにインスタンスが存在する時に 2 つ目のアプリが起動せずに即座に終了することを確認。                         | **PASS** |
+| TS-025       | 祝日計算・ライフサイクル単体テスト (Vitest) | フロントエンドでの固定祝日、新旧ハッピーマンデー、歴代天皇誕生日、春分・秋分、振替休日、国民の休日、2020/2021特例、境界値、設定ロード/リセットの計算が正確であること。 | `npm --prefix ui run test` の実行により、`holidays.test.js` 内の全10テストケースが 100% 合格することを確認。                                                                                            | **PASS** |
+| TS-026       | バックエンドデフォルトJSON検証テスト        | 内蔵の標準祝日定義JSON (`DEFAULT_HOLIDAYS_JSON`) が構文エラーなく、全必須フィールドを保持していること。                               | `cargo test --manifest-path src-tauri/Cargo.toml` において `test_default_holidays_json_validity` が成功することを確認。                                                                                   | **PASS** |
+| TS-027       | 設定生データ編集・事前バリデーション        | 祝日設定画面の Raw JSON 直接編集時、不正な構文やデータ型の入力に対して即座にエラー警告が表示され、不正保存が防止されること。             | 壊れた JSON や必須キー欠落の入力を検知してアラートを出力し、安全に保存処理がブロックされることを検証。                                                                                                   | **PASS** |
+| TS-028       | Rust 祝日計算エンジン検証 (holidays.rs)     | 固定祝日、新旧ハッピーマンデー、歴代天皇誕生日、春分・秋分、振替休日、国民の休日、2020/2021特例、アルゴリズムヘルパーが正確に算出されること。 | `cargo test --manifest-path src-tauri/Cargo.toml` において `calculate_holidays` 関連のテストケースがすべてパスすることを確認。                                                                           | **PASS** |
+| TS-029       | Rust 祝日スキーマ・範囲バリデーション       | Serde 構造体 `HolidayConfig` により、不正な月（13月等）や不正な週番号（6週等）の入力が検知されエラーを返却すること。                  | `test_validation_error_handling` により、不正な月・週番号が確実にエラー検出され保存が遮断されることを検証。                                                                                               | **PASS** |
+| TS-030       | 初期設定復元コマンド検証 (Reset)            | `reset_holidays_json` コマンドにより、内蔵デフォルト設定で祝日設定ファイルが安全に上書き復元されること。                               | 祝日マネージャーの「初期化」ボタン実行時、ファイルが内蔵デフォルトに上書きされ、UI およびカレンダーが即時初期化されることを検証。                                                                           | **PASS** |
+| TS-031       | Tauri ラッパー単体テスト (Vitest)           | `tauri.js` の環境判定（`isTauri`）、ウィンドウ取得、バージョン取得フォールバック、安全終了処理が例外なく正しく動作すること。         | `npm --prefix ui run test` の実行により、`tauri.test.js` 内の全4テストケースが 100% 合格することを確認。                                                                                                  | **PASS** |
 
 ---
 
@@ -74,6 +81,7 @@ graph TD
             TauriConf["設定ファイル (tauri.conf.json)<br/>- shadow: false<br/>- transparent: true<br/>- decorations: false"]:::backend
             Capabilities["権限設定 (default.json)<br/>- allow-outer-position<br/>- allow-set-position<br/>- allow-close"]:::backend
             RustMain["Rust ロジック (main.rs)<br/>- System Tray Menu Builder<br/>- rust-version: 1.96.0"]:::backend
+            HolidaysRS["祝日エンジン (holidays.rs)<br/>- calculate_holidays<br/>- validate_and_parse_config"]:::backend
             CommonLib["共有クレート (common_lib)<br/>- compute_diff<br/>- count_occurrences"]:::backend
         end
 
@@ -88,9 +96,10 @@ graph TD
     AppJSX --> CalendarJSX
     AppJSX --> HolidaysManager
     CalendarJSX -->|"祝日定義のロード"| HolidaysJSON
-    HolidaysManager -->|"Tauri経由での読込・保存"| HolidaysJSON
+    HolidaysManager -->|"Tauri経由での読込・保存・リセット"| HolidaysJSON
     HolidaysManager -->|"差分・統計計算コマンド"| TauriRuntime
     TauriRuntime -->|"コマンド実行"| RustMain
+    RustMain -->|"祝日算出・検証"| HolidaysRS
     RustMain -->|"共有ロジック呼び出し"| CommonLib
 
     AppJSX -->|"Window位置/最前面設定 復元"| LocalStorage
@@ -109,11 +118,13 @@ graph TD
 
     %% クラスの割当
     class WebUI,AppJSX,ClockJSX,CalendarJSX,TauriJS frontend;
-    class TauriConf,Capabilities,RustMain backend;
+    class TauriConf,Capabilities,RustMain,HolidaysRS backend;
     class LocalStorage storage;
     class HolidaysJSON config;
 ```
 
 ---
-**作成日**: 2026年7月10日
+**作成日**: 2026年7月10日  
+**最終更新日**: 2026年9月1日  
 **適合バージョン**: Widget v1.3.8 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)
+

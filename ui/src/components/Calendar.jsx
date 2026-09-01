@@ -1,18 +1,34 @@
+/**
+ * @fileoverview カレンダー表示コンポーネントモジュール。
+ *
+ * 常に 6週間 (42日間) の枠組みで安定表示される月間カレンダーグリッドと、
+ * 前年・翌年の切り替えに対応した全画面年間カレンダーモーダルビューを提供します。
+ */
+
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { getHolidays } from '../utils/holidays';
 
 /**
- * カレンダー表示コンポーネント。
- * 月ごとのカレンダーをグリッド表示し、祝日のツールチップ表示や設定画面の呼び出しを行います。
+ * 月間カレンダーコンポーネントのプロパティ型定義。
+ * @typedef {Object} CalendarProps
+ * @property {Date} currentMonth - 現在表示している月を表す Date オブジェクト
+ * @property {function(Date): void} setCurrentMonth - 表示月を更新するステートセッター関数
+ * @property {function(): void} onShowYearly - 年間カレンダーモーダルを表示するコールバック
+ * @property {function(): void} onShowHolidays - 祝日設定マネージャーモーダルを表示するコールバック
+ * @property {boolean} isTransparent - ウィンドウが背景透過モードであるかどうか
+ */
+
+/**
+ * 月間カレンダー表示コンポーネント。
  *
- * @param {Object} props - コンポーネントのプロパティ
- * @param {Date} props.currentMonth - 現在表示している月を表す Date オブジェクト
- * @param {Function} props.setCurrentMonth - 表示する月を更新する状態設定関数
- * @param {Function} props.onShowYearly - 年間カレンダービューを表示するためのコールバック関数
- * @param {Function} props.onShowHolidays - 祝日設定マネージャーを表示するためのコールバック関数
- * @param {boolean} props.isTransparent - ウィンドウが背景透過モードであるかどうか
+ * ## 特徴
+ * - 月の長さに依存せず常に 42日間（6行7列）を描画し、月切替時のウィジェットサイズ変動を排除。
+ * - 42日分の日付配列（`calendarDays`）を `useMemo` でキャッシュ化し、パフォーマンスを最適化。
+ * - 日本の祝日名（赤字表示）およびホバー時のツールチップ表示をサポート。
+ *
+ * @param {CalendarProps} props - コンポーネントのプロパティ
  * @returns {JSX.Element} Calendar コンポーネント
  */
 export const Calendar = ({ currentMonth, setCurrentMonth, onShowYearly, onShowHolidays, isTransparent }) => {
@@ -110,12 +126,20 @@ export const Calendar = ({ currentMonth, setCurrentMonth, onShowYearly, onShowHo
 };
 
 /**
+ * 年間カレンダービューのプロパティ型定義。
+ * @typedef {Object} YearlyViewProps
+ * @property {number} year - 初期表示する年 (西暦, 例: 2026)
+ * @property {function(): void} onClose - モーダルを閉じるコールバック関数
+ */
+
+/**
  * 年間カレンダー表示コンポーネント（モーダル形式）。
- * 指定された年の 12ヶ月分のカレンダーをグリッド表示し、祝日の簡易確認機能を提供します。
  *
- * @param {Object} props - コンポーネントのプロパティ
- * @param {number} props.year - 初期表示する年 (例: 2026)
- * @param {Function} props.onClose - モーダルを閉じるためのコールバック関数
+ * ## 特徴
+ * - 指定された年の 12ヶ月分（1月〜12月）のカレンダーグリッドを一覧表示。
+ * - 前年・翌年および「今年」へのジャンプナビゲーション。
+ *
+ * @param {YearlyViewProps} props - コンポーネントのプロパティ
  * @returns {JSX.Element} YearlyView コンポーネント
  */
 export const YearlyView = ({ year: initialYear, onClose }) => {

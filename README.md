@@ -29,7 +29,7 @@ Powered by Tauri v2, it operates with extremely low resource consumption, stays 
   - Full support for Japanese national holidays (including substitute and national press holidays).
   - Built-in visual stability with a locked 6-week grid layout.
   - Full-screen "Yearly Calendar" modal (with quick toggling to previous/next years).
-- **💾 Robust State Persistence (v1.2.2)**:
+- **💾 Robust State Persistence**:
   - **Physical Coordinate Restoring (DPI-Aware & Tauri v2 Optimized)**: Prevents coordinates drifting in multi-monitor or high-DPI scaling setups. Fully migrated to Tauri v2's modern `setPosition` API for improved stability.
   - **Startup Race-Condition Guard**: Incorporates an `isRestoringRef` locking gate preventing the window's centering animation from accidentally overwriting clean coordinate saves in LocalStorage.
   - **On-Exit Instant Save**: Automatically captures and records the absolute window position right before the application closes, ensuring 100% position persistence regardless of dragging status.
@@ -143,7 +143,7 @@ This project standardizes editor settings using `.editorconfig` and `.vscode/set
 
 ### 🤖 CI/CD & Automated Releases
 * **Dependabot**: Automatically scans Cargo dependencies and GitHub Actions workflows weekly to submit update Pull Requests.
-* **GitHub Actions Release**: When a tag matching `v*` (e.g. `v1.2.3`) is pushed to GitHub, a workflow triggers automatically to build the Windows app installer (`.msi` or `.exe`) and upload it to a draft GitHub Release.
+* **GitHub Actions Release**: When a tag matching `v*` (e.g. `v1.3.8`) is pushed to GitHub, a workflow triggers automatically to build the Windows app installer (`.msi` or `.exe`) and upload it to a draft GitHub Release.
 
 ### 📦 Release & Versioning Checklist
 Before packaging a new release, verify you have executed the following steps:
@@ -151,7 +151,7 @@ Before packaging a new release, verify you have executed the following steps:
 1. **Bump Version Codes**:
    * Open PowerShell 7 (`pwsh`) and run:
      ```powershell
-     pwsh -File scripts/bump-version.ps1 -NewVersion "1.2.3"
+     pwsh -File scripts/bump-version.ps1 -NewVersion "1.3.8"
      ```
      This automatically updates versions in `Cargo.toml`, `tauri.conf.json`, `docs/SPECIFICATION.md`, and `docs/TEST_REPORT.md` dynamically.
 2. **Rebuild Application Icons (If changed)**:
@@ -160,7 +160,7 @@ Before packaging a new release, verify you have executed the following steps:
 3. **Log Changes**:
    * Append your version notes into [CHANGELOG.md](./docs/en/CHANGELOG.md).
 4. **Trigger Automated Build & Release**:
-   * Push a Git tag matching your version (e.g., `git tag v1.2.3` and `git push origin v1.2.3`). GitHub Actions will handle the build and create a draft release.
+   * Push a Git tag matching your version (e.g., `git tag v1.3.8` and `git push origin v1.3.8`). GitHub Actions will handle the build and create a draft release.
 
 ---
 

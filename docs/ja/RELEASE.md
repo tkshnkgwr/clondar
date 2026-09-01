@@ -16,7 +16,7 @@ sequenceDiagram
     participant LocalRepo as ローカルリポジトリ
     participant GitHub as GitHub リモート
     participant Actions as GitHub Actions (release.yml)
-    participant Releases as GitHub Releases (Draft)
+    participant Releases as GitHub Releases (Published)
 
     Developer->>LocalRepo: scripts/bump-version.ps1 [新バージョン]
     Note over LocalRepo: Cargo.toml, tauri.conf.json,<br/>各Markdownのバージョン一括更新
@@ -25,7 +25,7 @@ sequenceDiagram
     GitHub->>Actions: トリガー起動 (tags: v*)
     Note over Actions: Windows環境でのビルド開始<br/>Tauri CLI によるパッケージング
     Actions->>Releases: MSI/EXE アセットのアップロード
-    Note over Releases: ドラフトリリースが自動作成される
+    Note over Releases: リリースが自動的に一般公開される
 ```
 
 ---
@@ -39,8 +39,8 @@ sequenceDiagram
 PowerShell を起動し、リポジトリのルートディレクトリで以下のスクリプトを実行します。
 
 ```powershell
-# 実行ポリシーを一時的に緩和してスクリプトを実行 (例: バージョン 1.3.1 へ更新する場合)
-powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.3.1
+# 実行ポリシーを一時的に緩和してスクリプトを実行 (例: バージョン 1.3.8 へ更新する場合)
+powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.3.8
 ```
 
 - **スクリプトの動作**:
@@ -57,14 +57,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.3.1
 
 ```bash
 # 1. 変更内容をコミット
-git commit -m "chore: release version 1.3.1"
+git commit -m "chore: release version 1.3.8"
 
 # 2. バージョンタグを作成 (セマンティックバージョニングに準拠し、頭に v を付けます)
-git tag v1.3.1
+git tag v1.3.8
 
 # 3. コミットと作成したタグをリモートにプッシュ
 git push origin main
-git push origin v1.3.1
+git push origin v1.3.8
 ```
 
 ---
@@ -90,5 +90,5 @@ git push origin v1.3.1
 ## 5. リリースの公開
 
 1. リポジトリの GitHub ページを開き、「**Releases**」にアクセスします。
-2. `v1.3.1` のドラフトリリース（Draft）が生成されていることを確認します。
+2. `v1.3.8` のドラフトリリース（Draft）が生成されていることを確認します。
 3. リリースノート（CHANGELOG からの抜粋など）を編集し、「**Publish release**」ボタンを押して一般公開します。

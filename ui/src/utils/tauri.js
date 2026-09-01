@@ -1,18 +1,34 @@
+/**
+ * @fileoverview Tauri v2 API ラッパーユーティリティ。
+ *
+ * ウィンドウの物理座標の取得・復元、最前面ピン留め設定、安全な終了処理、
+ * および移動イベント購読などのネイティブ OS 連携処理を安全に抽象化します。
+ * 非 Tauri 環境（Web ブラウザでの開発・テスト時）でのフォールバック動作も担保します。
+ */
+
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { getVersion as getTauriAppVersion } from '@tauri-apps/api/app';
 import { PhysicalPosition } from '@tauri-apps/api/dpi';
 
 /**
- * アプリケーションが Tauri 環境で動作しているかどうかを判定します。
- *
- * @returns {boolean} Tauri 環境である場合は true、それ以外は false
+ * 物理座標オブジェクトの型定義。
+ * @typedef {Object} WindowPosition
+ * @property {number} x - X座標（物理ピクセル）
+ * @property {number} y - Y座標（物理ピクセル）
+ * @property {'Physical'|'Logical'} [type] - 座標の種類
  */
-export const isTauri = () => !!window.__TAURI__;
+
+/**
+ * アプリケーションが Tauri ネイティブ実行環境で動作しているかを判定します。
+ *
+ * @returns {boolean} Tauri 環境（`window.__TAURI__` が存在）である場合は true、Webブラウザ環境時は false
+ */
+export const isTauri = () => typeof window !== 'undefined' && !!window.__TAURI__;
 
 /**
  * 現在の Tauri ウィンドウインスタンスを取得します。
  *
- * @returns {Object|null} WebviewWindow インスタンス、または取得に失敗/非Tauri環境の場合は null
+ * @returns {import('@tauri-apps/api/window').Window|null} 現在の Window インスタンス。非Tauri環境または取得失敗時は null
  */
 export const getTauriWindow = () => {
   if (isTauri()) {
@@ -28,7 +44,9 @@ export const getTauriWindow = () => {
 /**
  * ウィンドウの最前面表示（Always-On-Top）の状態を設定します。
  *
+ * @async
  * @param {boolean} on - 最前面表示を有効にする場合は true、解除する場合は false
+ * @returns {Promise<void>}
  */
 export const setAlwaysOnTop = async (on) => {
   const win = getTauriWindow();
@@ -42,9 +60,14 @@ export const setAlwaysOnTop = async (on) => {
 };
 
 /**
- * アプリケーションのバージョン情報を取得します。
+ * アプリケーションのバージョン文字列を取得します。
  *
- * @returns {Promise<string>} バージョン文字列 (例: "1.3.7")
+ * ## 動作仕様
+ * 1. Tauri 環境では `@tauri-apps/api/app` の `getVersion` を呼び出し、`tauri.conf.json` で定義された動的バージョンを取得します。
+ * 2. ブラウザ環境やテスト環境ではフォールバック値 `'0.0.0-dev'` を返します。
+ *
+ * @async
+ * @returns {Promise<string>} セマンティックバージョン文字列 (例: "1.3.8")
  */
 export const getAppVersion = async () => {
   if (isTauri()) {
@@ -58,8 +81,14 @@ export const getAppVersion = async () => {
 };
 
 /**
- * 現在のウィンドウを閉じます。
- * ウィンドウが閉じられる前に、現在のウィンドウ位置を LocalStorage に保存します。
+ * 現在のウィンドウを安全に閉じます。
+ *
+ * ## 動作仕様
+ * 1. ウィンドウを閉じる直前に、現在の物理絶対座標（`outerPosition`）を取得して `localStorage` に即時保存します。
+ * 2. `win.close()` を呼び出します（Rust 側の常駐フックにより、明示的終了フラグが立っていない場合は非表示になります）。
+ *
+ * @async
+ * @returns {Promise<void>}
  */
 export const closeWindow = async () => {
   const win = getTauriWindow();
@@ -83,10 +112,17 @@ export const closeWindow = async () => {
 };
 
 /**
- * LocalStorage から保存されたウィンドウ位置を読み込み、ウィンドウ位置を復元します。
- * 位置移動の完了後にウィンドウを表示 (show) することで、起動時の画面チラつき（ジャンプ）を防ぎます。
+ * LocalStorage から保存されたウィンドウ物理座標を読み込み、ウィンドウ位置を復元します。
  *
- * @param {React.MutableRefObject<boolean>} isRestoringRef - 復元処理中フラグの Ref
+ * ## 画面チラつき防止と競合ガード
+ * 1. 座標復元処理中、引数で渡された `isRestoringRef.current` を `true` に維持し、移動検知リスナーによる誤上書きをブロックします。
+ * 2. 保存された座標が存在する場合は `PhysicalPosition` オブジェクトを用いて指定位置へ移動させ、存在しない場合は画面中央へ配置（`center()`）します。
+ * 3. 位置移動が完了した後にウィンドウを表示（`win.show()`）することで、起動時の画面ジャンプやチラつきを排除します。
+ * 4. 起動後 1 秒経過した時点で `isRestoringRef.current` を `false` にリセットし、通常の位置記録を再開します。
+ *
+ * @async
+ * @param {React.MutableRefObject<boolean>} isRestoringRef - 位置復元ガード用 Ref オブジェクト
+ * @returns {Promise<void>}
  */
 export const restoreWindowPosition = async (isRestoringRef) => {
   const win = getTauriWindow();
@@ -126,10 +162,11 @@ export const restoreWindowPosition = async (isRestoringRef) => {
 
 /**
  * ウィンドウの移動イベント (`tauri://move`) を購読し、
- * 移動が完了した時点でのウィンドウ位置を LocalStorage に保存します。
+ * 移動が完了した時点での最新物理絶対座標を LocalStorage に保存します。
  *
- * @param {React.MutableRefObject<boolean>} isRestoringRef - 復元処理中フラグの Ref
- * @param {Function} [callback] - 移動完了時に呼び出されるコールバック関数（位置情報を引数に取る）
+ * @async
+ * @param {React.MutableRefObject<boolean>} isRestoringRef - 復元処理中フラグの Ref（true の間は保存をスキップ）
+ * @param {function(WindowPosition): void} [callback] - 移動完了時に最新の座標情報を受け取るコールバック関数
  * @returns {Promise<Function|null>} イベントの購読解除用関数（Unlisten）、非Tauri環境時は null
  */
 export const listenToMove = async (isRestoringRef, callback) => {
@@ -150,3 +187,4 @@ export const listenToMove = async (isRestoringRef, callback) => {
   }
   return null;
 };
+

@@ -3,6 +3,24 @@
 **English** | [日本語版](../ja/CHANGELOG.md)
 
 ## [Unreleased]
+### Added
+- **Rust-based Holiday Engine and Schema Validation (`holidays.rs`)**:
+  - Created `src-tauri/src/holidays.rs` module to migrate Japanese holiday calculations (fixed holidays, new/old Happy Mondays, Emperor birthdays, Vernal/Autumnal equinoxes, substitute holidays, national bridge holidays, and custom overrides) to the Rust backend.
+  - Implemented new IPC command `get_holidays(year)` to calculate the holiday map (`HashMap<String, String>`) for a given year in a fast, type-safe manner.
+  - Implemented new IPC command `reset_holidays_json` to restore built-in default settings safely.
+  - Added a "Reset" button to the Holidays Manager (`HolidaysManager.jsx`).
+- **Comprehensive Unit Test Suite Modernization**:
+  - **Rust Backend (`cargo test`)**: Expanded to 10 comprehensive tests covering emperor era transitions (Showa, Heisei, 2019 succession gap, Reiwa), 2021 Olympic overrides, pre-1948 boundaries, date algorithm helpers (Sakamoto day-of-week, leap years, days-in-month, equinox calculations), and invalid Serde schemas.
+  - **Frontend (`Vitest`)**: Modernized `holidays.test.js` (10 tests) and added `tauri.test.js` (4 tests: environment detection, window handle, version fallbacks, clean exit), achieving 100% pass rate across 14 test cases.
+
+### Security & Reliability
+- **Strict Serde Schema & Range Validation for Holiday JSON**:
+  - Enforced strong typing via `HolidayConfig` on `save_holidays_json`, verifying month (1-12), day (1-31), week (1-5), and MM-DD format before disk writes to prevent config corruption.
+
+### Documentation & Code Quality
+- **Advanced Evolution of RustDoc and TypeDoc/JSDoc Comments**:
+  - **RustDoc**: Fully documented all backend modules (`main.rs`, `lib.rs`, `build.rs`, `holidays.rs`), IPC commands, structs, constants, lifecycle steps, arguments, return values, error cases, and panic conditions in Japanese RustDoc.
+  - **TypeDoc / JSDoc**: Fully augmented frontend documentation across `holidays.js`, `tauri.js`, `Clock.jsx`, `Calendar.jsx`, `HolidaysManager.jsx`, `App.jsx`, `holidays.test.js`, and `tauri.test.js`, introducing `@typedef` schemas for configurations, props, and coordinate objects alongside `@async`, `@param`, `@returns`, and `@example` tags.
 
 ## [1.3.8] - 2026-08-17
 ### Performance & Optimization

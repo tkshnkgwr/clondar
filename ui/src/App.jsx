@@ -1,3 +1,11 @@
+/**
+ * @fileoverview Clondar Pro メインアプリケーションオーケストレーター。
+ *
+ * 全体の状態管理（時計モード、透過状態、最前面固定、ダークモード、カレンダー月管理）、
+ * 起動時の物理座標復元および競合ガード、タイマーの動的インターバル最適化、
+ * システムトレイとのイベント双方向連携、およびモーダル制御を行います。
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Clock as ClockIcon, Calendar as CalendarIcon, Sun, Moon, Pin, X } from 'lucide-react';
@@ -13,18 +21,28 @@ import {
   restoreWindowPosition, 
   listenToMove 
 } from './utils/tauri';
+
+/**
+ * カスタムウィンドウフレームのプロパティ型定義。
+ * @typedef {Object} WindowFrameProps
+ * @property {React.ReactNode} children - フレーム内にレンダリングするメインコンテンツ
+ * @property {string} title - ウィンドウのタイトルバー文字列
+ * @property {boolean} isPinned - 最前面表示（Always-On-Top）が有効かどうか
+ * @property {function(boolean): void} setIsPinned - 最前面表示状態を切り替えるステートセッター
+ * @property {boolean} isTransparent - 背景透過モードが有効かどうか
+ * @property {function(boolean): void} setIsTransparent - 背景透過状態を切り替えるステートセッター
+ * @property {string} version - アプリケーションのバージョン文字列
+ */
+
 /**
  * カスタムウィンドウフレームコンポーネント。
- * 最前面ピン留め、背景透過、ウィンドウ終了などのタイトルバー機能を提供します。
  *
- * @param {Object} props - コンポーネントのプロパティ
- * @param {React.ReactNode} props.children - ウィンドウのメインコンテンツ
- * @param {string} props.title - ウィンドウのタイトル
- * @param {boolean} props.isPinned - 最前面表示が有効かどうか
- * @param {Function} props.setIsPinned - 最前面表示状態を切り替える関数
- * @param {boolean} props.isTransparent - 背景が透過状態かどうか
- * @param {Function} props.setIsTransparent - 背景透過状態を切り替える関数
- * @param {string} props.version - アプリケーションのバージョン
+ * ## 特徴
+ * - `data-tauri-drag-region` 属性による、フレーム領域全域でのシームレスなウィンドウドラッグ移動。
+ * - 最前面ピン留め（📌）、背景透過トグル（☀️）、および安全なクローズ（❌）ボタンを統合。
+ * - グラスモーフィズムおよびダークモードに対応した透過デザイン。
+ *
+ * @param {WindowFrameProps} props - コンポーネントのプロパティ
  * @returns {JSX.Element} WindowFrame コンポーネント
  */
 const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version }) => {
@@ -72,9 +90,13 @@ const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, se
 };
 
 /**
- * メインのアプリケーションコンポーネント。
- * アプリケーション設定のロード・保存、タイマー同期、ウィンドウ制御イベントのハンドリング、
- * および時計表示とカレンダー表示のレンダリングを行います。
+ * メインのアプリケーションルートコンポーネント。
+ *
+ * ## 主要なアーキテクチャ設計
+ * 1. **設定の永続化と復元**: `localStorage` から各種表示設定（12H/24H、秒表示、ダークモード等）を自動読み書き。
+ * 2. **DPI対応の物理座標復元**: `restoreWindowPosition` により前回終了時の物理絶対位置へウィンドウを正確に復元。
+ * 3. **タイマー最適化**: 表示モードに応じて更新間隔（100ms〜1000ms）を動的制御し、CPU負荷を最小化。
+ * 4. **イベントバス連携**: Rust トレイメニューからの最前面トグルや位置リセットイベントをリアルタイム購読。
  *
  * @returns {JSX.Element} App コンポーネント
  */

@@ -73,15 +73,17 @@ graph TD
 
 ### 3.3 Calendar Section
 * **Visual Stability**: Maintains a locked **6-week (42-day)** grid layout regardless of the length of the month.
-* **External Holiday Loading & Saving (Persistence)**:
+* **External Holiday Loading & Saving (Persistence) & Rust Calculation Engine**:
   - Fetches configuration files from user local directories (`%LOCALAPPDATA%/com.clondar.pro/holidays.json`) during boot (routed through Tauri IPC command `load_holidays_json`).
   - If files are missing, the backend generates a default template automatically (falls back to traditional AJAX `fetch` in web browsers).
-  - Dynamically calculates dates for fixed public holidays, Happy Mondays, Emperors' birthdays, astronomical dates (Equinoxes), and custom overrides (e.g., Olympic shifts).
+  - **Rust Holiday Engine (`holidays.rs`)**: Provides the IPC command `get_holidays` to calculate all Japanese public holidays (fixed holidays, Happy Mondays, Emperors' birthdays, Equinoxes, substitute holidays, national bridge holidays, and custom overrides) on the Rust backend fast and type-safely.
   - Adjust definitions or custom items directly from the visual interface.
 * **Yearly Overlay**: Full-screen yearly calendar viewer with previous/next year navigation controls.
 * **Holidays Manager**:
   - Connects to the shared Rust library `common_lib`.
   - **Visual Editing**: Edit fixed holidays (add dates/names or delete entries in one click) in the UI. Click "Save and Apply" to write coordinates to file using `save_holidays_json` and reload calendar grids.
+  - **Serde Strong Typing & Range Validation**: Validates month (1-12), day (1-31), week (1-5), and date format on the Rust backend via `HolidayConfig` upon saving to prevent configuration file corruption.
+  - **Reset to Built-in Defaults**: Provides the `reset_holidays_json` IPC command to safely restore built-in default settings via the "Reset" UI button.
   - **Line-by-Line Diffs**: Compares active configuration changes with built-in fallbacks. Uses `common_lib::compute_diff` (LCS algorithm) on the backend to render additions (green) and deletions (red) visually.
   - **Definitions Statistics**: Scans configuration files using `common_lib::count_occurrences` to compile instances matching labels (such as "Day", "Birthday", "Substitute Holiday", "National Press Holiday") in a tabular grid.
 
@@ -145,7 +147,7 @@ graph TD
 
 ---
 
-**Last Updated**: July 14, 2026  
-**Version**: 1.3.8
+**Last Updated**: September 1, 2026  
+**Version**: 1.3.8  
 **Internal Version**: 1.3.8.0
 

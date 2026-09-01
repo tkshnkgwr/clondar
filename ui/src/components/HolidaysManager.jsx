@@ -1,18 +1,35 @@
+/**
+ * @fileoverview 祝日設定マネージャーコンポーネントモジュール。
+ *
+ * ユーザーによる固定祝日のビジュアル追加・削除、内蔵デフォルト設定との LCS テキスト差分（Diff）比較、
+ * 出現頻度統計カウント、および JSON 生データ（Raw）の直接編集と事前バリデーション機能を提供します。
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Calendar as CalendarIcon, AlertCircle, FileText, CheckCircle2, Trash2, Plus, Save } from 'lucide-react';
+import { X, Calendar as CalendarIcon, AlertCircle, FileText, CheckCircle2, Trash2, Plus, Save, RotateCcw } from 'lucide-react';
 import { isTauri } from '../utils/tauri';
-import { fallbackConfig, reloadHolidays } from '../utils/holidays';
+import { fallbackConfig, reloadHolidays, resetHolidays } from '../utils/holidays';
 import { invoke } from '@tauri-apps/api/core';
 
 /**
+ * 祝日設定マネージャーのプロパティ型定義。
+ * @typedef {Object} HolidaysManagerProps
+ * @property {function(): void} onClose - モーダルダイアログを閉じるコールバック関数
+ * @property {function(): void} [onSaved] - 設定の保存成功時に親コンポーネントでカレンダー再描画等をトリガーするコールバック
+ */
+
+/**
  * 祝日設定マネージャーコンポーネント（モーダル形式）。
- * ユーザー定義の固定祝日の追加・削除、内蔵設定との差分表示、
- * および JSON 生データの編集・保存機能を提供します。
  *
- * @param {Object} props - コンポーネントのプロパティ
- * @param {Function} props.onClose - モーダルを閉じるためのコールバック関数
- * @param {Function} props.onSaved - 保存成功時に親コンポーネントで再レンダリングをトリガーするためのコールバック関数
+ * ## 機能概要
+ * 1. **祝日の編集タブ**: 固定祝日リストの一覧表示、新規祝日（MM-DD形式）の追加フォーム、ワンクリック削除。
+ * 2. **変更差分 (Diff) タブ**: `common_lib::compute_diff` を利用した内蔵デフォルトとの視覚的差分ハイライト。
+ * 3. **設定生データタブ**: JSON 設定テキストの直接編集、および保存時のフロントエンド事前バリデーション。
+ * 4. **サイドバー統計**: `common_lib::count_occurrences` による祝日関連キーワードの定義件数表示。
+ * 5. **初期設定復元**: 内蔵デフォルト設定へのワンクリック復元機能。
+ *
+ * @param {HolidaysManagerProps} props - コンポーネントのプロパティ
  * @returns {JSX.Element} HolidaysManager コンポーネント
  */
 export default function HolidaysManager({ onClose, onSaved }) {
@@ -166,10 +183,30 @@ export default function HolidaysManager({ onClose, onSaved }) {
   };
 
   /**
+   * 祝日設定を内蔵の初期デフォルト設定に復元（リセット）します。
+   */
+  const handleReset = async () => {
+    const confirmed = window.confirm("祝日設定を初期の標準状態（内蔵デフォルト）に復元しますか？\n現在の変更はすべて上書きされます。");
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      await resetHolidays();
+      await loadData();
+      if (onSaved) onSaved();
+      alert("祝日設定を初期状態に復元しました。");
+    } catch (err) {
+      console.error("Failed to reset holidays:", err);
+      alert("初期設定への復元に失敗しました: " + (err.message || err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /**
    * 編集した祝日設定データを JSON 文字列として保存します。
    * 保存前に JSON の形式が正しいかをチェックし、不正な場合はエラーを表示して中断します。
-   * Tauri 環境ではファイルに保存し、ブラウザ環境では LocalStorage に保存します。
-   * 保存完了後、メモリキャッシュをリロードしてダイアログを閉じます。
+   * Tauri 環境では Rust 側の厳格なスキーマ検証を通過した上で安全に保存されます。
    */
   const handleSave = async () => {
     try {
@@ -182,32 +219,6 @@ export default function HolidaysManager({ onClose, onSaved }) {
           
           if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
             alert("保存失敗: 設定データはJSONオブジェクトである必要があります。");
-            setSaving(false);
-            return;
-          }
-
-          if (parsed.fixed && (typeof parsed.fixed !== 'object' || Array.isArray(parsed.fixed))) {
-            alert("保存失敗: 'fixed' はオブジェクトである必要があります。");
-            setSaving(false);
-            return;
-          }
-          if (parsed.happy_mondays && !Array.isArray(parsed.happy_mondays)) {
-            alert("保存失敗: 'happy_mondays' は配列である必要があります。");
-            setSaving(false);
-            return;
-          }
-          if (parsed.happy_mondays_legacy && !Array.isArray(parsed.happy_mondays_legacy)) {
-            alert("保存失敗: 'happy_mondays_legacy' は配列である必要があります。");
-            setSaving(false);
-            return;
-          }
-          if (parsed.emperor_birthdays && !Array.isArray(parsed.emperor_birthdays)) {
-            alert("保存失敗: 'emperor_birthdays' は配列である必要があります。");
-            setSaving(false);
-            return;
-          }
-          if (parsed.custom_overrides && (typeof parsed.custom_overrides !== 'object' || Array.isArray(parsed.custom_overrides))) {
-            alert("保存失敗: 'custom_overrides' はオブジェクトである必要があります。");
             setSaving(false);
             return;
           }
@@ -237,7 +248,7 @@ export default function HolidaysManager({ onClose, onSaved }) {
       onClose();
     } catch (err) {
       console.error("Failed to save holidays:", err);
-      alert("保存に失敗しました: " + (err.message || err));
+      alert("保存に失敗しました:\n" + (err.message || err));
     } finally {
       setSaving(false);
     }
@@ -364,15 +375,27 @@ export default function HolidaysManager({ onClose, onSaved }) {
                   </button>
                 </div>
 
-                {/* 保存ボタン */}
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
-                >
-                  <Save size={14} />
-                  {saving ? '保存中...' : '保存して適用'}
-                </button>
+                {/* アクションボタン群 */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleReset}
+                    disabled={saving}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-1.5"
+                    title="内蔵の初期設定に復元"
+                  >
+                    <RotateCcw size={13} />
+                    初期化
+                  </button>
+
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-4 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <Save size={14} />
+                    {saving ? '保存中...' : '保存して適用'}
+                  </button>
+                </div>
               </div>
 
               {/* ビューエリア */}

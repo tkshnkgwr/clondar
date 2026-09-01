@@ -3,6 +3,24 @@
 [English Version](../en/CHANGELOG.md) | **日本語版**
 
 ## [Unreleased]
+### Added
+- **祝日算出エンジンおよび設定バリデーションの Rust 化 (`holidays.rs`)**:
+  - `src-tauri/src/holidays.rs` モジュールを新設し、固定祝日、新旧ハッピーマンデー、歴代天皇誕生日、天文計算（春分・秋分）、振替休日（連休繰り下げ対応）、国民の休日、および特定年の特例オーバーライドの算出処理を Rust バックエンドへ移行。
+  - 新規 IPC コマンド `get_holidays(year)` を実装し、指定西暦年の祝日マップ（`HashMap<String, String>`）を高速・型安全に一括計算。
+  - 新規 IPC コマンド `reset_holidays_json` を実装し、内蔵デフォルト設定への安全な強制復元（リセット）機能を提供。
+  - 祝日マネージャー (`HolidaysManager.jsx`) に「初期化」ボタンを追加。
+- **ユニットテストスイートの最新化・大幅拡充**:
+  - **Rust バックエンド (`cargo test`)**: 歴代天皇誕生日の年代別切り替え（昭和・平成・即位特例年2019・令和）、2021年オリンピック特例、1948年以前の境界値、サカモトの曜日アルゴリズム・うるう年・月日数・春分秋分天文計算ヘルパー関数、および Serde バリデーション異常系を網羅する全10テストを完備。
+  - **フロントエンド (`Vitest`)**: `holidays.test.js`（10テスト）に加え、`tauri.test.js`（4テスト: 環境判定、ウィンドウ取得、バージョンフォールバック、安全終了）を新設し、合計14テストを全件パス。
+
+### Security & Reliability
+- **Serde による祝日設定 JSON の強型付け・範囲バリデーション**:
+  - `save_holidays_json` 実行時、Serde 構造体 `HolidayConfig` による月（1〜12）、日（1〜31）、週番号（1〜5）、MM-DD 形式の事前スキーマ・範囲妥当性チェックを Rust 側で強制。破損データや不正な値の混入を未然に防止。
+
+### Documentation & Code Quality
+- **RustDoc および TypeDoc/JSDoc ドキュメントコメントの再進化**:
+  - **RustDoc**: `src-tauri` 側の全モジュール（`main.rs`, `lib.rs`, `build.rs`, `holidays.rs`）、IPC コマンド、構造体、定数に対し、実行ライフサイクル、引数、戻り値、エラー条件、パニック条件を網羅した詳細な日本語 RustDoc を整備。
+  - **TypeDoc / JSDoc**: フロントエンド（`holidays.js`, `tauri.js`, `Clock.jsx`, `Calendar.jsx`, `HolidaysManager.jsx`, `App.jsx`, `holidays.test.js`, `tauri.test.js`）において、`@typedef` によるデータ構造・Props・座標オブジェクトの型宣言を定義し、全関数の `@async`, `@param`, `@returns`, `@example` ドキュメントを包括的に拡充。
 
 ## [1.3.8] - 2026-08-17
 ### Performance & Optimization

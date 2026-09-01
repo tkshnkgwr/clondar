@@ -16,7 +16,7 @@ sequenceDiagram
     participant LocalRepo as Local Repository
     participant GitHub as GitHub Remote
     participant Actions as GitHub Actions (release.yml)
-    participant Releases as GitHub Releases (Draft)
+    participant Releases as GitHub Releases (Published)
 
     Developer->>LocalRepo: scripts/bump-version.ps1 [New Version]
     Note over LocalRepo: Batch version updates in Cargo.toml,<br/>tauri.conf.json, and Markdowns
@@ -25,7 +25,7 @@ sequenceDiagram
     GitHub->>Actions: Trigger action execution (tags: v*)
     Note over Actions: Start Windows build runner<br/>Package app using Tauri CLI
     Actions->>Releases: Upload MSI/EXE binaries
-    Note over Releases: Draft release is created automatically
+    Note over Releases: Release is published automatically
 ```
 
 ---
@@ -39,8 +39,8 @@ Before packaging a release, all project-wide version designations (`Cargo.toml`,
 Launch PowerShell and execute the version bump script in the root directory:
 
 ```powershell
-# Temporarily bypass script execution policy (e.g., updating version to 1.3.1)
-powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.3.1
+# Temporarily bypass script execution policy (e.g., updating version to 1.3.8)
+powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.3.8
 ```
 
 - **Script Behavior**:
@@ -57,14 +57,14 @@ Once files are updated, commit the changes, tag the commit with the target versi
 
 ```bash
 # 1. Commit update changes
-git commit -m "chore: release version 1.3.1"
+git commit -m "chore: release version 1.3.8"
 
 # 2. Tag target commit (following semantic version naming conventions, prefixed with 'v')
-git tag v1.3.1
+git tag v1.3.8
 
 # 3. Push commit and tagging attributes to the remote origin
 git push origin main
-git push origin v1.3.1
+git push origin v1.3.8
 ```
 
 ---
@@ -90,5 +90,5 @@ Upon successful compilation, the following binaries are uploaded to the GitHub R
 ## 5. Publishing Releases
 
 1. Open the repository on GitHub and navigate to "**Releases**".
-2. Confirm the draft release for version `v1.3.1` exists.
+2. Confirm the draft release for version `v1.3.8` exists.
 3. Edit the release description notes (e.g., copying notes from the CHANGELOG) and click "**Publish release**".

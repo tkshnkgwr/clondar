@@ -29,7 +29,7 @@ Tauri v2 を基盤としており、低リソース消費で動作し、常に�
   - 日本の祝日（振替休日・国民の休日対応）を完全サポート。
   - 常に6週間を表示する安定したレイアウト。
   - 全画面表示の「年間カレンダー」モーダル搭載（前年・翌年の切り替えに対応）。
-- **💾 ロバストな状態記憶 (v1.2.2)**:
+- **💾 ロバストな状態記憶**:
   - **物理座標復元 (DPI対応・Tauri v2最適化)**: マルチモニターや高DPIスケーリング環境でのズレを恒久対策。Tauri v2の最新APIである `setPosition` へ完全移行し、動作の安定性を向上。
   - **復旧レースコンディションガード**: 起動時の自動センタリングとJS座標適用のズレを `isRestoringRef` でガード。起動時の誤上書きを100%防止。
   - **終了時の即時位置保存**: アプリ終了時に現在位置を即時保存するロジックを統合し、ドラッグ終了後の終了タイミングに関わらず次回起動時の位置を完璧に保証。
@@ -143,7 +143,7 @@ npx tauri icon /path/to/source_icon.png
 
 ### 🤖 CI/CD & 自動リリース
 * **Dependabot**: 週次で Cargo の依存関係および GitHub Actions ワークフローをスキャンし、アップデートの Pull Request を自動生成します。
-* **GitHub Actions による自動デプロイ**: `v*` 形式（例: `v1.2.3`）の Git タグが GitHub にプッシュされると、Windows 版インストーラー（`.msi` / `.exe`）が自動でビルドされ、GitHub Releases にドラフトリリースとしてデプロイされます。
+* **GitHub Actions による自動デプロイ**: `v*` 形式（例: `v1.3.8`）の Git タグが GitHub にプッシュされると、Windows 版インストーラー（`.msi` / `.exe`）が自動でビルドされ、GitHub Releases にドラフトリリースとしてデプロイされます。
 
 ### 📦 リリース・バージョンアップ手順
 新しいバージョンをビルド・リリースする際は、以下のチェックリストを順に実行します。
@@ -151,7 +151,7 @@ npx tauri icon /path/to/source_icon.png
 1. **バージョン表記の一括更新**:
    * PowerShell 7 (`pwsh`) を開き、以下のコマンドを実行します：
      ```powershell
-     pwsh -File scripts/bump-version.ps1 -NewVersion "1.2.3"
+     pwsh -File scripts/bump-version.ps1 -NewVersion "1.3.8"
      ```
      これにより、`Cargo.toml`、`tauri.conf.json`、`docs/ja/SPECIFICATION.md`、`docs/ja/TEST_REPORT.md` 内のバージョン情報が自動的に一括置換されます。
 2. **アプリアイコンの更新 (変更時のみ)**:
@@ -160,7 +160,7 @@ npx tauri icon /path/to/source_icon.png
 3. **CHANGELOG の更新**:
    * [CHANGELOG.md](./docs/ja/CHANGELOG.md) に新規バージョンと変更点を追記。
 4. **自動ビルド＆デプロイのトリガー**:
-   * バージョンに合わせたタグを作成し、GitHub にプッシュします（例: `git tag v1.2.3` -> `git push origin v1.2.3`）。GitHub Actions が自動でビルドおよびリリースドラフトのアップロードを実行します。
+   * バージョンに合わせたタグを作成し、GitHub にプッシュします（例: `git tag v1.3.8` -> `git push origin v1.3.8`）。GitHub Actions が自動でビルドおよびリリースドラフトのアップロードを実行します。
 
 ---
 

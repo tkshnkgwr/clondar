@@ -132,4 +132,4 @@ graph TD
 ---
 **Created**: July 10, 2026  
 **Last Updated**: September 8, 2026  
-**Target Version**: Widget v1.4.0 (Tauri v2 Standard Layout & Help Modal Integration)
+**Target Version**: Widget v1.4.1 (Tauri v2 Standard Layout & Help Modal Integration)

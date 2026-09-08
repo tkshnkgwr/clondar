@@ -2,7 +2,7 @@
 
 **English** | [日本語版](../ja/CHANGELOG.md)
 
-## [1.4.0] - 2026-09-08
+## [1.4.1] - 2026-09-08
 ### Added
 - **New Help & App Information Modal (`HelpModal.jsx`)**:
   - Added a Help button (❓ icon) in the window title bar next to the pin toggle and close buttons.

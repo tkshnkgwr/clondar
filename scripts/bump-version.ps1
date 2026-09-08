@@ -46,8 +46,8 @@ if (Test-Path $tauriPath) {
     Write-Warning "$tauriPath not found."
 }
 
-# 2.1 ui/package.json
-$pkgPath = "ui/package.json"
+# 2.1 package.json
+$pkgPath = "package.json"
 if (Test-Path $pkgPath) {
     Write-Host "Updating $pkgPath..."
     $content = [System.IO.File]::ReadAllText($pkgPath, $utf8)

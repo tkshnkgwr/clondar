@@ -1,6 +1,18 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import { isTauri, getTauriWindow, getAppVersion, setAlwaysOnTop, closeWindow } from './tauri';
+import { 
+  isTauri, 
+  getTauriWindow, 
+  getAppVersion, 
+  setAlwaysOnTop, 
+  closeWindow, 
+  restoreWindowPosition, 
+  listenToMove 
+} from './tauri';
 
+/**
+ * @fileoverview Tauri ユーティリティ関数のユニットテストスイート。
+ * 非Tauri環境（Webブラウザ/CI環境）でのフォールバック動作および例外安全性を検証します。
+ */
 describe('Tauri ユーティリティ (tauri.js)', () => {
   beforeEach(() => {
     if (typeof globalThis.window === 'undefined') {
@@ -34,5 +46,17 @@ describe('Tauri ユーティリティ (tauri.js)', () => {
   test('非Tauri環境での setAlwaysOnTop() および closeWindow() が例外をスローせず安全に終了すること', async () => {
     await expect(setAlwaysOnTop(true)).resolves.toBeUndefined();
     await expect(closeWindow()).resolves.toBeUndefined();
+  });
+
+  test('非Tauri環境での restoreWindowPosition() が安全に完了し isRestoringRef を解除すること', async () => {
+    const isRestoringRef = { current: true };
+    await expect(restoreWindowPosition(isRestoringRef)).resolves.toBeUndefined();
+    expect(isRestoringRef.current).toBe(false);
+  });
+
+  test('非Tauri環境での listenToMove() が null を返すこと', async () => {
+    const isRestoringRef = { current: false };
+    const unlisten = await listenToMove(isRestoringRef);
+    expect(unlisten).toBeNull();
   });
 });

@@ -47,7 +47,7 @@ graph TD
 
 ### 技術スタックの選択
 * **Vite / ESM**:
-  開発時には高速なホットモジュール置換（HMR）を提供し、ビルド時にはアセットを `ui/dist/` ディレクトリに自己完結型（ローカルバンドル）で書き出します。
+  開発時には高速なホットモジュール置換（HMR）を提供し、ビルド時にはアセットを `dist/` ディレクトリに自己完結型（ローカルバンドル）で書き出します。
 * **React & Tailwind CSS (v3)**:
   コンポーネント化されたモダンな UI デザインと、ユーティリティファーストなスタイリングをローカルの `node_modules` に閉じた環境で実現します。これにより、完全にオフラインの状態でも Web 依存せず画面が即座に起動します。
 * **Tauri v2 JS API**:
@@ -57,10 +57,10 @@ graph TD
 
 ## 2. ディレクトリ構成
 
-フロントエンドは `ui/` ディレクトリの下に配置されており、以下のように役割ごとにモジュール化されています。
+フロントエンドコードおよび設定ファイルはプロジェクトルート直下に配置されており、以下のように役割ごとにモジュール化されています。
 
 ```
-ui/
+clondar/
 ├── index.html           # エントリーHTML (Viteメイン)
 ├── vite.config.js       # Vite 設定 (ビルド先: dist)
 ├── tailwind.config.js   # Tailwind CSS v3 設定
@@ -121,7 +121,7 @@ cargo tauri dev
 ```bash
 cargo tauri build
 ```
-Vite によるビルドが走り、`ui/dist` に静的ファイルがバンドルされた後、MSI / EXE インストーラーが自動生成されます。
+Vite によるビルドが走り、`dist/` に静的ファイルがバンドルされた後、MSI / EXE インストーラーが自動生成されます。
 
 ---
 
@@ -133,8 +133,8 @@ Rust 側 [main.rs](../../src-tauri/src/main.rs) で `TrayIconBuilder` を使用�
 最前面トグルや位置リセットは、Tauri のイベントバス (`always-on-top-toggled`, `position-reset`) を通じてフロントエンドの表示と即時連動します。
 
 ### ② 外部祝日設定ファイル (`holidays.json`)
-日本の祝日計算ルールを `ui/public/config/holidays.json` に集約。
-[holidays.js](../../ui/src/utils/holidays.js) がアプリ起動時に非同期でフェッチし、固定祝日、ハッピーマンデー、天皇誕生日、オリンピック特例などの例外上書きを適用します。法改正時は JSON を更新するだけで、JavaScript のコードに手を加えることなくカレンダー表示を更新できます。
+日本の祝日計算ルールを `public/config/holidays.json` に集約。
+[holidays.js](../../src/utils/holidays.js) がアプリ起動時に非同期でフェッチし、固定祝日、ハッピーマンデー、天皇誕生日、オリンピック特例などの例外上書きを適用します。法改正時は JSON を更新するだけで、JavaScript のコードに手を加えることなくカレンダー表示を更新できます。
 
 ---
 

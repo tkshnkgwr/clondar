@@ -2,16 +2,27 @@
 
 **English** | [日本語版](../ja/CHANGELOG.md)
 
-## [1.4.0] - 2026-09-01
+## [1.4.0] - 2026-09-08
 ### Added
+- **New Help & App Information Modal (`HelpModal.jsx`)**:
+  - Added a Help button (❓ icon) in the window title bar next to the pin toggle and close buttons.
+  - Implemented a glassmorphism modal presenting application overview, dynamic version badge (`v1.4.0`), and 6 operational guide cards (Basic Controls, Clock Display, Calendar Navigation, Holidays Manager, System Tray, Keyboard Shortcuts).
+  - Supported closing via close button, backdrop click, and Esc key (graceful design closing only the modal without quitting the widget).
 - **Rust-based Holiday Engine and Schema Validation (`holidays.rs`)**:
   - Created `src-tauri/src/holidays.rs` module to migrate Japanese holiday calculations (fixed holidays, new/old Happy Mondays, Emperor birthdays, Vernal/Autumnal equinoxes, substitute holidays, national bridge holidays, and custom overrides) to the Rust backend.
   - Implemented new IPC command `get_holidays(year)` to calculate the holiday map (`HashMap<String, String>`) for a given year in a fast, type-safe manner.
   - Implemented new IPC command `reset_holidays_json` to restore built-in default settings safely.
   - Added a "Reset" button to the Holidays Manager (`HolidaysManager.jsx`).
 - **Comprehensive Unit Test Suite Modernization**:
-  - **Rust Backend (`cargo test`)**: Expanded to 10 comprehensive tests covering emperor era transitions (Showa, Heisei, 2019 succession gap, Reiwa), 2021 Olympic overrides, pre-1948 boundaries, date algorithm helpers (Sakamoto day-of-week, leap years, days-in-month, equinox calculations), and invalid Serde schemas.
-  - **Frontend (`Vitest`)**: Modernized `holidays.test.js` (10 tests) and added `tauri.test.js` (4 tests: environment detection, window handle, version fallbacks, clean exit), achieving 100% pass rate across 14 test cases.
+  - **Rust Backend (`cargo test`)**: Expanded with diff calculation logic (`test_holidays_diff_logic`) and word count aggregation logic (`test_word_count_logic`) leveraging `common_lib`, completing all 12 tests with 100% pass rate.
+  - **Frontend (`Vitest`)**: Augmented `tauri.test.js` with tests for window restoration and move listeners (total 6 tests) in addition to `holidays.test.js` (10 tests), achieving 100% pass rate across 16 test cases.
+
+### Changed
+- **Unified Tauri Official Standard Directory Structure & File Cleanup**:
+  - Deprecated the `ui/` subfolder and migrated all frontend code to the root `src/` directory, establishing the official Tauri standard layout alongside `src-tauri/`.
+  - Enabled direct execution of commands (`npm test`, `npm run build`, `cargo check`, `cargo tauri dev`) at repository root.
+  - Removed obsolete empty directory `ui/config`.
+  - Updated configuration paths in `src-tauri/tauri.conf.json`, `scripts/bump-version.ps1`, and GitHub Actions workflows (`ci.yml`, `release.yml`).
 
 ### Security & Reliability
 - **Strict Serde Schema & Range Validation for Holiday JSON**:
@@ -20,7 +31,9 @@
 ### Documentation & Code Quality
 - **Advanced Evolution of RustDoc and TypeDoc/JSDoc Comments**:
   - **RustDoc**: Fully documented all backend modules (`main.rs`, `lib.rs`, `build.rs`, `holidays.rs`), IPC commands, structs, constants, lifecycle steps, arguments, return values, error cases, and panic conditions in Japanese RustDoc.
-  - **TypeDoc / JSDoc**: Fully augmented frontend documentation across `holidays.js`, `tauri.js`, `Clock.jsx`, `Calendar.jsx`, `HolidaysManager.jsx`, `App.jsx`, `holidays.test.js`, and `tauri.test.js`, introducing `@typedef` schemas for configurations, props, and coordinate objects alongside `@async`, `@param`, `@returns`, and `@example` tags.
+  - **TypeDoc / JSDoc**: Fully augmented frontend documentation across `holidays.js`, `tauri.js`, `Clock.jsx`, `Calendar.jsx`, `HelpModal.jsx`, `HolidaysManager.jsx`, `App.jsx`, `holidays.test.js`, and `tauri.test.js`, introducing `@typedef` schemas for configurations, props, and coordinate objects alongside `@async`, `@param`, `@returns`, and `@example` tags.
+- **Documentation Overhaul & Path Synchronization**:
+  - Refreshed all specifications, guides, and test reports under `docs/` to eliminate legacy `ui/` references and ensured strict Markdown table vertical alignment.
 
 ## [1.3.8] - 2026-08-17
 ### Performance & Optimization

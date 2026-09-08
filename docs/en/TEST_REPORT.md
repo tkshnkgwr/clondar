@@ -37,14 +37,18 @@
 | TS-020       | Release Build Binary Optimizations    | Optimization profile flags do not trigger compiler linking errors.                                                        | Compiles and links binaries successfully under release flags.                                                                                                                                                         |   **PASS**    |
 | TS-021       | Vite Dynamic Import Warnings          | Resolves compiler warnings concerning dynamic import targets.                                                             | Swapped dynamic loaders in `HolidaysManager.jsx` with static imports.                                                                                                                                                 |   **PASS**    |
 | TS-022       | Source Code Localizations             | Confirmed all developer comments inside source codes are translated to Japanese.                                          | Compiled frontend and checked backend components without warnings.                                                                                                                                                    |   **PASS**    |
-| TS-023       | GitHub Actions CI Workflows           | CI runner triggers on pushes and PRs, validating formats, clippy checks, and unit tests.                                  | Checked `ci.yml` syntax structures and authentication overrides for checkout runners.                                                                                                                                 |   **PASS**    |
-| TS-025       | Holiday & Lifecycle Unit Tests (Vitest) | Accurate calculation of fixed holidays, Happy Mondays, emperor eras, equinoxes, substitutes, 2020/2021 overrides, boundaries, and config loads. | Running `npm --prefix ui run test` passes 100% of all 10 test cases in `holidays.test.js`.                                                                                                                             |   **PASS**    |
-| TS-026       | Backend Default JSON Validation Test  | Built-in default holiday configuration JSON (`DEFAULT_HOLIDAYS_JSON`) parses with zero syntax errors and valid schema.    | Running `cargo test --manifest-path src-tauri/Cargo.toml` executes `test_default_holidays_json_validity` successfully.                                                                                                |   **PASS**    |
-| TS-027       | Raw JSON Editing & Pre-Validation     | In Holidays Manager Raw Data tab, invalid JSON input or missing required fields triggers instant validation errors.       | Invalid syntax/missing keys are detected immediately on save, preventing corrupted payloads from reaching backend.                                                                                                    |   **PASS**    |
-| TS-028       | Rust Holiday Engine Tests (holidays.rs) | Accurate calculation of fixed holidays, Happy Mondays, emperor eras, equinoxes, substitutes, bridge holidays, and helpers in Rust. | Verified comprehensive calculation test cases under `cargo test --manifest-path src-tauri/Cargo.toml` pass successfully.                                                                                              |   **PASS**    |
-| TS-029       | Rust Schema & Range Validation Tests  | Strongly typed `HolidayConfig` via Serde rejects out-of-range months (e.g. 13), invalid days, or invalid weeks.           | Verified `test_validation_error_handling` detects invalid months and weeks properly, preventing disk writes.                                                                                                          |   **PASS**    |
-| TS-030       | Reset Holidays Command (Reset)        | `reset_holidays_json` IPC command restores built-in default settings safely onto local disk storage.                      | Verified clicking "Reset" in Holidays Manager overwrites config with built-in defaults and resets UI and calendar grids.                                                                                              |   **PASS**    |
-| TS-031       | Tauri Wrapper Unit Tests (Vitest)     | `tauri.js` environment detection (`isTauri`), window handle, version retrieval fallbacks, and clean exit without errors.  | Running `npm --prefix ui run test` passes 100% of all 4 test cases in `tauri.test.js`.                                                                                                                                |   **PASS**    |
+| TS-023       | GitHub Actions CI Workflows           | CI runner triggers on pushes and PRs, validating formats, clippy checks, and unit tests.                                                                                 | Checked `ci.yml` syntax structures and authentication overrides for checkout runners.                                                                                                                                 |   **PASS**    |
+| TS-024       | Single Instance Guard (Named Mutex)   | Windows named mutex properly prevents multiple instances from running, exiting redundant processes immediately.                                                         | Integrated `common_lib::check_single_instance` which returns a Result, ensuring a secondary launched instance exits gracefully without conflict.                                                                     |   **PASS**    |
+| TS-025       | Holiday & Lifecycle Unit Tests (Vitest) | Accurate calculation of fixed holidays, Happy Mondays, emperor eras, equinoxes, substitutes, 2020/2021 overrides, boundaries, and config loads.                         | Running `npm test` passes 100% of all 10 test cases in `holidays.test.js`.                                                                                                                                            |   **PASS**    |
+| TS-026       | Backend Default JSON Validation Test  | Built-in default holiday configuration JSON (`DEFAULT_HOLIDAYS_JSON`) parses with zero syntax errors and valid schema.                                                   | Running `cargo test --manifest-path src-tauri/Cargo.toml` executes `test_default_holidays_json_validity` successfully.                                                                                                |   **PASS**    |
+| TS-027       | Raw JSON Editing & Pre-Validation     | In Holidays Manager Raw Data tab, invalid JSON input or missing required fields triggers instant validation errors.                                                      | Invalid syntax/missing keys are detected immediately on save, preventing corrupted payloads from reaching backend.                                                                                                    |   **PASS**    |
+| TS-028       | Rust Holiday Engine Tests (holidays.rs) | Accurate calculation of fixed holidays, Happy Mondays, emperor eras, equinoxes, substitutes, bridge holidays, and helpers in Rust.                                        | Verified comprehensive calculation test cases under `cargo test --manifest-path src-tauri/Cargo.toml` pass successfully.                                                                                              |   **PASS**    |
+| TS-029       | Rust Schema & Range Validation Tests  | Strongly typed `HolidayConfig` via Serde rejects out-of-range months (e.g. 13), invalid days, or invalid weeks.                                                          | Verified `test_validation_error_handling` detects invalid months and weeks properly, preventing disk writes.                                                                                                          |   **PASS**    |
+| TS-030       | Reset Holidays Command (Reset)        | `reset_holidays_json` IPC command restores built-in default settings safely onto local disk storage.                                                                     | Verified clicking "Reset" in Holidays Manager overwrites config with built-in defaults and resets UI and calendar grids.                                                                                              |   **PASS**    |
+| TS-031       | Tauri Wrapper Unit Tests (Vitest)     | `tauri.js` environment detection (`isTauri`), window handle, version retrieval fallbacks, and clean exit without errors.                                                 | Running `npm test` passes 100% of all test cases in `tauri.test.js` (including window restoration and move listeners).                                                                                                 |   **PASS**    |
+| TS-032       | Help & App Info Modal Verification    | Clicking the help button (❓) in title bar opens the modal displaying version badge and feature guides, and closes safely via button, backdrop, or Esc.                  | Verified `HelpModal.jsx` mounts dynamically, shows the app version badge and 6 guide cards, and closes properly on close button click, backdrop click, or Esc key.                                                   |   **PASS**    |
+| TS-033       | Tauri Standard Directory Structure    | Deprecates `ui/` directory and unifies project into Tauri official standard layout (root `src/` and `src-tauri/`), verifying all builds and tests pass cleanly.          | Verified clean passes across root `npm test` (16 Vitest cases passed), `npm run build` (zero errors), `cargo check`, `cargo test`, `cargo clippy`, and `cargo fmt`.                                                   |   **PASS**    |
+| TS-034       | Backend Diff & Word Count Unit Tests  | Unit tests for configuration diff computation (`test_holidays_diff_logic`) and keyword occurrence aggregation (`test_word_count_logic`) leveraging `common_lib`.       | Ran `cargo test --manifest-path src-tauri/Cargo.toml` and verified that both new tests passed, completing all 12 cargo tests successfully.                                                                            |   **PASS**    |
 
 ---
 
@@ -68,10 +72,11 @@ graph TD
 
     subgraph DesktopWidget [Low-Resource Desktop Widget]
         subgraph FrontEnd [Frontend Layer (React / Vite / JSX)]
-            WebUI["UI Shell (ui/index.html)"]:::frontend
+            WebUI["UI Shell (index.html)"]:::frontend
             AppJSX["Main App Logic (App.jsx)"]:::frontend
             ClockJSX["Clock Component (Clock.jsx)"]:::frontend
             CalendarJSX["Calendar Component (Calendar.jsx)"]:::frontend
+            HelpModal["Help Modal (HelpModal.jsx)"]:::frontend
             HolidaysManager["Holidays Manager (HolidaysManager.jsx)"]:::frontend
             TauriJS["Tauri wrapper (tauri.js)"]:::frontend
             LocalStorage["localStorage<br/>- windowPosition (Physical coordinates)<br/>- keepsAlwaysOnTop"]:::storage
@@ -94,6 +99,7 @@ graph TD
     WebUI --> AppJSX
     AppJSX --> ClockJSX
     AppJSX --> CalendarJSX
+    AppJSX --> HelpModal
     AppJSX --> HolidaysManager
     CalendarJSX -->|"Load Holiday Definitions"| HolidaysJSON
     HolidaysManager -->|"Read/Write/Reset via Tauri"| HolidaysJSON
@@ -117,13 +123,13 @@ graph TD
     TauriRuntime -->|"Apply Window Operations"| OS_Platform
 
     %% Assign classes
-    class WebUI,AppJSX,ClockJSX,CalendarJSX,TauriJS frontend;
-    class TauriConf,Capabilities,RustMain,HolidaysRS backend;
+    class WebUI,AppJSX,ClockJSX,CalendarJSX,HelpModal,HolidaysManager,TauriJS frontend;
+    class TauriConf,Capabilities,RustMain,HolidaysRS,CommonLib backend;
     class LocalStorage storage;
     class HolidaysJSON config;
 ```
 
 ---
 **Created**: July 10, 2026  
-**Last Updated**: September 1, 2026  
-**Target Version**: Widget v1.3.8 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)
+**Last Updated**: September 8, 2026  
+**Target Version**: Widget v1.4.0 (Tauri v2 Standard Layout & Help Modal Integration)

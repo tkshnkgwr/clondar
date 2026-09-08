@@ -59,7 +59,7 @@ git clone https://github.com/tkshnkgwr/clondar.git
 cd clondar
 
 # フロントエンド（Vite）の依存パッケージをインストールします
-npm --prefix ui install
+npm install
 ```
 
 ### 2. 開発モードでの起動
@@ -130,7 +130,7 @@ npx tauri icon /path/to/source_icon.png
 
 ### 📅 日本の祝日（法改正）への対応手順
 日本の祝日が追加・変更された場合、以下の手順で祝日定義を更新します。
-1. [ui/public/config/holidays.json](./ui/public/config/holidays.json) を開きます。
+1. [public/config/holidays.json](./public/config/holidays.json) を開きます。
 2. 法改正に合わせて、該当する日付やルール（固定祝日、ハッピーマンデーなど）を JSON 設定ファイルに追加・編集します。
 3. 編集後、アプリ内の「**祝日設定**」ボタンをクリックして「祝日設定マネージャー」モーダルを起動し、内蔵のデフォルト設定（`fallbackConfig`）との変更点（追加/削除）が正しく Diff に反映されているか、また統計情報が意図した通りになっているかを視覚的に検証します。
 4. 動作に問題がないことを確認し、[TEST_REPORT.md](./docs/ja/TEST_REPORT.md) などを更新します。

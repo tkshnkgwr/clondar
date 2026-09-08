@@ -30,6 +30,8 @@ graph TD
         AppJSX[App.jsx: State & Event Listener]
         ClockJSX[Clock.jsx: Digital/Analog UI]
         CalendarJSX[Calendar.jsx: Month/Yearly UI]
+        HelpModalJSX[HelpModal.jsx: Help & Version UI]
+        HolidaysManagerJSX[HolidaysManager.jsx: Holiday Editor UI]
     end
 
     subgraph Config_Data [Data Layer]
@@ -44,6 +46,8 @@ graph TD
     HTML --> AppJSX
     AppJSX --> ClockJSX
     AppJSX --> CalendarJSX
+    AppJSX --> HelpModalJSX
+    AppJSX --> HolidaysManagerJSX
     CalendarJSX --> HolidaysJSON
     HTML --> CSS
 ```
@@ -99,6 +103,16 @@ graph TD
   - Captures and records physical absolute coordinates (`PhysicalPosition`) at exit, restoring coordinates at relaunch using Tauri v2 `setPosition` APIs.
   - **Startup Race Guard**: Locks coordinate saves for 1 second during boot using `isRestoringRef` to prevent centering routines or scale updates from overwriting clean position states.
   - **Tray Coordinate Synchronization**: Updates memory coordinates immediately when resetting positions from the system tray menu.
+
+### 3.5 Help & App Info Feature (HelpModal)
+* **Title Bar Trigger**: Click the `HelpCircle` (❓) icon button located on the title bar.
+* **Information Display**:
+  - Shows application branding (`Clondar Pro`) and dynamic versioning badge (e.g. `v1.4.0`) synced from `tauri.conf.json`.
+  - App overview explaining the borderless, transparent desktop widget philosophy.
+  - Six core feature cards: Clock Modes, Calendar, Always on Top, Transparency, Widget Dragging, and Shortcuts.
+* **Safe Controls**:
+  - Dismissible via background overlay clicks, the top-right close button (✕), footer close button, or the `Esc` key.
+  - Esc key interceptor prevents the main widget from closing accidentally while the help modal is open.
 
 ---
 

@@ -47,7 +47,7 @@ graph TD
 
 ### Technology Stack Choices
 * **Vite / ESM**:
-  Provides fast Hot Module Replacement (HMR) during local development and bundles all assets locally into the `ui/dist/` directory during compilation.
+  Provides fast Hot Module Replacement (HMR) during local development and bundles all assets locally into the `dist/` directory during compilation.
 * **React & Tailwind CSS (v3)**:
   Enables component-driven UI design and utility-first styling utilizing packages stored entirely within local `node_modules`. This ensures the UI launches immediately without external web dependencies.
 * **Tauri v2 JS API**:
@@ -57,10 +57,10 @@ graph TD
 
 ## 2. Directory Layout
 
-The frontend is housed inside the `ui/` directory and is modularized as follows:
+The frontend source code and configurations are located directly under the project root, modularized as follows:
 
 ```
-ui/
+clondar/
 ├── index.html           # Entry HTML (Vite main)
 ├── vite.config.js       # Vite configurations (Target build: dist)
 ├── tailwind.config.js   # Tailwind CSS v3 configuration
@@ -121,7 +121,7 @@ Hot-reloading is triggered automatically for both Rust backend and React fronten
 ```bash
 cargo tauri build
 ```
-Vite compiles and packages frontend files into `ui/dist`, followed by Tauri creating native Windows MSI and EXE installers.
+Vite compiles and packages frontend files into `dist/`, followed by Tauri creating native Windows MSI and EXE installers.
 
 ---
 
@@ -133,8 +133,8 @@ Users can right-click the icon to control visibility, toggle Always on Top, rese
 Always on Top toggles and coordinate resets instantly dispatch events through Tauri's event bus (`always-on-top-toggled`, `position-reset`) to sync frontend states.
 
 ### ② External Holiday Configuration (`holidays.json`)
-Calculations for Japanese national holidays are configured inside `ui/public/config/holidays.json`.
-[holidays.js](../../ui/src/utils/holidays.js) fetches this dynamically during boot, applying calculations for fixed dates, Happy Mondays, Emperors' birthdays, and Olympic special schedule modifications. Adjusting dates inside the JSON updates the calendar without modifying React application code.
+Calculations for Japanese national holidays are configured inside `public/config/holidays.json`.
+[holidays.js](../../src/utils/holidays.js) fetches this dynamically during boot, applying calculations for fixed dates, Happy Mondays, Emperors' birthdays, and Olympic special schedule modifications. Adjusting dates inside the JSON updates the calendar without modifying React application code.
 
 ---
 

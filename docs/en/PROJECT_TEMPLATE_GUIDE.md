@@ -45,8 +45,9 @@ Organize files cleanly to help AI developers navigate and modify code efficientl
 │   └── capabilities/
 │       └── default.json
 │
-├── ui/                      # Frontend Application (React / HTML)
-│   └── index.html           # (Note: Fetch versions dynamically from Tauri APIs)
+├── src/                     # Frontend Application (React / HTML source code)
+├── index.html               # Entry HTML (Note: Fetch versions dynamically from Tauri APIs)
+├── package.json             # Frontend dependency manifest
 │
 ├── .editorconfig            # ★ Shared editor settings (spacing, line endings)
 ├── .gitignore               # ★ Consolidated Git exclusion filters

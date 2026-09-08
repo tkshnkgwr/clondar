@@ -45,8 +45,9 @@ Google AI Studio や AntiGravity（Gem）と共同でデスクトップアプリ
 │   └── capabilities/
 │       └── default.json
 │
-├── ui/                      # フロントエンド（React / SPA）
-│   └── index.html           # (※バージョンは直書きせずTauri APIから動的取得する)
+├── src/                     # フロントエンド（React / SPA ソースコード）
+├── index.html               # エントリーHTML (※バージョンは直書きせずTauri APIから動的取得する)
+├── package.json             # フロントエンド依存関係定義
 │
 ├── .editorconfig            # ★エディタ用共通設定
 ├── .gitignore               # ★ルート一本化のGit除外設定

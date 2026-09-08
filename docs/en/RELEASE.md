@@ -76,7 +76,7 @@ Once GitHub detects a tagged push, `.github/workflows/release.yml` triggers auto
 ### 4.1 Actions Workflow Processes
 1. **Environment Setup**: Provisions Node.js and Rust (MSVC targets) runners.
 2. **Git Authentication Setup**: Installs access tokens to fetch the private shared crate `common_lib` securely.
-3. **Frontend Asset Compilation**: Runs `npm ci` inside the `ui/` directory and compiles assets via Vite.
+3. **Frontend Asset Compilation**: Runs `npm ci` inside the project root and compiles assets via Vite.
 4. **Tauri App Compilation**: Runs `tauri build` to package native Windows executable binaries.
 5. **Releases Draft Generation**: Uses `softprops/action-gh-release@v2` to draft a GitHub Release and attach the compiled installation binaries.
 

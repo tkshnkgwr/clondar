@@ -485,4 +485,33 @@ mod tests {
             "2021年の上書き設定が必要です"
         );
     }
+
+    /// 差分計算コマンド (`get_holidays_diff`) のロジックをテストします。
+    #[test]
+    fn test_holidays_diff_logic() {
+        let old_text = "line1\nline2\nline3";
+        let new_text = "line1\nline2_modified\nline3";
+        let diff = common_lib::compute_diff(old_text, new_text);
+
+        assert!(!diff.is_empty(), "差分リストが生成される必要があります");
+        let has_removed = diff
+            .iter()
+            .any(|p| matches!(p.diff_type, common_lib::DiffType::Removed));
+        let has_added = diff
+            .iter()
+            .any(|p| matches!(p.diff_type, common_lib::DiffType::Added));
+        assert!(
+            has_removed,
+            "変更前の行が削除として検出される必要があります"
+        );
+        assert!(has_added, "変更後の行が追加として検出される必要があります");
+    }
+
+    /// キーワード出現回数集計コマンド (`get_word_count`) のロジックをテストします。
+    #[test]
+    fn test_word_count_logic() {
+        let text = r#"{"fixed": {"01-01": "元日", "02-11": "建国記念の日", "04-29": "昭和の日"}}"#;
+        let count = common_lib::count_occurrences(text, "の日");
+        assert_eq!(count, 2, "「の日」が2件検出される必要があります");
+    }
 }

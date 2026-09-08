@@ -30,6 +30,8 @@ graph TD
         AppJSX[App.jsx: State & Event Listener]
         ClockJSX[Clock.jsx: Digital/Analog UI]
         CalendarJSX[Calendar.jsx: Month/Yearly UI]
+        HelpModalJSX[HelpModal.jsx: Help & Version UI]
+        HolidaysManagerJSX[HolidaysManager.jsx: Holiday Editor UI]
     end
 
     subgraph Config_Data [Data Layer]
@@ -44,6 +46,8 @@ graph TD
     HTML --> AppJSX
     AppJSX --> ClockJSX
     AppJSX --> CalendarJSX
+    AppJSX --> HelpModalJSX
+    AppJSX --> HolidaysManagerJSX
     CalendarJSX --> HolidaysJSON
     HTML --> CSS
 ```
@@ -99,6 +103,16 @@ graph TD
   - 終了時のウィンドウの物理絶対座標 (`PhysicalPosition`) を記憶し、次回起動時にその位置へ自動的に移動（Tauri v2 規格の `setPosition` API を使用）。
   - **位置検出ガード**: 起動直前の配置や位置復元中の過渡的移動によって発生する位置の誤上書きを完全に防ぐ、状態ロード・セキュリティロック設計（`isRestoringRef` による書き込み制限）を搭載。
   - **トレイリセット連携**: システムトレイから位置をリセットした際にも、即座に `localStorage` の記憶座標を更新。
+
+### 3.5 ヘルプ＆アプリ情報機能 (Help & App Info Modal)
+* **タイトルバー連携**: タイトルバー右側の `HelpCircle`（❓）ボタンからワンクリックで起動。
+* **情報表示**:
+  - アプリケーション名（`Clondar Pro`）および `tauri.conf.json` と連動した動的バージョンバッジ（例: `v1.4.0`）を表示。
+  - アプリのコンセプト概要（透過・枠なし・ミニマルデザイン）。
+  - 主要機能カード（時計、カレンダー、最前面ピン留め、背景透過、ウィンドウ配置、ショートカット）。
+* **操作性と安全設計**:
+  - モーダル外クリック、右上の閉じるボタン（✕）、フッターの閉じるボタン、および `Esc` キーで安全にクローズ。
+  - モーダル表示中の `Esc` キー押下時はアプリ終了をガードし、モーダルのみを閉じる親切設計。
 
 ---
 

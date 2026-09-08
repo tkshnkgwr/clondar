@@ -12,7 +12,7 @@ This document details testing strategies, quality check policies, and execution 
 
 Key testing targets include:
 - **Holiday Calculation Algorithms (Frontend)**:
-  - Verifies date calculations for fixed holidays, Happy Mondays, Vernal/Autumnal Equinoxes, substitute holidays, and custom overrides compiled inside `ui/src/utils/holidays.js` (validated by `holidays.test.js`).
+  - Verifies date calculations for fixed holidays, Happy Mondays, Vernal/Autumnal Equinoxes, substitute holidays, and custom overrides compiled inside `src/utils/holidays.js` (validated by `holidays.test.js`).
 - **Data Load Consistency (Backend)**:
   - Validates structures of built-in fallback holiday JSON templates and confirms clean file recoveries under data corruption.
 - **Shared Crate `common_lib` Integration**:
@@ -37,7 +37,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 ### 2.2 Frontend Tests (React / Vitest)
 ```bash
 # Run Vitest test suites
-npm --prefix ui run test
+npm test
 ```
 
 ### 2.3 Quality Verification Pipeline (Pre-Commit checklist)
@@ -62,7 +62,7 @@ cargo doc --manifest-path src-tauri/Cargo.toml --no-deps --document-private-item
 ## 3. Test Writing Directives
 
 1. **Expanding Holiday Test Metrics**:
-   * If legislation updates public holidays, insert corresponding test assertions in `ui/src/utils/holidays.test.js` to verify calculation offsets.
+   * If legislation updates public holidays, insert corresponding test assertions in `src/utils/holidays.test.js` to verify calculation offsets.
 2. **Boundary Auditing**:
    - Ensure comprehensive coverage of edge cases, including year-end wrap-arounds (Dec 31st to Jan 1st), leap years, and multiple consecutive substitute holidays (e.g. May Golden Week slots).
 3. **OS-Dependent Scoping**:

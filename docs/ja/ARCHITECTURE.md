@@ -69,28 +69,37 @@ clondar/ (プロジェクトルート)
 │   │   └── lib.rs              # ライブラリ部（アプリ起動、デバッグログセットアップ）
 │   ├── Cargo.toml              # Rustの依存関係およびビルド最適化定義
 │   └── tauri.conf.json         # Tauri設定ファイル（透過設定、ビルド設定）
-└── ui/                         # フロントエンド（React）
-    ├── public/                 # 静的アセット（設定ファイルのフォールバック用JSON等）
-    ├── src/                    # フロントエンドソースコード
-    │   ├── components/         # UIコンポーネント
-    │   │   ├── Clock.jsx       # デジタル・アナログ時計コンポーネント
-    │   │   ├── Calendar.jsx    # カレンダー・年間カレンダーコンポーネント
-    │   │   └── HolidaysManager.jsx # 祝日データのビジュアル編集・差分・統計コンポーネント
-    │   ├── utils/              # ユーティリティロジック
-    │   │   ├── holidays.js     # 祝日定義のロード・保存・祝日日付計算アルゴリズム
-    │   │   └── tauri.js        # Tauri JS APIの抽象化（座標復元、ウィンドウ制御等）
-    │   ├── App.jsx             # メインコンポーネント（状態管理、各種同期イベント管理）
-    │   ├── main.jsx            # エントリーポイント
-    │   └── index.css           # Tailwind CSSインポートおよび基本スタイル定義
-    ├── package.json            # Node.js依存関係およびビルドスクリプト
-    ├── tailwind.config.js      # Tailwind CSSの設定ファイル
-    └── vite.config.js          # Viteのビルド設定ファイル
+├── src-tauri/                  # バックエンド（Rust）
+│   ├── capabilities/           # Tauri v2 権限・ケーパビリティ定義
+│   │   └── default.json        # 許可するウィンドウ操作やコマンドの宣言
+│   ├── icons/                  # 各種アプリアイコン
+│   ├── src/                    # Rustソースコード
+│   │   ├── main.rs             # メインロジック（ウィンドウ制御、トレイ、コマンド登録）
+│   │   └── lib.rs              # ライブラリ部（アプリ起動、デバッグログセットアップ）
+│   ├── Cargo.toml              # Rustの依存関係およびビルド最適化定義
+│   └── tauri.conf.json         # Tauri設定ファイル（透過設定、ビルド設定）
+├── src/                        # フロントエンド（React）ソースコード
+│   ├── components/             # UIコンポーネント
+│   │   ├── Clock.jsx           # デジタル・アナログ時計コンポーネント
+│   │   ├── Calendar.jsx        # カレンダー・年間カレンダーコンポーネント
+│   │   ├── HelpModal.jsx       # ヘルプ・アプリ情報モーダルコンポーネント
+│   │   └── HolidaysManager.jsx # 祝日データのビジュアル編集・差分・統計コンポーネント
+│   ├── utils/                  # ユーティリティロジック
+│   │   ├── holidays.js         # 祝日定義のロード・保存・祝日日付計算アルゴリズム
+│   │   └── tauri.js            # Tauri JS APIの抽象化（座標復元、ウィンドウ制御等）
+│   ├── App.jsx                 # メインコンポーネント（状態管理、各種同期イベント管理）
+│   ├── main.jsx                # エントリーポイント
+│   └── index.css               # Tailwind CSSインポートおよび基本スタイル定義
+├── public/                     # 静的アセット（設定ファイルのフォールバック用JSON等）
+├── package.json                # Node.js依存関係およびビルドスクリプト
+├── tailwind.config.js          # Tailwind CSSの設定ファイル
+└── vite.config.js              # Viteのビルド設定ファイル
 ```
 
 ### 構造設計の意図
-1. **`src-tauri` と `ui` の分離**: フロントエンド開発とバックエンド開発を完全に独立させ、モックでのブラウザ確認やホットリロードの恩恵を最大化。
+1. **`src` と `src-tauri` の対称的構成**: Tauri公式標準の構成に準拠し、フロントエンド（`src`）とバックエンド（`src-tauri`）が直感的に対比・分離された見通しの良い配置を採用。
 2. **`capabilities` によるセキュアな分離**: Tauri v2 のポリシーに従い、フロントエンドから勝手にOSの任意機能へ触れられないようにし、明示的に許可した権限（移動、終了、最前面等）のみを `default.json` で宣言。
-3. **`ui/src/utils` への Tauri API 隠蔽**: フロントエンドのビューコード（`Clock.jsx` や `Calendar.jsx`）が直接 Tauri 特有の API に依存するのを防ぎ、`tauri.js` というラッパーを介すことでブラウザでのモック動作やテストが容易になるように設計。
+3. **`src/utils` への Tauri API 隠蔽**: フロントエンドのビューコード（`Clock.jsx` や `Calendar.jsx`）が直接 Tauri 特有の API に依存するのを防ぎ、`tauri.js` というラッパーを介すことでブラウザでのモック動作やテストが容易になるように設計。
 
 ---
 

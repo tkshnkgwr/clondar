@@ -8,11 +8,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Clock as ClockIcon, Calendar as CalendarIcon, Sun, Moon, Pin, X } from 'lucide-react';
+import { Clock as ClockIcon, Calendar as CalendarIcon, Sun, Moon, Pin, X, HelpCircle } from 'lucide-react';
 import { DigitalClock, AnalogClock } from './components/Clock';
 import { Calendar, YearlyView } from './components/Calendar';
 import { initHolidays } from './utils/holidays';
 import HolidaysManager from './components/HolidaysManager';
+import HelpModal from './components/HelpModal';
 import { 
   isTauri, 
   setAlwaysOnTop, 
@@ -32,6 +33,7 @@ import {
  * @property {boolean} isTransparent - 背景透過モードが有効かどうか
  * @property {function(boolean): void} setIsTransparent - 背景透過状態を切り替えるステートセッター
  * @property {string} version - アプリケーションのバージョン文字列
+ * @property {function(): void} [onOpenHelp] - ヘルプモーダルを開くコールバック関数
  */
 
 /**
@@ -39,13 +41,13 @@ import {
  *
  * ## 特徴
  * - `data-tauri-drag-region` 属性による、フレーム領域全域でのシームレスなウィンドウドラッグ移動。
- * - 最前面ピン留め（📌）、背景透過トグル（☀️）、および安全なクローズ（❌）ボタンを統合。
+ * - ヘルプ（❓）、最前面ピン留め（📌）、背景透過トグル（☀️）、および安全なクローズ（❌）ボタンを統合。
  * - グラスモーフィズムおよびダークモードに対応した透過デザイン。
  *
  * @param {WindowFrameProps} props - コンポーネントのプロパティ
  * @returns {JSX.Element} WindowFrame コンポーネント
  */
-const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version }) => {
+const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version, onOpenHelp }) => {
   return (
     <div 
       className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 w-full h-full ${isTransparent ? 'bg-white/30 dark:bg-slate-900/30 glass' : 'bg-slate-50 dark:bg-slate-950'}`}
@@ -60,6 +62,14 @@ const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, se
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={onOpenHelp} 
+            className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors" 
+            title="ヘルプ・アプリ情報"
+            aria-label="ヘルプ・アプリ情報"
+          >
+            <HelpCircle size={14} />
+          </button>
           <button 
             onClick={() => { setIsPinned(!isPinned); setAlwaysOnTop(!isPinned); }} 
             className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isPinned ? 'text-blue-500' : 'text-slate-400'}`} 
@@ -112,9 +122,14 @@ export default function App() {
   const [isPinned, setIsPinned] = useState(true);
   const [showYearly, setShowYearly] = useState(false);
   const [showHolidaysManager, setShowHolidaysManager] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [holidaysVersion, setHolidaysVersion] = useState(0);
   const [isTransparent, setIsTransparent] = useState(false);
   const [version, setVersion] = useState('');
+
+  // Escキー制御用のモーダル表示状態Ref
+  const modalsRef = useRef({ showHelp: false, showYearly: false, showHolidaysManager: false });
+  modalsRef.current = { showHelp, showYearly, showHolidaysManager };
 
   // 設定の読み込みと外部データの初期化
   useEffect(() => {
@@ -228,9 +243,21 @@ export default function App() {
     // コンテキストメニュー禁止
     window.oncontextmenu = (e) => { e.preventDefault(); return false; };
 
-    // Escキーで終了
+    // Escキーでモーダル閉じる、またはアプリ終了
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
+        if (modalsRef.current.showHelp) {
+          setShowHelp(false);
+          return;
+        }
+        if (modalsRef.current.showYearly) {
+          setShowYearly(false);
+          return;
+        }
+        if (modalsRef.current.showHolidaysManager) {
+          setShowHolidaysManager(false);
+          return;
+        }
         closeWindow();
       }
     };
@@ -265,6 +292,7 @@ export default function App() {
         isTransparent={isTransparent} 
         setIsTransparent={setIsTransparent} 
         version={version}
+        onOpenHelp={() => setShowHelp(true)}
       >
         <div className="flex flex-row gap-12 items-start">
           <div className="flex flex-col items-center gap-8 w-[500px] flex-shrink-0 z-10">
@@ -333,6 +361,12 @@ export default function App() {
       </WindowFrame>
 
       <AnimatePresence>
+        {showHelp && (
+          <HelpModal 
+            version={version} 
+            onClose={() => setShowHelp(false)} 
+          />
+        )}
         {showYearly && (
           <YearlyView 
             year={currentMonth.getFullYear()} 

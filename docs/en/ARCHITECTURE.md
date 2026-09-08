@@ -69,28 +69,37 @@ clondar/ (Project Root)
 │   │   └── lib.rs              # Library definitions (Lifecycle events and logger config)
 │   ├── Cargo.toml              # Rust crate dependencies and release profiles
 │   └── tauri.conf.json         # Tauri compiler configs (Transparency, windows, and bundler)
-└── ui/                         # React Frontend (Vite)
-    ├── public/                 # Static assets (Default fallback JSON configurations)
-    ├── src/                    # React source code
-    │   ├── components/         # UI Elements
-    │   │   ├── Clock.jsx       # Digital & Analog clock renderings
-    │   │   ├── Calendar.jsx    # Monthly and yearly calendar overlays
-    │   │   └── HolidaysManager.jsx # Holidays visual editor, diffs, and metrics dashboard
-    │   ├── utils/              # Helper libraries
-    │   │   ├── holidays.js     # Holiday rules parsing, storage, and date calculators
-    │   │   └── tauri.js        # Tauri JS API abstractions (Coordinate saves, exit triggers)
-    │   ├── App.jsx             # Root component handling application state and event buses
-    │   ├── main.jsx            # Entry point loading style sheets
-    │   └── index.css           # Tailwind directives and core animations
-    ├── package.json            # Node.js dependencies and script workflows
-    ├── tailwind.config.js      # Tailwind compiler settings
-    └── vite.config.js          # Vite server and compiler configurations
+├── src-tauri/                  # Rust Backend
+│   ├── capabilities/           # Declared window controls and IPC command whitelist
+│   │   └── default.json        # Window operations and command permissions
+│   ├── icons/                  # Application icons across resolutions
+│   ├── src/                    # Rust backend source code
+│   │   ├── main.rs             # Main process setup (Window, Tray, and command registry)
+│   │   └── lib.rs              # Library definitions (Lifecycle events and logger config)
+│   ├── Cargo.toml              # Rust crate dependencies and release profiles
+│   └── tauri.conf.json         # Tauri compiler configs (Transparency, windows, and bundler)
+├── src/                        # React Frontend Source Code
+│   ├── components/             # UI Elements
+│   │   ├── Clock.jsx           # Digital & Analog clock renderings
+│   │   ├── Calendar.jsx        # Monthly and yearly calendar overlays
+│   │   ├── HelpModal.jsx       # Help and app information modal
+│   │   └── HolidaysManager.jsx # Holidays visual editor, diffs, and metrics dashboard
+│   ├── utils/                  # Helper libraries
+│   │   ├── holidays.js         # Holiday rules parsing, storage, and date calculators
+│   │   └── tauri.js            # Tauri JS API abstractions (Coordinate saves, exit triggers)
+│   ├── App.jsx                 # Root component handling application state and event buses
+│   ├── main.jsx                # Entry point loading style sheets
+│   └── index.css               # Tailwind directives and core animations
+├── public/                     # Static assets (Default fallback JSON configurations)
+├── package.json                # Node.js dependencies and script workflows
+├── tailwind.config.js          # Tailwind compiler settings
+└── vite.config.js              # Vite server and compiler configurations
 ```
 
 ### Key Directory Design Rationale
-1. **Separation of Concerns (`src-tauri` / `ui`)**: Decouples backend compilation from frontend web development. Allows debugging UI components inside standard browsers via Vite's Hot Module Replacement (HMR).
+1. **Symmetric Standard Layout (`src` / `src-tauri`)**: Adheres to the official Tauri standard layout, presenting a clean and intuitive pairing between frontend (`src`) and backend (`src-tauri`).
 2. **Capability-based Sandboxing**: Follows Tauri v2 capability paradigms. Restricts the frontend from invoking raw OS APIs unless declared inside `capabilities/default.json` (such as dragging, closing, or positioning).
-3. **Abstrated Tauri APIs in `ui/src/utils/tauri.js`**: Prevents UI components (`Clock.jsx` or `Calendar.jsx`) from directly executing Tauri core library imports. This allows clean browser mocking and isolated unit testing.
+3. **Abstracted Tauri APIs in `src/utils/tauri.js`**: Prevents UI components (`Clock.jsx` or `Calendar.jsx`) from directly executing Tauri core library imports. This allows clean browser mocking and isolated unit testing.
 
 ---
 

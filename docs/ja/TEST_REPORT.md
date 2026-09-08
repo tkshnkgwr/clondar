@@ -35,16 +35,19 @@
 | TS-019       | 手動バンプ＆タグリリース構成                | `bump-version.yml` を削除し、手動で `scripts/bump-version.ps1` を実行した後に Git タグ（`v*`）をプッシュしてリリースをビルド・デプロイする構成に変更すること。 | 自動バンプワークフローを削除。手動実行スクリプト `bump-version.ps1` がローカルで正常に機能し、また `release.yml` がタグプッシュでのみリリースビルドを起動することを確認。                                 | **PASS** |
 | TS-020       | リリースビルドのサイズ最適化                | `[profile.release]` の最適化オプション（LTO、シンボル削除等）を追加し、ビルドエラーが発生しないこと。                                   | `cargo build --release --manifest-path src-tauri/Cargo.toml` にて、最適化オプションを適用した状態でコンパイル・リンクが成功することを確認。                                                                 | **PASS** |
 | TS-021       | Viteビルド時の警告解消                      | `npm run build` 実行時に `@tauri-apps/api/core` などの動的インポートによる「Viteチャンク分割不能警告」が発生しないこと。               | `HolidaysManager.jsx` と `holidays.js` で動的インポートされていた箇所を、すべてファイル上部での静的インポートに修正。ビルド実行時に警告が一切出力されず、クリーンにビルドが成功することを確認。         | **PASS** |
-| TS-022       | コメントの日本語化検証                      | ソースコード（Rust、JS）内の英語コメントが分かりやすい日本語に翻訳され、ビルドが正常に通ること。                                         | `src-tauri/src/main.rs`、`ui/src/utils/holidays.js`、`ui/src/utils/tauri.js` の英語コメントを日本語に修正し、フロントエンドのビルド（`npm run build`）およびバックエンドのコードチェック（`cargo clippy`）がエラーなく成功することを確認。 | **PASS** |
+| TS-022       | コメントの日本語化検証                      | ソースコード（Rust、JS）内の英語コメントが分かりやすい日本語に翻訳され、ビルドが正常に通ること。                                         | `src-tauri/src/main.rs`、`src/utils/holidays.js`、`src/utils/tauri.js` の英語コメントを日本語に修正し、フロントエンドのビルド（`npm run build`）およびバックエンドのコードチェック（`cargo clippy`）がエラーなく成功することを確認。 | **PASS** |
 | TS-023       | GitHub Actions CIワークフロー検証           | プッシュやプルリクエスト時に `ci.yml` がトリガーされ、`cargo fmt`、`cargo clippy`、`cargo test` が自動検証されること。                   | `ci.yml` のスキーマ定義が正しく、ジョブレベルの作業ディレクトリ指定（`clondar`）や `git config insteadOf` の認証トークン設定を含め、GitHub Actions上で正常に実行可能な構造であることを検証。             | **PASS** |
 | TS-024       | 二重起動防止機能の検証                      | 二重起動防止の Named Mutex が正しく働き、多重起動時に2つ目のプロセスが安全に即座に終了すること。                                       | `common_lib::check_single_instance` の API 設計変更（Result を返す仕様）に合わせて組み込み、すでにインスタンスが存在する時に 2 つ目のアプリが起動せずに即座に終了することを確認。                         | **PASS** |
-| TS-025       | 祝日計算・ライフサイクル単体テスト (Vitest) | フロントエンドでの固定祝日、新旧ハッピーマンデー、歴代天皇誕生日、春分・秋分、振替休日、国民の休日、2020/2021特例、境界値、設定ロード/リセットの計算が正確であること。 | `npm --prefix ui run test` の実行により、`holidays.test.js` 内の全10テストケースが 100% 合格することを確認。                                                                                            | **PASS** |
+| TS-025       | 祝日計算・ライフサイクル単体テスト (Vitest) | フロントエンドでの固定祝日、新旧ハッピーマンデー、歴代天皇誕生日、春分・秋分、振替休日、国民の休日、2020/2021特例、境界値、設定ロード/リセットの計算が正確であること。 | `npm test` の実行により、`holidays.test.js` 内の全10テストケースが 100% 合格することを確認。                                                                                                              | **PASS** |
 | TS-026       | バックエンドデフォルトJSON検証テスト        | 内蔵の標準祝日定義JSON (`DEFAULT_HOLIDAYS_JSON`) が構文エラーなく、全必須フィールドを保持していること。                               | `cargo test --manifest-path src-tauri/Cargo.toml` において `test_default_holidays_json_validity` が成功することを確認。                                                                                   | **PASS** |
 | TS-027       | 設定生データ編集・事前バリデーション        | 祝日設定画面の Raw JSON 直接編集時、不正な構文やデータ型の入力に対して即座にエラー警告が表示され、不正保存が防止されること。             | 壊れた JSON や必須キー欠落の入力を検知してアラートを出力し、安全に保存処理がブロックされることを検証。                                                                                                   | **PASS** |
 | TS-028       | Rust 祝日計算エンジン検証 (holidays.rs)     | 固定祝日、新旧ハッピーマンデー、歴代天皇誕生日、春分・秋分、振替休日、国民の休日、2020/2021特例、アルゴリズムヘルパーが正確に算出されること。 | `cargo test --manifest-path src-tauri/Cargo.toml` において `calculate_holidays` 関連のテストケースがすべてパスすることを確認。                                                                           | **PASS** |
 | TS-029       | Rust 祝日スキーマ・範囲バリデーション       | Serde 構造体 `HolidayConfig` により、不正な月（13月等）や不正な週番号（6週等）の入力が検知されエラーを返却すること。                  | `test_validation_error_handling` により、不正な月・週番号が確実にエラー検出され保存が遮断されることを検証。                                                                                               | **PASS** |
 | TS-030       | 初期設定復元コマンド検証 (Reset)            | `reset_holidays_json` コマンドにより、内蔵デフォルト設定で祝日設定ファイルが安全に上書き復元されること。                               | 祝日マネージャーの「初期化」ボタン実行時、ファイルが内蔵デフォルトに上書きされ、UI およびカレンダーが即時初期化されることを検証。                                                                           | **PASS** |
-| TS-031       | Tauri ラッパー単体テスト (Vitest)           | `tauri.js` の環境判定（`isTauri`）、ウィンドウ取得、バージョン取得フォールバック、安全終了処理が例外なく正しく動作すること。         | `npm --prefix ui run test` の実行により、`tauri.test.js` 内の全4テストケースが 100% 合格することを確認。                                                                                                  | **PASS** |
+| TS-031       | Tauri ラッパー単体テスト (Vitest)           | `tauri.js` の環境判定（`isTauri`）、ウィンドウ取得、バージョン取得フォールバック、安全終了処理が例外なく正しく動作すること。         | `npm test` の実行により、`tauri.test.js` 内の全テストケースが 100% 合格することを確認。                                                                                                                   | **PASS** |
+| TS-032       | ヘルプ＆アプリ情報モーダル検証              | タイトルバーのヘルプボタン（❓）クリック時にモーダルが開き、バージョン番号・機能説明が正確に表示され、安全に閉じられること。           | `HelpModal.jsx` がマウントされ、動的バージョンバッジや機能一覧カードが表示されること、閉じるボタン・外側クリック・Escキーで正常に閉じることを検証。                                                     | **PASS** |
+| TS-033       | Tauri公式標準フォルダ構成への統一検証       | `ui/` ディレクトリを廃止し、ルート直下の `src/` と `src-tauri/` による公式標準構成でビルド・テストが正常に動作すること。               | ルート直下での `npm test`（16件全勝）、`npm run build`（エラーなし）、`cargo check`、`cargo test`、`cargo clippy`、`cargo fmt` の全パスを確認。                                                          | **PASS** |
+| TS-034       | バックエンド差分・単語集計単体テスト        | `common_lib` を利用した差分計算 (`test_holidays_diff_logic`) およびキーワード出現回数集計 (`test_word_count_logic`) の単体テスト。     | `cargo test --manifest-path src-tauri/Cargo.toml` において新設した 2 件のテストが成功し、全12件がすべて合格することを確認。                                                                               | **PASS** |
 
 ---
 
@@ -68,10 +71,11 @@ graph TD
 
     subgraph DesktopWidget [低リソースデスクトップウィジェット]
         subgraph FrontEnd [フロントエンド領域 (React / Vite / JSX)]
-            WebUI["UI 画面 (ui/index.html)"]:::frontend
+            WebUI["UI 画面 (index.html)"]:::frontend
             AppJSX["メインロジック (App.jsx)"]:::frontend
             ClockJSX["時計コンポーネント (Clock.jsx)"]:::frontend
             CalendarJSX["カレンダーコンポーネント (Calendar.jsx)"]:::frontend
+            HelpModal["ヘルプモーダル (HelpModal.jsx)"]:::frontend
             HolidaysManager["祝日マネージャー (HolidaysManager.jsx)"]:::frontend
             TauriJS["Tauriラッパー (tauri.js)"]:::frontend
             LocalStorage["localStorage<br/>- windowPosition (Physical座標)<br/>- keepsAlwaysOnTop"]:::storage

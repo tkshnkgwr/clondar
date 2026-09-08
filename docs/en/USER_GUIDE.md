@@ -29,9 +29,13 @@ Clondar Pro functions as a transparent desktop widget blending natively into you
 - **Dragging/Repositioning**:  
   Click and drag anywhere on the widget surface (e.g. transparent background spaces where no text displays) to reposition it on the screen.
 - **Set Always on Top (Pinning)**:  
-  Click the pin icon (📌) on the top right of the calendar to pin the widget above other active windows. Click it again to unpin it.
+  Click the pin icon (📌) on the title bar to pin the widget above other active windows. Click it again to unpin it.
+- **Toggle Transparency**:  
+  Click the sun icon (☀️) to toggle background blur and glassmorphism transparency.
+- **Help & Information (❓)**:  
+  Click the help icon (❓) on the title bar to display an overlay modal showing application details, current version, and feature guidelines.
 - **Toggle Visibility**:  
-  Click the close button (`❌`) on the top right of the widget or press the `Esc` key on your keyboard to hide the window. This does not terminate the app; you can restore the window from the system tray menu.
+  Click the close button (`❌`) on the top right of the widget or press the `Esc` key on your keyboard to hide the window (if a modal is open, `Esc` closes the modal first). This does not terminate the app; you can restore the window from the system tray menu.
 
 ---
 

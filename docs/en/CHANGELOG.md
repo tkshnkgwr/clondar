@@ -2,11 +2,28 @@
 
 **English** | [日本語版](../ja/CHANGELOG.md)
 
+## [1.4.2] - 2026-10-27
+### Fixed
+- **Enhanced Offline Completeness & Static Config Consistency**:
+  - Removed external Google Fonts CDN links from `index.html` to guarantee 100% offline-complete execution.
+  - Removed redundant `"02-23": "天皇誕生日"` from `fixed` in `public/config/holidays.json` (since Emperor's Birthday is dynamically computed via `emperor_birthdays`), aligning static config 100% with Rust/JS built-in defaults.
+  - Resolved `Invalid URL` fetch errors during Node.js / Vitest execution of `initHolidays()` by checking for `window.location.origin` before attempting relative URL fetches.
+
+### Changed
+- **CI Workflow & Build Script Improvements**:
+  - Added `"lint": "vite build"` script to `package.json` for standard pre-verification compliance.
+  - Added frontend unit test execution (`npm test`) step to `.github/workflows/ci.yml`.
+  - Improved `scripts/bump-version.ps1` to also update the `**Target Version**` field in `docs/en/TEST_REPORT.md`.
+
+### Documentation
+- **Documentation Overhaul & Path Synchronization**:
+  - Refreshed all specifications, architecture documents, developer/user guides, security policies, todo lists, and test reports under `docs/ja/` and `docs/en/` to eliminate legacy `ui/` references and ensure strict Markdown table vertical alignment.
+
 ## [1.4.1] - 2026-09-08
 ### Added
 - **New Help & App Information Modal (`HelpModal.jsx`)**:
   - Added a Help button (❓ icon) in the window title bar next to the pin toggle and close buttons.
-  - Implemented a glassmorphism modal presenting application overview, dynamic version badge (`v1.4.0`), and 6 operational guide cards (Basic Controls, Clock Display, Calendar Navigation, Holidays Manager, System Tray, Keyboard Shortcuts).
+  - Implemented a glassmorphism modal presenting application overview, dynamic version badge (`v1.4.1`), and 6 operational guide cards (Basic Controls, Clock Display, Calendar Navigation, Holidays Manager, System Tray, Keyboard Shortcuts).
   - Supported closing via close button, backdrop click, and Esc key (graceful design closing only the modal without quitting the widget).
 - **Rust-based Holiday Engine and Schema Validation (`holidays.rs`)**:
   - Created `src-tauri/src/holidays.rs` module to migrate Japanese holiday calculations (fixed holidays, new/old Happy Mondays, Emperor birthdays, Vernal/Autumnal equinoxes, substitute holidays, national bridge holidays, and custom overrides) to the Rust backend.

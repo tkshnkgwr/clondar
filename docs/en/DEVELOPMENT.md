@@ -74,11 +74,13 @@ clondar/
     ├── App.jsx          # Shell layout, state controls, tray event subscriptions
     ├── index.css        # Tailwind directives + custom styles
     ├── components/
-    │   ├── Clock.jsx    # Digital & Analog clock renderings
-    │   └── Calendar.jsx # Calendar grids, holiday indications, tooltips
+    │   ├── Clock.jsx           # Digital & Analog clock renderings
+    │   ├── Calendar.jsx        # Calendar grids, holiday indications, tooltips
+    │   ├── HelpModal.jsx       # Help & app info modal component
+    │   └── HolidaysManager.jsx # Visual holiday editor, diffs & statistics component
     └── utils/
-        ├── holidays.js  # Async holidays fetch and date calculations
-        └── tauri.js     # Safe wrapper abstractions for Tauri v2 APIs
+        ├── holidays.js         # Async holidays fetch and date calculations
+        └── tauri.js            # Safe wrapper abstractions for Tauri v2 APIs
 ```
 
 ---
@@ -90,24 +92,19 @@ Building and running this application requires **Node.js (v26.4.0+ recommended)*
 It also utilizes the shared library `common_lib` as a build dependency.
 
 ### Resolving `common_lib` Dependencies
-This project depends on the external shared library `common_lib`. To ensure GitHub Actions and Dependabot updates succeed, the dependency is configured as a direct Git reference in `src-tauri/Cargo.toml`:
+This project depends on the external shared library `common_lib`. For fast local development and compilation, the dependency is configured as a relative path in `src-tauri/Cargo.toml`:
 ```toml
-common_lib = { git = "https://github.com/tkshnkgwr/common_lib" }
+common_lib = { path = "../../common_lib" }
 ```
 
-When modifying `common_lib` locally in parallel (`../../common_lib`), you can override this Git dependency with a local path using `src-tauri/.cargo/config.toml`.
-
-Before starting development, create `src-tauri/.cargo/config.toml` (git-ignored) and add the following paths:
-```toml
-paths = ["../../common_lib"]
-```
+Ensure that the `common_lib` repository is checked out in the sibling directory (`../../common_lib`) alongside `clondar` (in GitHub Actions CI/CD, `common_lib` is checked out in parallel automatically).
 
 
 ### 1. Install Dependencies
 Run the following inside the project root:
 ```bash
 # Install frontend packages
-npm --prefix ui install
+npm install
 ```
 
 ### 2. Launch in Development Mode

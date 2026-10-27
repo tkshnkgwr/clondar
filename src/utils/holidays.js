@@ -200,7 +200,7 @@ export async function initHolidays() {
   }
 
   try {
-    if (typeof fetch !== 'undefined') {
+    if (typeof fetch !== 'undefined' && typeof window !== 'undefined' && window.location && window.location.origin) {
       const res = await fetch('/config/holidays.json');
       if (!res.ok) throw new Error('Failed to fetch holidays config');
       config = await res.json();

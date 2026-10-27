@@ -31,7 +31,7 @@
    ```
 2. **依存関係のインストール**:
    ```bash
-   npm --prefix ui install
+   npm install
    ```
 3. **開発モードでの起動**:
    ```bash
@@ -56,8 +56,8 @@
 ### プルリクエスト作成前のチェックリスト
 プルリクエストを送信する前に、以下のコマンドを実行し全て合格することを確認してください：
 
-- [ ] `cargo test` （バックエンドユニットテスト合格）
-- [ ] `npm --prefix ui run test` （フロントエンドテスト合格）
-- [ ] `cargo clippy --all-targets -- -D warnings` （静的解析の警告ゼロ）
-- [ ] `cargo fmt --check` （コードフォーマット準拠）
-- [ ] `cargo doc --no-deps --document-private-items` （Rustdocビルドエラーゼロ）
+- [ ] `cargo test --manifest-path src-tauri/Cargo.toml` （バックエンドユニットテスト合格）
+- [ ] `npm test` （フロントエンドテスト合格）
+- [ ] `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` （静的解析の警告ゼロ）
+- [ ] `cargo fmt --manifest-path src-tauri/Cargo.toml --check` （コードフォーマット準拠）
+- [ ] `cargo doc --manifest-path src-tauri/Cargo.toml --no-deps --document-private-items` （Rustdocビルドエラーゼロ）

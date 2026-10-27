@@ -74,11 +74,13 @@ clondar/
     ├── App.jsx          # アプリ全体のレイアウト、状態管理、トレイイベント購読
     ├── index.css        # Tailwind directives + カスタムCSS
     ├── components/
-    │   ├── Clock.jsx    # デジタル・アナログ時計コンポーネント
-    │   └── Calendar.jsx # 月間・年間カレンダー、祝日表示、ツールチップ
+    │   ├── Clock.jsx           # デジタル・アナログ時計コンポーネント
+    │   ├── Calendar.jsx        # 月間・年間カレンダー、祝日表示、ツールチップ
+    │   ├── HelpModal.jsx       # ヘルプ・アプリ情報モーダルコンポーネント
+    │   └── HolidaysManager.jsx # 祝日データのビジュアル編集・差分・統計コンポーネント
     └── utils/
-        ├── holidays.js  # holidays.json の非同期ロードと祝日計算ロジック
-        └── tauri.js     # Tauri v2 API の安全なラッパー
+        ├── holidays.js         # holidays.json の非同期ロードと祝日計算ロジック
+        └── tauri.js            # Tauri v2 API の安全なラッパー
 ```
 
 ---
@@ -90,24 +92,19 @@ clondar/
 また、ビルドの依存関係として共通ライブラリ `common_lib` を使用します。
 
 ### 共通ライブラリ `common_lib` の依存解決について
-本プロジェクトは、外部共有ライブラリ `common_lib` に依存しています。GitHub Actions や Dependabot でのビルドおよびパッケージ自動更新を正常に通過させるため、リポジトリ内の `src-tauri/Cargo.toml` では以下のように Git リポジトリへの直接参照が設定されています。
+本プロジェクトは、外部共有ライブラリ `common_lib` に依存しています。ローカル開発およびビルドの高速化のため、リポジトリ内の `src-tauri/Cargo.toml` では以下のように相対パス参照が設定されています。
 ```toml
-common_lib = { git = "https://github.com/tkshnkgwr/common_lib" }
+common_lib = { path = "../../common_lib" }
 ```
 
-ローカル開発環境で親ディレクトリにある `common_lib` （`../../common_lib`）の変更を即座に適用しながら開発する際は、`src-tauri/.cargo/config.toml` にてローカルパスを優先させるオーバーライド設定を行います。
-
-開発前に、`src-tauri/.cargo/config.toml` を作成して以下の内容を記述してください（このファイルは `.gitignore` に追加されており、Git管理対象外となっています）。
-```toml
-paths = ["../../common_lib"]
-```
+開発時は、`clondar` リポジトリと同じ階層（親ディレクトリ）に `common_lib` リポジトリが配置されていることを確認してください（CI環境ではワークフロー内で自動的に並行チェックアウトされます）。
 
 
 ### 1. 依存関係のインストール
 プロジェクトのルートディレクトリで以下を実行します。
 ```bash
 # フロントエンドの依存関係をインストール
-npm --prefix ui install
+npm install
 ```
 
 ### 2. 開発モードでの起動

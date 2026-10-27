@@ -61,21 +61,13 @@ clondar/ (プロジェクトルート)
 │       └── DEVELOPMENT.md      # Developer Setup & Build Guide
 ├── scripts/                    # バージョン更新等を行うためのPowerShell補助スクリプト
 ├── src-tauri/                  # Tauriバックエンド（Rust）
-│   ├── capabilities/           # Tauri v2用の実行権限定義
-│   │   └── default.json        # 許可するウィンドウ操作やコマンドの宣言
-│   ├── icons/                  # 各種アプリアイコン
-│   ├── src/                    # Rustソースコード
-│   │   ├── main.rs             # メインロジック（ウィンドウ制御、トレイ、コマンド登録）
-│   │   └── lib.rs              # ライブラリ部（アプリ起動、デバッグログセットアップ）
-│   ├── Cargo.toml              # Rustの依存関係およびビルド最適化定義
-│   └── tauri.conf.json         # Tauri設定ファイル（透過設定、ビルド設定）
-├── src-tauri/                  # バックエンド（Rust）
 │   ├── capabilities/           # Tauri v2 権限・ケーパビリティ定義
 │   │   └── default.json        # 許可するウィンドウ操作やコマンドの宣言
 │   ├── icons/                  # 各種アプリアイコン
 │   ├── src/                    # Rustソースコード
 │   │   ├── main.rs             # メインロジック（ウィンドウ制御、トレイ、コマンド登録）
-│   │   └── lib.rs              # ライブラリ部（アプリ起動、デバッグログセットアップ）
+│   │   ├── lib.rs              # ライブラリ部（アプリ起動、デバッグログセットアップ）
+│   │   └── holidays.rs         # 日本の祝日算出エンジンおよびスキーマ検証モジュール
 │   ├── Cargo.toml              # Rustの依存関係およびビルド最適化定義
 │   └── tauri.conf.json         # Tauri設定ファイル（透過設定、ビルド設定）
 ├── src/                        # フロントエンド（React）ソースコード
@@ -282,11 +274,7 @@ sequenceDiagram
 プロジェクトの保守性とコード共有性を最大化するため、複数のプロダクトで共通利用されるアルゴリズムは独立したクレート `common_lib` として切り出されています。
 
 ### 7.1 `common_lib` 依存関係の解決
-- **Git 依存関係への集約**:  
-  GitHub Actions や Dependabot 解析でリポジトリ外の相対パス参照エラー（`path_dependencies_not_reachable`）が発生するのを防ぐため、`src-tauri/Cargo.toml` における `common_lib` の依存定義は Git リポジトリ（`https://github.com/tkshnkgwr/common_lib`）を指定しています。
-- **開発時ローカルパス・オーバーライド**:  
-  ローカル開発時に `common_lib` と `clondar` を同時修正・並行デバッグできるよう、`src-tauri/.cargo/config.toml` にてオーバーライドを定義し、ローカルの `../../common_lib` を優先してロードする設計となっています。
-  ```toml
-  paths = ["../../common_lib"]
-  ```
-  ※ このファイルは開発環境に依存するため、`.gitignore` によって Git 追跡から除外されています。
+- **ローカル相対パス依存とCI並行チェックアウト**:  
+  ローカル開発およびビルドの高速化のため、`src-tauri/Cargo.toml` における `common_lib` の依存定義は相対パス（`{ path = "../../common_lib" }`）を指定しています。
+- **CI / CD 環境での解決**:  
+  GitHub Actions（`ci.yml`, `release.yml`）上では、`clondar` リポジトリと並行して `common_lib` リポジトリを同一階層のディレクトリへチェックアウトすることで、相対パス参照のままクリーンにコンパイル・ビルドが完遂する構成となっています。

@@ -66,16 +66,8 @@ clondar/ (Project Root)
 │   ├── icons/                  # Application icons across resolutions
 │   ├── src/                    # Rust backend source code
 │   │   ├── main.rs             # Main process setup (Window, Tray, and command registry)
-│   │   └── lib.rs              # Library definitions (Lifecycle events and logger config)
-│   ├── Cargo.toml              # Rust crate dependencies and release profiles
-│   └── tauri.conf.json         # Tauri compiler configs (Transparency, windows, and bundler)
-├── src-tauri/                  # Rust Backend
-│   ├── capabilities/           # Declared window controls and IPC command whitelist
-│   │   └── default.json        # Window operations and command permissions
-│   ├── icons/                  # Application icons across resolutions
-│   ├── src/                    # Rust backend source code
-│   │   ├── main.rs             # Main process setup (Window, Tray, and command registry)
-│   │   └── lib.rs              # Library definitions (Lifecycle events and logger config)
+│   │   ├── lib.rs              # Library definitions (Lifecycle events and logger config)
+│   │   └── holidays.rs         # Japanese holiday calculation engine and schema validator
 │   ├── Cargo.toml              # Rust crate dependencies and release profiles
 │   └── tauri.conf.json         # Tauri compiler configs (Transparency, windows, and bundler)
 ├── src/                        # React Frontend Source Code
@@ -282,11 +274,7 @@ persistence strategies are separated by access speeds, size, and context.
 To streamline updates across applications, core algorithms are modularized into a separate crate: `common_lib`.
 
 ### 7.1 Resolving `common_lib` Dependencies
-- **Git Dependencies**:
-  To prevent relative path import failures (`path_dependencies_not_reachable`) during GitHub Actions workflows and Dependabot scans, the project imports `common_lib` in `src-tauri/Cargo.toml` directly from its Git repository (`https://github.com/tkshnkgwr/common_lib`).
-- **Local Workspace Overrides**:
-  For rapid local debugging and development, a Cargo configuration override is defined in `src-tauri/.cargo/config.toml` to prioritize the local `../../common_lib` folder.
-  ```toml
-  paths = ["../../common_lib"]
-  ```
-  *Note: This file contains workspace-specific paths and is ignored by Git.*
+- **Local Relative Path & CI Parallel Checkout**:
+  For rapid local development and compilation, `src-tauri/Cargo.toml` references `common_lib` via a local relative path (`{ path = "../../common_lib" }`).
+- **CI / CD Resolution**:
+  During GitHub Actions workflows (`ci.yml`, `release.yml`), the `common_lib` repository is checked out in parallel alongside `clondar` at the sibling directory level, allowing relative path resolution to work seamlessly in CI builds.

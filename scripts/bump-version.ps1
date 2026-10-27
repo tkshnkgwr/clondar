@@ -113,8 +113,8 @@ foreach ($testPath in $testPaths) {
             if ($lines[$i] -match "\*\*$suitableLabel\*\*") {
                 $lines[$i] = "**$suitableLabel**: Widget v$NewVersion (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)"
                 break
-            } elseif ($lines[$i] -match "\*\*Suitable Version\*\*") {
-                $lines[$i] = "**Suitable Version**: Widget v$NewVersion (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)"
+            } elseif ($lines[$i] -match "\*\*(Suitable|Target) Version\*\*") {
+                $lines[$i] = "**Target Version**: Widget v$NewVersion (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)"
                 break
             }
         }

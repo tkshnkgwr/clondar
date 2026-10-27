@@ -43,14 +43,16 @@ This document manages development progress, current tasks, and future feature ba
   - [x] Implemented instant syntax parsing (`JSON.parse`) and schema validation on the "Raw JSON" tab inside Holidays Manager to prevent corrupted payloads from triggering Rust backend panics.
 - [x] **Expand Unit Tests (v1.3.8)**
   - [x] Expanded test coverage for holiday calculation algorithms (`holidays.test.js`) and backend default JSON validation (`main.rs`).
+- [x] **Help Modal, Rust Holiday Engine & Standard Directory Layout (v1.4.1)**
+  - [x] Implemented `HelpModal.jsx` providing application overview, version badge, and operational guide cards.
+  - [x] Migrated holiday calculation engine to Rust (`src-tauri/src/holidays.rs`), added strong Serde schema/range validation, and implemented `reset_holidays_json`.
+  - [x] Unified directory layout to the official Tauri standard (root `src/` and `src-tauri/`) and expanded unit test suites across frontend and backend.
 
 ---
 
 ## 2. Current Tasks (Todo)
 
-- [ ] **Align Crate Reference Paths**
-  - **Issue**: Standard developer documentation (`docs/ja/DEVELOPMENT.md` and `.agents/AGENTS.md`) mandates using Git repository paths inside `Cargo.toml` to prevent CI build failures, overriding paths locally using `.cargo/config.toml`. Currently, `src-tauri/Cargo.toml` directly references relative directories `{ path = "../../common_lib" }`.
-  - **Resolution**: Revert `Cargo.toml` changes to reference remote repositories, enforcing local overrides via `.cargo/config.toml`.
+There are currently no pending immediate tasks. All core features and verification suites are complete.
 
 ---
 

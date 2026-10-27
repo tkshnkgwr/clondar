@@ -31,7 +31,7 @@ Building and running the project requires **Node.js (v26.4.0+ recommended)** and
    ```
 2. **Install Dependencies**:
    ```bash
-   npm --prefix ui install
+   npm install
    ```
 3. **Launch in Dev Mode**:
    ```bash
@@ -56,8 +56,8 @@ Use the Conventional Commits format for your commit messages:
 ### Pre-PR Checklist
 Before submitting a pull request, run the following verification checks and ensure all pass without warnings:
 
-- [ ] `cargo test` (Backend tests pass)
-- [ ] `npm --prefix ui run test` (Frontend Vitest tests pass)
-- [ ] `cargo clippy --all-targets -- -D warnings` (Clippy issues resolved)
-- [ ] `cargo fmt --check` (Formatting rules applied)
-- [ ] `cargo doc --no-deps --document-private-items` (Rustdoc compilation completes successfully)
+- [ ] `cargo test --manifest-path src-tauri/Cargo.toml` (Backend tests pass)
+- [ ] `npm test` (Frontend Vitest tests pass)
+- [ ] `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` (Clippy issues resolved)
+- [ ] `cargo fmt --manifest-path src-tauri/Cargo.toml --check` (Formatting rules applied)
+- [ ] `cargo doc --manifest-path src-tauri/Cargo.toml --no-deps --document-private-items` (Rustdoc compilation completes successfully)

@@ -39,15 +39,15 @@ sequenceDiagram
 PowerShell を起動し、リポジトリのルートディレクトリで以下のスクリプトを実行します。
 
 ```powershell
-# 実行ポリシーを一時的に緩和してスクリプトを実行 (例: バージョン 1.3.8 へ更新する場合)
-powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.3.8
+# 実行ポリシーを一時的に緩和してスクリプトを実行 (例: バージョン 1.4.1 へ更新する場合)
+powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.4.1
 ```
 
 - **スクリプトの動作**:
   - `src-tauri/Cargo.toml` の `version = "..."` を更新。
-  - `src-tauri/tauri.conf.json` の `version` （および Windows 用内部バージョン表記）を更新。
-  - `docs/ja/TEST_REPORT.md` 内の適合バージョン表記を更新。
-  - バージョン変更を Git ステージング領域に追加（`git add`）。
+  - `src-tauri/tauri.conf.json` および `package.json` の `version` を更新。
+  - `docs/ja/SPECIFICATION.md` および `docs/en/SPECIFICATION.md` 内のバージョン表記（および内部バージョン表記）を更新。
+  - `docs/ja/TEST_REPORT.md` および `docs/en/TEST_REPORT.md` 内の適合バージョン表記を更新。
 
 ---
 
@@ -56,29 +56,29 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.3.8
 バージョンの更新スクリプトの実行が完了したら、コミットを行い、リリース対象のバージョンタグを作成して GitHub にプッシュします。
 
 ```bash
-# 1. 変更内容をコミット
-git commit -m "chore: release version 1.3.8"
+# 1. 変更内容をステージングしてコミット
+git add .
+git commit -m "chore: バージョン 1.4.1 への更新"
 
 # 2. バージョンタグを作成 (セマンティックバージョニングに準拠し、頭に v を付けます)
-git tag v1.3.8
+git tag v1.4.1
 
 # 3. コミットと作成したタグをリモートにプッシュ
 git push origin main
-git push origin v1.3.8
+git push origin v1.4.1
 ```
 
 ---
 
-## 4. GitHub Actions での自動ビルドとドラフトリリース
+## 4. GitHub Actions での自動ビルドとリリース公開
 
 タグのプッシュを GitHub が検知すると、`.github/workflows/release.yml` が自動的に起動します。
 
 ### 4.1 ワークフローの実行内容
-1. **環境セットアップ**: Node.js および Rust (MSVC ターゲット) 環境をランナー上に構築します。
-2. **Git認証構成**: `x-access-token` を用いて、非公開共有ライブラリ `common_lib` への Git 依存フェッチが認証エラーにならないように一時設定します。
-3. **フロントエンドビルド**: プロジェクトルートで `npm ci` を実行し、Vite によるアセットコンパイルを実行します。
-4. **Tauri アプリのビルド**: `tauri build` を実行し、Windows 向けの最終アセットをコンパイル・パッケージングします。
-5. **リリース作成とアップロード**: `softprops/action-gh-release@v2` を用いて、GitHub 上にドラフト（下書き）状態のリリースを作成し、ビルドされたアセットファイルを添付します。
+1. **環境セットアップ**: Node.js および Rust (MSVC ターゲット) 環境をランナー上に構築し、`clondar` および共有クレート `common_lib` をチェックアウトします。
+2. **フロントエンドビルド**: プロジェクトルートで `npm ci` を実行し、依存関係をセットアップします。
+3. **Tauri アプリのビルド**: `tauri build` を実行し、Windows 向けの最終アセットをコンパイル・パッケージングします。
+4. **リリース作成とアップロード**: `softprops/action-gh-release@v3` を用いて、GitHub 上にリリースを自動作成・公開（`draft: false`）し、ビルドされたアセットファイルを添付します。
 
 ### 4.2 生成されるリリースアセット
 ビルド成功時、以下のパスに出力されたアセットが GitHub Releases にアップロードされます。
@@ -87,8 +87,7 @@ git push origin v1.3.8
 
 ---
 
-## 5. リリースの公開
+## 5. リリースの確認
 
 1. リポジトリの GitHub ページを開き、「**Releases**」にアクセスします。
-2. `v1.3.8` のドラフトリリース（Draft）が生成されていることを確認します。
-3. リリースノート（CHANGELOG からの抜粋など）を編集し、「**Publish release**」ボタンを押して一般公開します。
+2. `v1.4.1` のリリースが公開され、MSI / EXE インストーラーアセットが正常に添付されていることを確認します。

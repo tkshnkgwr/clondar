@@ -52,7 +52,7 @@ Organize files cleanly to help AI developers navigate and modify code efficientl
 ├── .editorconfig            # ★ Shared editor settings (spacing, line endings)
 ├── .gitignore               # ★ Consolidated Git exclusion filters
 ├── CHANGELOG.md             # Change history routing (Links to localized changelogs)
-├── LICENSE                  # MIT License
+├── LICENSE                  # GNU GPL v3.0 or later
 ├── README.md                # Main documentation (English, links to README_JA.md)
 └── README_JA.md             # Japanese documentation
 ```

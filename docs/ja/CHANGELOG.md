@@ -2,6 +2,12 @@
 
 [English Version](../en/CHANGELOG.md) | **日本語版**
 
+## [1.4.3] - 2026-10-27
+### Changed
+- **オープンソースライセンスの変更**:
+  - プロジェクトのライセンスを MIT License から **GNU General Public License v3.0 or later (GPL-3.0-or-later)** へ移行。
+  - `LICENSE`、`package.json`、`Cargo.toml`、`README.md`、`README_JA.md`、および関連ドキュメントのライセンス表記を GPL-3.0-or-later に更新。
+
 ## [1.4.2] - 2026-10-27
 ### Fixed
 - **オフライン完結性の強化と静的設定ファイルの整合性修正**:

@@ -2,6 +2,12 @@
 
 **English** | [日本語版](../ja/CHANGELOG.md)
 
+## [1.4.3] - 2026-10-27
+### Changed
+- **Open Source License Migration**:
+  - Migrated project license from the MIT License to **GNU General Public License v3.0 or later (GPL-3.0-or-later)**.
+  - Updated `LICENSE`, `package.json`, `Cargo.toml`, `README.md`, `README_JA.md`, and related documentation references to GPL-3.0-or-later.
+
 ## [1.4.2] - 2026-10-27
 ### Fixed
 - **Enhanced Offline Completeness & Static Config Consistency**:

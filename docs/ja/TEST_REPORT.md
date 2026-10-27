@@ -131,5 +131,5 @@ graph TD
 ---
 **作成日**: 2026年7月10日  
 **最終更新日**: 2026年9月8日  
-**適合バージョン**: Widget v1.4.2 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)
+**適合バージョン**: Widget v1.4.3 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)
 

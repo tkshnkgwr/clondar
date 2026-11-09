@@ -98,7 +98,7 @@ export default function HelpModal({ version, onClose }) {
                   Clondar Pro
                 </h2>
                 <span className="px-2.5 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-mono text-xs font-bold rounded-full border border-blue-500/20">
-                  {version ? `v${version}` : 'v1.0.0'}
+                  {version ? (version.startsWith('v') ? version : `v${version}`) : 'v0.0.0-dev'}
                 </span>
               </div>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">

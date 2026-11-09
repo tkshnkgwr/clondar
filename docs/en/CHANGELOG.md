@@ -2,6 +2,25 @@
 
 **English** | [日本語版](../ja/CHANGELOG.md)
 
+## [1.4.4] - 2026-11-09
+### Fixed
+- **Holiday Calculation Engine Optimization & Rust IPC Bridge**:
+  - Introduced annual holiday memory cache (`holidaysCache`) in `holidays.js` and automated prefetching via Rust backend's type-safe `get_holidays` IPC command in Tauri environments.
+  - Retained deterministic JavaScript calculation fallback for headless browser and test runner environments.
+- **Form Input Validation in Holidays Manager**:
+  - Implemented client-side boundary checking in `HolidaysManager.jsx` for month (01–12), day (01–31), and month-specific day limits, preventing invalid date strings from corrupting memory state.
+- **Help Modal Version Fallback Standardization**:
+  - Aligned fallback version badge in `HelpModal.jsx` with `tauri.js` conventions (`v0.0.0-dev`).
+- **Safe Unlisten Cleanup in Event Listeners**:
+  - Added null guards (`unlisten && unlisten()`) to tray event listener teardowns in `App.jsx`.
+
+### Documentation
+- **Comprehensive Documentation Audit & Gap Closure**:
+  - Substantially expanded `README.md` and `README_JA.md` with complete feature outlines, system requirements, quick start shortcuts, build commands, and an exhaustive technical documentation index.
+  - Updated `TODO.md` (JA & EN) Done lists with v1.4.2 and v1.4.3 deliverables, adding actionable feature proposals (UI scaling slider, Pomodoro timer, update checker) to Backlog.
+  - Created `docs/en/INSTRUCTIONS.md` and linked it bidirectionally with `docs/ja/INSTRUCTIONS.md`.
+  - Aligned dynamic version badge references (`v1.4.4`) in `SPECIFICATION.md` and expanded Rust backend testing targets in `TESTING.md`.
+
 ## [1.4.3] - 2026-10-27
 ### Changed
 - **Open Source License Migration**:

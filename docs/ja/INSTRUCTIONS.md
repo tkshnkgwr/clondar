@@ -1,5 +1,7 @@
 # Clondar Pro AI 開発指示書 (INSTRUCTIONS.md)
 
+[English Version](../en/INSTRUCTIONS.md) | **日本語版**
+
 本ドキュメントは、AIアシスタントが Clondar Pro のソースコード（Rust バックエンド / React フロントエンド）を修正・追加する際に厳守すべきコーディングスタイル、エラーハンドリング方針、コンポーネント設計、および出力フォーマットを定義したガイドラインです。
 
 ---

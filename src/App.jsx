@@ -266,8 +266,8 @@ export default function App() {
     return () => {
       clearInterval(posTimer);
       unlistenMovePromise.then(unlisten => unlisten && unlisten());
-      if (unlistenAlwaysOnTopPromise) unlistenAlwaysOnTopPromise.then(unlisten => unlisten());
-      if (unlistenPositionResetPromise) unlistenPositionResetPromise.then(unlisten => unlisten());
+      if (unlistenAlwaysOnTopPromise) unlistenAlwaysOnTopPromise.then(unlisten => unlisten && unlisten());
+      if (unlistenPositionResetPromise) unlistenPositionResetPromise.then(unlisten => unlisten && unlisten());
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [loading]);

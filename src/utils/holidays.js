@@ -51,6 +51,9 @@ import { invoke } from '@tauri-apps/api/core';
 /** @type {HolidayConfig|null} キャッシュされた祝日設定オブジェクト */
 let config = null;
 
+/** @type {Map<number, Object.<string, string>>} 年ごとの祝日マップのインメモリキャッシュ */
+const holidaysCache = new Map();
+
 /**
  * 祝日設定のデフォルト（内蔵フォールバック）定義。
  * 外部ファイルの読み込みに失敗した場合や初期起動時に使用されます。
@@ -171,11 +174,47 @@ export const fallbackConfig = {
 };
 
 /**
+ * 指定された西暦年の日本の祝日マップを非同期に取得します。
+ * Tauri環境下では Rust バックエンドの IPC コマンド `get_holidays` を呼び出して高速・型安全に計算し、
+ * ブラウザ環境または取得失敗時は JavaScript 側フォールバック計算ロジックを実行してキャッシュします。
+ *
+ * @async
+ * @param {number|string} yearParam - 祝日を算出する対象の西暦年 (例: 2026)
+ * @returns {Promise<Object.<string, string>>} "YYYY-MM-DD" 形式の日付文字列をキー、祝日名称を値とするマップ
+ */
+export async function fetchHolidays(yearParam) {
+  const year = parseInt(yearParam, 10);
+  if (isNaN(year) || year < 1948) return {};
+
+  if (holidaysCache.has(year)) {
+    return holidaysCache.get(year);
+  }
+
+  const isTauriEnv = typeof window !== 'undefined' && !!window.__TAURI__;
+  if (isTauriEnv) {
+    try {
+      const holidays = await invoke('get_holidays', { year });
+      if (holidays && typeof holidays === 'object') {
+        holidaysCache.set(year, holidays);
+        return holidays;
+      }
+    } catch (e) {
+      console.error(`Rust get_holidays(${year}) failed, fallback to JS:`, e);
+    }
+  }
+
+  const holidays = computeHolidaysJs(year);
+  holidaysCache.set(year, holidays);
+  return holidays;
+}
+
+/**
  * 祝日設定データを初期化してメモリ上にロードします。
  *
  * ## 動作仕様
  * 1. 既にキャッシュ（`config` 変数）が存在する場合は、それを即座に返します。
- * 2. Tauri 環境下であれば、Rust の IPC コマンド `load_holidays_json` を呼び出してローカルファイルから読み込みます。
+ * 2. Tauri 環境下であれば、Rust の IPC コマンド `load_holidays_json` を呼び出してローカルファイルから読み込み、
+ *    併せて当年の祝日マップを Rust 側からプリフェッチします。
  * 3. ブラウザ環境であれば、静的パス `/config/holidays.json` へ `fetch` リクエストを試行します。
  * 4. いずれの読み込みにも失敗した場合は、内蔵の `fallbackConfig` を適用して安全にフォールバックします。
  *
@@ -188,11 +227,13 @@ export const fallbackConfig = {
 export async function initHolidays() {
   if (config) return config;
   
-  const isTauri = typeof window !== 'undefined' && !!window.__TAURI__;
-  if (isTauri) {
+  const isTauriEnv = typeof window !== 'undefined' && !!window.__TAURI__;
+  if (isTauriEnv) {
     try {
       const jsonText = await invoke('load_holidays_json');
       config = JSON.parse(jsonText);
+      const currentYear = new Date().getFullYear();
+      await fetchHolidays(currentYear);
       return config;
     } catch (e) {
       console.error('Error invoking load_holidays_json, fallback to fetch:', e);
@@ -223,6 +264,7 @@ export async function initHolidays() {
  */
 export function reloadHolidays() {
   config = null;
+  holidaysCache.clear();
   return initHolidays();
 }
 
@@ -233,11 +275,14 @@ export function reloadHolidays() {
  * @returns {Promise<HolidayConfig>} 復元されたデフォルト祝日設定オブジェクト
  */
 export async function resetHolidays() {
-  const isTauri = typeof window !== 'undefined' && !!window.__TAURI__;
-  if (isTauri) {
+  holidaysCache.clear();
+  const isTauriEnv = typeof window !== 'undefined' && !!window.__TAURI__;
+  if (isTauriEnv) {
     try {
       const jsonText = await invoke('reset_holidays_json');
       config = JSON.parse(jsonText);
+      const currentYear = new Date().getFullYear();
+      await fetchHolidays(currentYear);
       return config;
     } catch (e) {
       console.error('Error invoking reset_holidays_json:', e);
@@ -248,28 +293,13 @@ export async function resetHolidays() {
 }
 
 /**
- * 指定された西暦年の日本の祝日マップ（日付文字列 => 祝日名称）を計算して返します。
+ * JavaScript による祝日日付計算フォールバックロジック。
  *
- * ## 計算アルゴリズムの構成
- * 1. **固定祝日**: `fixed` マップから該当年の "YYYY-MM-DD" を生成。
- * 2. **ハッピーマンデー制度**: 該当年月に応じた「第 N 月曜日」の日付を動的算出。
- * 3. **歴代天皇誕生日**: 在位期間に合致する天皇誕生日を判定・追加。
- * 4. **天文計算（春分の日・秋分の日）**: 簡易天文計算式（海上保安庁基準式ベース）により日付を導出。
- * 5. **振替休日 (1973年〜)**: 祝日が日曜日と重なった場合、直後の平日（連休の場合は祝日明け平日）を「振替休日」に設定。
- * 6. **国民の休日 (1986年〜)**: 2つの祝日に挟まれた平日（日曜日でない日）を「国民の休日」に設定。
- * 7. **特定年上書き**: オリンピック特例等、特定年に特別に移動・削除（null指定）された祝日を反映。
- *
- * @param {number|string} yearParam - 祝日を算出する対象の西暦年 (例: 2026, "2026")
- * @returns {Object.<string, string>} "YYYY-MM-DD" 形式の日付文字列をキー、祝日名称を値とするマップ
- * @example
- * const holidays2026 = getHolidays(2026);
- * console.log(holidays2026["2026-01-01"]); // "元日"
- * console.log(holidays2026["2026-05-06"]); // "振替休日"
+ * @param {number} year - 対象の西暦年
+ * @returns {Object.<string, string>} 祝日マップ
  */
-export function getHolidays(yearParam) {
-  const year = parseInt(yearParam, 10);
+function computeHolidaysJs(year) {
   const holidays = {};
-  
   if (isNaN(year) || year < 1948) return {};
   
   const activeConfig = config || fallbackConfig;
@@ -371,5 +401,39 @@ export function getHolidays(yearParam) {
     });
   }
 
+  return holidays;
+}
+
+/**
+ * 指定された西暦年の日本の祝日マップ（日付文字列 => 祝日名称）を計算またはキャッシュから同期的に返します。
+ *
+ * ## 動作仕様
+ * 1. キャッシュが存在する場合はキャッシュされた祝日マップを即座に返します。
+ * 2. キャッシュが存在しない場合は、JavaScript 側の計算エンジンを実行して結果をキャッシュに登録して返します。
+ * 3. Tauri 環境下では、バックグラウンドで Rust コマンド `get_holidays` による最新値取得・キャッシュ同期も試行します。
+ *
+ * @param {number|string} yearParam - 祝日を算出する対象の西暦年 (例: 2026, "2026")
+ * @returns {Object.<string, string>} "YYYY-MM-DD" 形式の日付文字列をキー、祝日名称を値とするマップ
+ * @example
+ * const holidays2026 = getHolidays(2026);
+ * console.log(holidays2026["2026-01-01"]); // "元日"
+ * console.log(holidays2026["2026-05-06"]); // "振替休日"
+ */
+export function getHolidays(yearParam) {
+  const year = parseInt(yearParam, 10);
+  if (isNaN(year) || year < 1948) return {};
+
+  if (holidaysCache.has(year)) {
+    return holidaysCache.get(year);
+  }
+
+  // Tauri環境下かつキャッシュ未生成時はバックグラウンドでRustからのフェッチも試行
+  const isTauriEnv = typeof window !== 'undefined' && !!window.__TAURI__;
+  if (isTauriEnv) {
+    fetchHolidays(year).catch(e => console.error(e));
+  }
+
+  const holidays = computeHolidaysJs(year);
+  holidaysCache.set(year, holidays);
   return holidays;
 }

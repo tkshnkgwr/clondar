@@ -39,8 +39,8 @@ Before packaging a release, all project-wide version designations (`Cargo.toml`,
 Launch PowerShell and execute the version bump script in the root directory:
 
 ```powershell
-# Temporarily bypass script execution policy (e.g., updating version to 1.4.1)
-powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.4.1
+# Temporarily bypass script execution policy (e.g., updating version to 1.4.3)
+powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.4.3
 ```
 
 - **Script Behavior**:
@@ -58,14 +58,14 @@ Once files are updated, stage and commit the changes, tag the commit with the ta
 ```bash
 # 1. Stage and commit update changes
 git add .
-git commit -m "chore: release version 1.4.1"
+git commit -m "chore: release version 1.4.3"
 
 # 2. Tag target commit (following semantic version naming conventions, prefixed with 'v')
-git tag v1.4.1
+git tag v1.4.3
 
 # 3. Push commit and tagging attributes to the remote origin
 git push origin main
-git push origin v1.4.1
+git push origin v1.4.3
 ```
 
 ---
@@ -90,4 +90,4 @@ Upon successful compilation, the following binaries are uploaded to the GitHub R
 ## 5. Verifying Releases
 
 1. Open the repository on GitHub and navigate to "**Releases**".
-2. Confirm the published release for version `v1.4.1` exists and the MSI / EXE installer assets are attached.
+2. Confirm the published release for version `v1.4.3` exists and the MSI / EXE installer assets are attached.

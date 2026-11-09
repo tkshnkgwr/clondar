@@ -135,8 +135,23 @@ export default function HolidaysManager({ onClose, onSaved }) {
       return;
     }
 
+    const [monthStr, dayStr] = newFixedDate.split('-');
+    const month = parseInt(monthStr, 10);
+    const day = parseInt(dayStr, 10);
+
+    if (month < 1 || month > 12) {
+      alert("月は 01〜12 の範囲で入力してください。");
+      return;
+    }
+
+    const maxDays = [0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (day < 1 || day > maxDays[month]) {
+      alert(`${month}月の日付は 01〜${maxDays[month]} の範囲で入力してください。`);
+      return;
+    }
+
     setHolidaysConfig(prev => {
-      const nextFixed = { ...prev.fixed, [newFixedDate]: newFixedName };
+      const nextFixed = { ...prev.fixed, [newFixedDate]: newFixedName.trim() };
       return { ...prev, fixed: nextFixed };
     });
     setNewFixedDate('');

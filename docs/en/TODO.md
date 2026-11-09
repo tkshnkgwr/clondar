@@ -47,6 +47,20 @@ This document manages development progress, current tasks, and future feature ba
   - [x] Implemented `HelpModal.jsx` providing application overview, version badge, and operational guide cards.
   - [x] Migrated holiday calculation engine to Rust (`src-tauri/src/holidays.rs`), added strong Serde schema/range validation, and implemented `reset_holidays_json`.
   - [x] Unified directory layout to the official Tauri standard (root `src/` and `src-tauri/`) and expanded unit test suites across frontend and backend.
+- [x] **Offline Reliability & Static Configuration Alignment (v1.4.2)**
+  - [x] Removed external Google Fonts CDN links from `index.html` to guarantee 100% offline self-containment.
+  - [x] Aligned dynamic Emperor's Birthday calculation in `public/config/holidays.json` by eliminating duplicates.
+  - [x] Prevented URL resolution errors (`Invalid URL`) in headless Vitest environments with `window.location.origin` safety guards.
+  - [x] Added `npm test` step to CI workflows and mapped `npm run lint` in `package.json`.
+- [x] **Open Source Licensing Update (v1.4.3)**
+  - [x] Transitioned project license from MIT License to GNU General Public License v3.0 or later (GPL-3.0-or-later).
+  - [x] Updated license notices across `LICENSE`, `package.json`, `Cargo.toml`, `README.md`, `README_JA.md`, and all documentation.
+- [x] **Holiday Engine Optimization, Input Validation & Documentation Complete (v1.4.4)**
+  - [x] Introduced annual holiday memory cache in `holidays.js` and automated prefetching via Rust backend's `get_holidays` IPC command in Tauri environments.
+  - [x] Implemented month/day boundary and monthly day-limit input validation in `HolidaysManager.jsx`.
+  - [x] Synchronized version fallback badge in `HelpModal.jsx` with `tauri.js` (`0.0.0-dev`).
+  - [x] Added null-safe unlisten guards in `App.jsx` lifecycle teardowns.
+  - [x] Comprehensive overhaul of `README.md` / `README_JA.md` and complete technical documentation alignment.
 
 ---
 
@@ -71,6 +85,10 @@ There are currently no pending immediate tasks. All core features and verificati
   - Toggle displaying annual week numbers (e.g. W01..W52) on the left margin of calendar rows.
 - [ ] **Multi-Timezone / World Clock Sub-Display**
   - Render a secondary compact clock displaying UTC or selected international timezones (e.g., New York, London).
+- [ ] **Widget Scaling & Display Scaling Slider**
+  - Enable users to smoothly adjust widget zoom scale (80% to 150%) across high-DPI and 4K displays.
+- [ ] **Alarm & Countdown Timer (Pomodoro Tracker)**
+  - Integrate a customizable countdown timer (e.g., 25-minute work intervals) and scheduled alarms with Windows toast notifications.
 
 ### ⚡ Usability & System Integration
 - [ ] **Global Hotkey Integration (Instant Show/Hide)**
@@ -79,6 +97,10 @@ There are currently no pending immediate tasks. All core features and verificati
   - Integrate autostart toggles into the settings panel (e.g., using Tauri's autostart plugin) for direct startup enrollment.
 - [ ] **Ghost / Click-Through Transparency Mode**
   - Temporarily increase transparency on mouse hover or allow mouse events to click through to underlying desktop windows.
+- [ ] **Automatic Update Checker via GitHub Releases**
+  - Check for newer releases in the background at startup or within the Help Modal, notifying users with an unobtrusive update badge.
+- [ ] **Complete Frontend Integration of Rust Holiday Engine (`get_holidays`)**
+  - Unify dual holiday calculation logic by routing Tauri frontend requests directly through the Rust `get_holidays` command for maximal execution speed and maintainability.
 
 ### 📅 Scheduling & Data Interoperability
 - [ ] **Monospace Widget Planner & Desktop Reminders**

@@ -14,7 +14,7 @@
  */
 
 import { describe, test, expect, beforeEach } from 'vitest';
-import { getHolidays, initHolidays, reloadHolidays, resetHolidays, fallbackConfig } from './holidays';
+import { getHolidays, fetchHolidays, initHolidays, reloadHolidays, resetHolidays, fallbackConfig } from './holidays';
 
 describe('日本の祝日計算ロジック (getHolidays)', () => {
 
@@ -168,5 +168,16 @@ describe('祝日設定ライフサイクル (initHolidays, reloadHolidays, reset
     expect(config).toBeDefined();
     expect(config.fixed['01-01']).toBe('元日');
     expect(config.fixed['05-05']).toBe('こどもの日');
+  });
+
+  test('fetchHolidays が指定年の祝日マップを非同期に取得しキャッシュすること', async () => {
+    const holidays = await fetchHolidays(2026);
+    expect(holidays).toBeDefined();
+    expect(holidays['2026-01-01']).toBe('元日');
+    expect(holidays['2026-05-03']).toBe('憲法記念日');
+
+    // キャッシュされた値が即座に同期 getHolidays でも返ること
+    const syncHolidays = getHolidays(2026);
+    expect(syncHolidays['2026-01-01']).toBe('元日');
   });
 });

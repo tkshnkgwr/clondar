@@ -107,7 +107,7 @@ graph TD
 ### 3.5 Help & App Info Feature (HelpModal)
 * **Title Bar Trigger**: Click the `HelpCircle` (❓) icon button located on the title bar.
 * **Information Display**:
-  - Shows application branding (`Clondar Pro`) and dynamic versioning badge (e.g. `v1.4.0`) synced from `tauri.conf.json`.
+  - Shows application branding (`Clondar Pro`) and dynamic versioning badge (e.g. `v1.4.3`) synced from `tauri.conf.json`.
   - App overview explaining the borderless, transparent desktop widget philosophy.
   - Six core feature cards: Clock Modes, Calendar, Always on Top, Transparency, Widget Dragging, and Shortcuts.
 * **Safe Controls**:
@@ -162,6 +162,6 @@ graph TD
 ---
 
 **Last Updated**: September 8, 2026  
-**Version**: 1.4.3
-**Internal Version**: 1.4.3.0
+**Version**: 1.4.4
+**Internal Version**: 1.4.4.0
 

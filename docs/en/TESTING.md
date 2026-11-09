@@ -11,14 +11,14 @@ This document details testing strategies, quality check policies, and execution 
 `Clondar Pro` coordinates backend tasks (Rust / Tauri) alongside frontend components (React / Vitest). We utilize comprehensive test cases to verify widget responsiveness and algorithm accuracy.
 
 Key testing targets include:
-- **Holiday Calculation Algorithms (Frontend)**:
-  - Verifies date calculations for fixed holidays, Happy Mondays, Vernal/Autumnal Equinoxes, substitute holidays, and custom overrides compiled inside `src/utils/holidays.js` (validated by `holidays.test.js`).
-- **Data Load Consistency (Backend)**:
-  - Validates structures of built-in fallback holiday JSON templates and confirms clean file recoveries under data corruption.
+- **Holiday Calculation Algorithms (Frontend & Backend)**:
+  - Verifies date calculations for fixed holidays, Happy Mondays, Vernal/Autumnal Equinoxes, Emperors' Birthdays, substitute holidays, and custom overrides across both `src/utils/holidays.js` (JS) and `src-tauri/src/holidays.rs` (Rust), verified by `holidays.test.js` and Rust native unit tests.
+- **Data Load Consistency & Schema Validation (Backend)**:
+  - Validates structures of built-in fallback holiday JSON templates (`test_default_holidays_json_validity`) and ensures invalid month/day/week inputs are rejected cleanly via Serde schema validation (`test_validation_error_handling`).
 - **Shared Crate `common_lib` Integration**:
   - Validates LCS string alignments for line diff displays, and checks keyword occurrences metric calculations.
-- **Physical Coordinates Management**:
-  - Ensures correct captures of absolute physical positions at exit, coordinate restoration on boot, and confirms startup race protection guards (`isRestoringRef`) in mixed multi-monitor setups.
+- **Physical Coordinates Management & Tauri API Wrappers**:
+  - Ensures correct captures of absolute physical positions at exit, coordinate restoration on boot, and confirms startup race protection guards (`isRestoringRef`) in mixed multi-monitor setups (verified by `tauri.test.js`).
 - **Single Instance Verification (Named Mutex)**:
   - Validates the Named Mutex lock, confirming duplicate processes terminate cleanly.
 

@@ -39,8 +39,8 @@ sequenceDiagram
 PowerShell を起動し、リポジトリのルートディレクトリで以下のスクリプトを実行します。
 
 ```powershell
-# 実行ポリシーを一時的に緩和してスクリプトを実行 (例: バージョン 1.4.1 へ更新する場合)
-powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.4.1
+# 実行ポリシーを一時的に緩和してスクリプトを実行 (例: バージョン 1.4.3 へ更新する場合)
+powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.4.3
 ```
 
 - **スクリプトの動作**:
@@ -58,14 +58,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.4.1
 ```bash
 # 1. 変更内容をステージングしてコミット
 git add .
-git commit -m "chore: バージョン 1.4.1 への更新"
+git commit -m "chore: バージョン 1.4.3 への更新"
 
 # 2. バージョンタグを作成 (セマンティックバージョニングに準拠し、頭に v を付けます)
-git tag v1.4.1
+git tag v1.4.3
 
 # 3. コミットと作成したタグをリモートにプッシュ
 git push origin main
-git push origin v1.4.1
+git push origin v1.4.3
 ```
 
 ---
@@ -90,4 +90,4 @@ git push origin v1.4.1
 ## 5. リリースの確認
 
 1. リポジトリの GitHub ページを開き、「**Releases**」にアクセスします。
-2. `v1.4.1` のリリースが公開され、MSI / EXE インストーラーアセットが正常に添付されていることを確認します。
+2. `v1.4.3` のリリースが公開され、MSI / EXE インストーラーアセットが正常に添付されていることを確認します。

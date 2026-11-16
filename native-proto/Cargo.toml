@@ -1,0 +1,24 @@
+[package]
+name = "clondar-native"
+version = "2.0.0-alpha.1"
+description = "Clondar Pro Phase C Native GUI Prototype (egui / eframe)"
+license = "GPL-3.0-or-later"
+edition = "2021"
+
+[dependencies]
+eframe = { version = "0.37.0", default-features = false, features = [
+    "glow",
+    "default_fonts",
+] }
+chrono = "0.4.38"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tray-icon = { version = "0.26.1", default-features = false }
+common_lib = { path = "../../common_lib", features = ["windows_desktop"] }
+
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'
+strip = true

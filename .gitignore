@@ -1,6 +1,7 @@
 # Rust (Cargo) 関連の除外
 /target/
 /src-tauri/target/
+/native-proto/target/
 /src-tauri/gen/schemas/
 **/*.rs.bk
 

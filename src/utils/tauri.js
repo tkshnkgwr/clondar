@@ -81,6 +81,27 @@ export const getAppVersion = async () => {
 };
 
 /**
+ * 現在のウィンドウ物理座標を取得し、LocalStorage に保存します。
+ *
+ * @async
+ * @param {import('@tauri-apps/api/window').Window} win - 対象ウィンドウインスタンス
+ * @returns {Promise<WindowPosition|null>} 保存された物理座標。取得失敗時は null
+ */
+export const saveWindowPosition = async (win) => {
+  if (!win) return null;
+  try {
+    const pos = await win.outerPosition();
+    if (pos) {
+      localStorage.setItem('windowPosition', JSON.stringify({ x: pos.x, y: pos.y, type: pos.type || 'Physical' }));
+      return pos;
+    }
+  } catch (e) {
+    console.error("Failed to save window position:", e);
+  }
+  return null;
+};
+
+/**
  * 現在のウィンドウを安全に閉じます。
  *
  * ## 動作仕様
@@ -93,14 +114,7 @@ export const getAppVersion = async () => {
 export const closeWindow = async () => {
   const win = getTauriWindow();
   if (win) {
-    try {
-      const pos = await win.outerPosition();
-      if (pos) {
-        localStorage.setItem('windowPosition', JSON.stringify({ x: pos.x, y: pos.y, type: pos.type || 'Physical' }));
-      }
-    } catch (e) {
-      console.error("Failed to save position on close:", e);
-    }
+    await saveWindowPosition(win);
     try {
       await win.close();
     } catch (e) {
@@ -162,7 +176,7 @@ export const restoreWindowPosition = async (isRestoringRef) => {
 
 /**
  * ウィンドウの移動イベント (`tauri://move`) を購読し、
- * 移動が完了した時点での最新物理絶対座標を LocalStorage に保存します。
+ * 移動が停止した時点（250ms デバウンス後）の最新物理絶対座標を LocalStorage に保存します。
  *
  * @async
  * @param {React.MutableRefObject<boolean>} isRestoringRef - 復元処理中フラグの Ref（true の間は保存をスキップ）
@@ -172,15 +186,25 @@ export const restoreWindowPosition = async (isRestoringRef) => {
 export const listenToMove = async (isRestoringRef, callback) => {
   const win = getTauriWindow();
   if (win && win.listen) {
+    let debounceTimer = null;
     try {
-      return await win.listen('tauri://move', async () => {
+      const unlisten = await win.listen('tauri://move', () => {
         if (isRestoringRef.current) return;
-        const pos = await win.outerPosition();
-        if (pos) {
-          localStorage.setItem('windowPosition', JSON.stringify({ x: pos.x, y: pos.y, type: pos.type || 'Physical' }));
-          if (callback) callback(pos);
-        }
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+          debounceTimer = null;
+          if (isRestoringRef.current) return;
+          const pos = await saveWindowPosition(win);
+          if (pos && callback) callback(pos);
+        }, 250);
       });
+      return () => {
+        if (debounceTimer) {
+          clearTimeout(debounceTimer);
+          debounceTimer = null;
+        }
+        if (unlisten) unlisten();
+      };
     } catch (e) {
       console.error("Failed to listen to move event:", e);
     }

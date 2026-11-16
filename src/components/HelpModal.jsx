@@ -6,7 +6,6 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { 
   X, 
   HelpCircle, 
@@ -49,7 +48,7 @@ const GUIDE_ITEMS = [
   {
     icon: Sun,
     title: '透過 & ダークモード',
-    description: '太陽アイコンで背景透過モード（グラスモーフィズム）へ切り替え。月アイコンでライト/ダークテーマを瞬時に切り替えられ、壁紙に美しく調和します。'
+    description: '太陽アイコンで半透明の背景透過モードへ切り替え。月アイコンでライト/ダークテーマを瞬時に切り替えられ、壁紙に美しく調和します。'
   },
   {
     icon: Move,
@@ -76,11 +75,8 @@ const GUIDE_ITEMS = [
  */
 export default function HelpModal({ version, onClose }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md select-none"
+    <div
+      className="animate-modal-in fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75 select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -165,6 +161,6 @@ export default function HelpModal({ version, onClose }) {
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

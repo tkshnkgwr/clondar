@@ -14,7 +14,7 @@
  */
 
 import { describe, test, expect, beforeEach } from 'vitest';
-import { getHolidays, fetchHolidays, initHolidays, reloadHolidays, resetHolidays, fallbackConfig } from './holidays';
+import { getHolidays, getCachedHolidays, fetchHolidays, initHolidays, reloadHolidays, resetHolidays, formatDateStr, fallbackConfig } from './holidays';
 
 describe('日本の祝日計算ロジック (getHolidays)', () => {
 
@@ -179,5 +179,17 @@ describe('祝日設定ライフサイクル (initHolidays, reloadHolidays, reset
     // キャッシュされた値が即座に同期 getHolidays でも返ること
     const syncHolidays = getHolidays(2026);
     expect(syncHolidays['2026-01-01']).toBe('元日');
+    expect(getCachedHolidays(2026)?.['2026-01-01']).toBe('元日');
+  });
+
+  test('getCachedHolidays は未キャッシュ時に null、範囲外年に空オブジェクトを返すこと', () => {
+    expect(getCachedHolidays(2035)).toBeNull();
+    expect(getCachedHolidays(1940)).toEqual({});
+    expect(getCachedHolidays('invalid')).toEqual({});
+  });
+
+  test('formatDateStr が YYYY-MM-DD 形式へ正しく整形すること', () => {
+    expect(formatDateStr(new Date(2026, 0, 5))).toBe('2026-01-05');
+    expect(formatDateStr(new Date(2026, 11, 31))).toBe('2026-12-31');
   });
 });

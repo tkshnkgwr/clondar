@@ -4,6 +4,7 @@ import {
   getTauriWindow, 
   getAppVersion, 
   setAlwaysOnTop, 
+  saveWindowPosition,
   closeWindow, 
   restoreWindowPosition, 
   listenToMove 
@@ -58,5 +59,9 @@ describe('Tauri ユーティリティ (tauri.js)', () => {
     const isRestoringRef = { current: false };
     const unlisten = await listenToMove(isRestoringRef);
     expect(unlisten).toBeNull();
+  });
+
+  test('saveWindowPosition() は null 引数に対して安全に null を返すこと', async () => {
+    await expect(saveWindowPosition(null)).resolves.toBeNull();
   });
 });

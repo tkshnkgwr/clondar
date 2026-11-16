@@ -2,26 +2,28 @@
  * @fileoverview Clondar Pro メインアプリケーションオーケストレーター。
  *
  * 全体の状態管理（時計モード、透過状態、最前面固定、ダークモード、カレンダー月管理）、
- * 起動時の物理座標復元および競合ガード、タイマーの動的インターバル最適化、
- * システムトレイとのイベント双方向連携、およびモーダル制御を行います。
+ * 起動時の物理座標復元および競合ガード、システムトレイとのイベント双方向連携、
+ * および遅延ロード（React.lazy）によるモーダル制御を行います。
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { Clock as ClockIcon, Calendar as CalendarIcon, Sun, Moon, Pin, X, HelpCircle } from 'lucide-react';
 import { DigitalClock, AnalogClock } from './components/Clock';
-import { Calendar, YearlyView } from './components/Calendar';
+import { Calendar } from './components/Calendar';
 import { initHolidays } from './utils/holidays';
-import HolidaysManager from './components/HolidaysManager';
-import HelpModal from './components/HelpModal';
-import { 
-  isTauri, 
-  setAlwaysOnTop, 
-  closeWindow, 
-  getAppVersion, 
-  restoreWindowPosition, 
-  listenToMove 
+import {
+  isTauri,
+  setAlwaysOnTop,
+  closeWindow,
+  getAppVersion,
+  restoreWindowPosition,
+  listenToMove
 } from './utils/tauri';
+
+// モーダル群の完全遅延ロード（初期バンドルおよび初期 DOM から切り離し）
+const YearlyView = lazy(() => import('./components/YearlyView'));
+const HolidaysManager = lazy(() => import('./components/HolidaysManager'));
+const HelpModal = lazy(() => import('./components/HelpModal'));
 
 /**
  * カスタムウィンドウフレームのプロパティ型定義。
@@ -39,18 +41,13 @@ import {
 /**
  * カスタムウィンドウフレームコンポーネント。
  *
- * ## 特徴
- * - `data-tauri-drag-region` 属性による、フレーム領域全域でのシームレスなウィンドウドラッグ移動。
- * - ヘルプ（❓）、最前面ピン留め（📌）、背景透過トグル（☀️）、および安全なクローズ（❌）ボタンを統合。
- * - グラスモーフィズムおよびダークモードに対応した透過デザイン。
- *
  * @param {WindowFrameProps} props - コンポーネントのプロパティ
  * @returns {JSX.Element} WindowFrame コンポーネント
  */
-const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version, onOpenHelp }) => {
+const WindowFrame = React.memo(({ children, title, isPinned, setIsPinned, isTransparent, setIsTransparent, version, onOpenHelp }) => {
   return (
-    <div 
-      className={`flex flex-col rounded-2xl overflow-hidden transition-all duration-300 w-full h-full ${isTransparent ? 'bg-white/30 dark:bg-slate-900/30 glass' : 'bg-slate-50 dark:bg-slate-950'}`}
+    <div
+      className={`flex flex-col rounded-2xl overflow-hidden transition-colors duration-300 w-full h-full ${isTransparent ? 'bg-white/40 dark:bg-slate-900/45' : 'bg-slate-50 dark:bg-slate-950'}`}
       data-tauri-drag-region
     >
       <div className="flex items-center justify-between px-4 py-2 bg-white/50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 select-none" data-tauri-drag-region>
@@ -62,31 +59,31 @@ const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, se
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={onOpenHelp} 
-            className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors" 
+          <button
+            onClick={onOpenHelp}
+            className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
             title="ヘルプ・アプリ情報"
             aria-label="ヘルプ・アプリ情報"
           >
             <HelpCircle size={14} />
           </button>
-          <button 
-            onClick={() => { setIsPinned(!isPinned); setAlwaysOnTop(!isPinned); }} 
-            className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isPinned ? 'text-blue-500' : 'text-slate-400'}`} 
+          <button
+            onClick={() => { setIsPinned(!isPinned); setAlwaysOnTop(!isPinned); }}
+            className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isPinned ? 'text-blue-500' : 'text-slate-400'}`}
             title="最前面表示"
           >
             <Pin size={14} />
           </button>
-          <button 
-            onClick={() => setIsTransparent(!isTransparent)} 
-            className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isTransparent ? 'text-blue-500' : 'text-slate-400'}`} 
+          <button
+            onClick={() => setIsTransparent(!isTransparent)}
+            className={`p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors ${isTransparent ? 'text-blue-500' : 'text-slate-400'}`}
             title="背景透過"
           >
             <Sun size={14} />
           </button>
           <div className="w-px h-4 bg-slate-200 dark:bg-slate-800 mx-1" />
-          <button 
-            onClick={closeWindow} 
+          <button
+            onClick={closeWindow}
             className="p-1 rounded hover:bg-red-500 hover:text-white text-slate-400 transition-colors"
             title="閉じる"
           >
@@ -97,28 +94,28 @@ const WindowFrame = ({ children, title, isPinned, setIsPinned, isTransparent, se
       <div className="flex-1 p-8">{children}</div>
     </div>
   );
-};
+});
 
 /**
  * メインのアプリケーションルートコンポーネント。
  *
  * ## 主要なアーキテクチャ設計
  * 1. **設定の永続化と復元**: `localStorage` から各種表示設定（12H/24H、秒表示、ダークモード等）を自動読み書き。
- * 2. **DPI対応の物理座標復元**: `restoreWindowPosition` により前回終了時の物理絶対位置へウィンドウを正確に復元。
- * 3. **タイマー最適化**: 表示モードに応じて更新間隔（100ms〜1000ms）を動的制御し、CPU負荷を最小化。
- * 4. **イベントバス連携**: Rust トレイメニューからの最前面トグルや位置リセットイベントをリアルタイム購読。
+ * 2. **DPI対応の物理座標復元**: `restoreWindowPosition` により前回終了時の物理絶対位置へウィンドウを正確に復元した後に1回だけ表示。
+ * 3. **レンダリング分離**: 時刻更新を `DigitalClock` / `AnalogClock` 内部に局所化し、ルートやカレンダーの再描画を完全に排除。
+ * 4. **イベント駆動座標保存**: デバウンス付き `listenToMove` および終了前保存に一本化し、常時 IPC ポーリングを撤廃。
+ * 5. **イベントバス連携**: Rust トレイメニューからの最前面トグルや位置リセットイベントをリアルタイム購読。
  *
  * @returns {JSX.Element} App コンポーネント
  */
 export default function App() {
   const isRestoringRef = useRef(true);
   const [loading, setLoading] = useState(true);
-  const [time, setTime] = useState(new Date());
   const [is24Hour, setIs24Hour] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [clockType, setClockType] = useState('digital');
   const [showSeconds, setShowSeconds] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
   const [isPinned, setIsPinned] = useState(true);
   const [showYearly, setShowYearly] = useState(false);
   const [showHolidaysManager, setShowHolidaysManager] = useState(false);
@@ -131,56 +128,55 @@ export default function App() {
   const modalsRef = useRef({ showHelp: false, showYearly: false, showHolidaysManager: false });
   modalsRef.current = { showHelp, showYearly, showHolidaysManager };
 
+  const handleOpenHelp = useCallback(() => setShowHelp(true), []);
+  const handleCloseHelp = useCallback(() => setShowHelp(false), []);
+  const handleShowYearly = useCallback(() => setShowYearly(true), []);
+  const handleCloseYearly = useCallback(() => setShowYearly(false), []);
+  const handleShowHolidays = useCallback(() => setShowHolidaysManager(true), []);
+  const handleCloseHolidays = useCallback(() => setShowHolidaysManager(false), []);
+  const handleSavedHolidays = useCallback(() => setHolidaysVersion((v) => v + 1), []);
+
   // 設定の読み込みと外部データの初期化
   useEffect(() => {
     const loadSettings = async () => {
-      // 1. 外部祝日設定 JSON のロード
-      await initHolidays();
-      setLoading(false);
+      try {
+        // 1. 外部祝日設定・当年祝日のロード
+        await initHolidays();
 
-      // 2. LocalStorage 設定の読み込み
-      const saved24H = localStorage.getItem('is24Hour');
-      if (saved24H !== null) setIs24Hour(saved24H === 'true');
-      
-      const savedSeconds = localStorage.getItem('showSeconds');
-      if (savedSeconds !== null) setShowSeconds(savedSeconds === 'true');
-      
-      const savedClockType = localStorage.getItem('clockType');
-      if (savedClockType) setClockType(savedClockType);
-      
-      const savedDarkMode = localStorage.getItem('isDarkMode');
-      if (savedDarkMode !== null) setIsDarkMode(savedDarkMode === 'true');
+        // 2. LocalStorage 設定の読み込み
+        const saved24H = localStorage.getItem('is24Hour');
+        if (saved24H !== null) setIs24Hour(saved24H === 'true');
 
-      const savedTransparent = localStorage.getItem('isTransparent');
-      if (savedTransparent !== null) setIsTransparent(savedTransparent === 'true');
+        const savedSeconds = localStorage.getItem('showSeconds');
+        if (savedSeconds !== null) setShowSeconds(savedSeconds === 'true');
 
-      const savedPinned = localStorage.getItem('isPinned');
-      if (savedPinned !== null) {
-        setIsPinned(savedPinned === 'true');
-        setAlwaysOnTop(savedPinned === 'true');
+        const savedClockType = localStorage.getItem('clockType');
+        if (savedClockType) setClockType(savedClockType);
+
+        const savedDarkMode = localStorage.getItem('isDarkMode');
+        if (savedDarkMode !== null) setIsDarkMode(savedDarkMode === 'true');
+
+        const savedTransparent = localStorage.getItem('isTransparent');
+        if (savedTransparent !== null) setIsTransparent(savedTransparent === 'true');
+
+        const savedPinned = localStorage.getItem('isPinned');
+        if (savedPinned !== null) {
+          setIsPinned(savedPinned === 'true');
+          setAlwaysOnTop(savedPinned === 'true');
+        }
+
+        // 3. アプリケーションバージョンの取得
+        const appVersion = await getAppVersion();
+        setVersion(appVersion);
+      } finally {
+        setLoading(false);
+        // 4. ウィンドウ位置の復元と1回限りの表示
+        await restoreWindowPosition(isRestoringRef);
       }
-
-      // 3. アプリケーションバージョンの取得
-      const appVersion = await getAppVersion();
-      setVersion(appVersion);
-
-      // 4. ウィンドウ位置の復元
-      await restoreWindowPosition(isRestoringRef);
     };
 
     loadSettings();
   }, []);
-
-  // 時計の定期アップデート（表示モードに応じた最適なインターバルで負荷を低減）
-  useEffect(() => {
-    if (loading) return;
-
-    // アナログ時計のスイープ運針時は100ms、デジタル秒表示時は250ms、秒非表示時は1000msに設定
-    const intervalMs = showSeconds ? (clockType === 'analog' ? 100 : 250) : 1000;
-    const timer = setInterval(() => setTime(new Date()), intervalMs);
-
-    return () => clearInterval(timer);
-  }, [loading, showSeconds, clockType]);
 
   // 設定の保存
   useEffect(() => {
@@ -203,24 +199,8 @@ export default function App() {
   useEffect(() => {
     if (loading) return;
 
-    // ウィンドウの移動イベント購読
-    let unlistenMovePromise = listenToMove(isRestoringRef);
-
-    // フォールバック用の座標保存ポーリング
-    const posTimer = setInterval(async () => {
-      if (isRestoringRef.current || !isTauri()) return;
-      const win = window.__TAURI__?.webviewWindow?.getCurrentWebviewWindow?.() || window.__TAURI__?.window?.getCurrentWindow?.();
-      if (win) {
-        try {
-          const pos = await win.outerPosition();
-          if (pos) {
-            localStorage.setItem('windowPosition', JSON.stringify({ x: pos.x, y: pos.y, type: pos.type || 'Physical' }));
-          }
-        } catch (e) {
-          console.error("Failed to poll position:", e);
-        }
-      }
-    }, 5000);
+    // ウィンドウの移動イベント購読（デバウンス付き座標保存）
+    const unlistenMovePromise = listenToMove(isRestoringRef);
 
     // Rust トレイメニューからの最前面切り替えイベントハンドラ
     let unlistenAlwaysOnTopPromise;
@@ -239,7 +219,7 @@ export default function App() {
         localStorage.setItem('windowPosition', JSON.stringify({ x, y, type: 'Physical' }));
       });
     }
-    
+
     // コンテキストメニュー禁止
     window.oncontextmenu = (e) => { e.preventDefault(); return false; };
 
@@ -264,7 +244,6 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      clearInterval(posTimer);
       unlistenMovePromise.then(unlisten => unlisten && unlisten());
       if (unlistenAlwaysOnTopPromise) unlistenAlwaysOnTopPromise.then(unlisten => unlisten && unlisten());
       if (unlistenPositionResetPromise) unlistenPositionResetPromise.then(unlisten => unlisten && unlisten());
@@ -285,26 +264,26 @@ export default function App() {
 
   return (
     <div className="h-full w-full overflow-hidden relative select-none" data-tauri-drag-region>
-      <WindowFrame 
-        title="Clondar Pro" 
-        isPinned={isPinned} 
-        setIsPinned={setIsPinned} 
-        isTransparent={isTransparent} 
-        setIsTransparent={setIsTransparent} 
+      <WindowFrame
+        title="Clondar Pro"
+        isPinned={isPinned}
+        setIsPinned={setIsPinned}
+        isTransparent={isTransparent}
+        setIsTransparent={setIsTransparent}
         version={version}
-        onOpenHelp={() => setShowHelp(true)}
+        onOpenHelp={handleOpenHelp}
       >
         <div className="flex flex-row gap-12 items-start">
           <div className="flex flex-col items-center gap-8 w-[500px] flex-shrink-0 z-10">
             <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl shadow-inner relative z-20">
-              <button 
-                onClick={() => setClockType('digital')} 
+              <button
+                onClick={() => setClockType('digital')}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${clockType === 'digital' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >
                 <ClockIcon size={16} />DIGITAL
               </button>
-              <button 
-                onClick={() => setClockType('analog')} 
+              <button
+                onClick={() => setClockType('analog')}
                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${clockType === 'analog' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
               >
                 <ClockIcon size={16} />ANALOG
@@ -313,27 +292,27 @@ export default function App() {
 
             <div className="flex-1 flex items-center justify-center min-h-[300px]">
               {clockType === 'digital' ? (
-                <DigitalClock time={time} is24Hour={is24Hour} showSeconds={showSeconds} />
+                <DigitalClock is24Hour={is24Hour} showSeconds={showSeconds} />
               ) : (
-                <AnalogClock time={time} showSeconds={showSeconds} />
+                <AnalogClock showSeconds={showSeconds} />
               )}
             </div>
 
             <div className="flex items-center justify-center gap-3 mt-auto">
-              <button 
-                onClick={() => setIs24Hour(!is24Hour)} 
+              <button
+                onClick={() => setIs24Hour(!is24Hour)}
                 className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all shadow-sm ${is24Hour ? 'bg-blue-500 text-white shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}
               >
                 {is24Hour ? '24H' : '12H'}
               </button>
-              <button 
-                onClick={() => setShowSeconds(!showSeconds)} 
+              <button
+                onClick={() => setShowSeconds(!showSeconds)}
                 className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all shadow-sm ${showSeconds ? 'bg-blue-500 text-white shadow-blue-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}
               >
                 秒表示: {showSeconds ? 'ON' : 'OFF'}
               </button>
-              <button 
-                onClick={() => setIsDarkMode(!isDarkMode)} 
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
                 className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors shadow-sm animate-none"
               >
                 {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
@@ -348,38 +327,38 @@ export default function App() {
               <CalendarIcon size={16} />
               <span className="text-xs font-bold uppercase tracking-widest">Calendar</span>
             </div>
-            <Calendar 
+            <Calendar
               key={`calendar-${holidaysVersion}`}
-              currentMonth={currentMonth} 
-              setCurrentMonth={setCurrentMonth} 
-              onShowYearly={() => setShowYearly(true)} 
-              onShowHolidays={() => setShowHolidaysManager(true)} 
-              isTransparent={isTransparent} 
+              currentMonth={currentMonth}
+              setCurrentMonth={setCurrentMonth}
+              onShowYearly={handleShowYearly}
+              onShowHolidays={handleShowHolidays}
+              isTransparent={isTransparent}
             />
           </div>
         </div>
       </WindowFrame>
 
-      <AnimatePresence>
+      <Suspense fallback={null}>
         {showHelp && (
-          <HelpModal 
-            version={version} 
-            onClose={() => setShowHelp(false)} 
+          <HelpModal
+            version={version}
+            onClose={handleCloseHelp}
           />
         )}
         {showYearly && (
-          <YearlyView 
-            year={currentMonth.getFullYear()} 
-            onClose={() => setShowYearly(false)} 
+          <YearlyView
+            year={currentMonth.getFullYear()}
+            onClose={handleCloseYearly}
           />
         )}
         {showHolidaysManager && (
-          <HolidaysManager 
-            onClose={() => setShowHolidaysManager(false)} 
-            onSaved={() => setHolidaysVersion(v => v + 1)}
+          <HolidaysManager
+            onClose={handleCloseHolidays}
+            onSaved={handleSavedHolidays}
           />
         )}
-      </AnimatePresence>
+      </Suspense>
     </div>
   );
 }

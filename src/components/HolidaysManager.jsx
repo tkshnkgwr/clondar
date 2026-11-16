@@ -6,11 +6,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { X, Calendar as CalendarIcon, AlertCircle, FileText, CheckCircle2, Trash2, Plus, Save, RotateCcw } from 'lucide-react';
+import { X, Calendar as CalendarIcon, AlertCircle, CheckCircle2, Trash2, Plus, Save, RotateCcw } from 'lucide-react';
 import { isTauri } from '../utils/tauri';
 import { fallbackConfig, reloadHolidays, resetHolidays } from '../utils/holidays';
 import { invoke } from '@tauri-apps/api/core';
+
+const KEYWORDS = ['の日', '天皇誕生日', '振替休日', '国民の休日'];
 
 /**
  * 祝日設定マネージャーのプロパティ型定義。
@@ -46,64 +47,45 @@ export default function HolidaysManager({ onClose, onSaved }) {
   const [newFixedDate, setNewFixedDate] = useState('');
   const [newFixedName, setNewFixedName] = useState('');
 
-  const keywords = ['の日', '天皇誕生日', '振替休日', '国民の休日'];
-
   /**
    * 祝日設定データをロードし、初期化します。
-   * Tauri 環境では Rust 側のコマンドを呼び出し、ブラウザ環境ではフォールバック設定を読み込みます。
-   * また、設定の統計情報とデフォルトとの差分を算出します。
+   * Tauri 環境では Rust 側の一括コマンドを並列呼び出しし、ブラウザ環境ではモックまたはバンドル設定を読み込みます。
    */
   const loadData = async () => {
     try {
       setLoading(true);
+      const tauriEnv = isTauri();
       let currentJson = '';
-      
-      if (isTauri()) {
+
+      if (tauriEnv) {
         currentJson = await invoke('load_holidays_json');
       } else {
-        // Webブラウザ環境用のフォールバック読み込み
-        try {
-          const response = await fetch('/config/holidays.json');
-          if (response.ok) {
-            currentJson = await response.text();
-          } else {
-            currentJson = JSON.stringify(fallbackConfig, null, 2);
-          }
-        } catch (e) {
-          currentJson = JSON.stringify(fallbackConfig, null, 2);
-        }
+        currentJson =
+          (typeof localStorage !== 'undefined' && localStorage.getItem('mock_holidays_json')) ||
+          JSON.stringify(fallbackConfig, null, 2);
       }
 
       setRawJsonText(currentJson);
       const parsedConfig = JSON.parse(currentJson);
       setHolidaysConfig(parsedConfig);
 
-      const fallbackJson = JSON.stringify(fallbackConfig, null, 2);
-
-      // 2. 統計の取得
-      const calculatedStats = [];
-      for (const word of keywords) {
-        let count = 0;
-        if (isTauri()) {
-          count = await invoke('get_word_count', { text: currentJson, word });
-        } else {
-          const regex = new RegExp(word, 'gi');
-          count = (currentJson.match(regex) || []).length;
-        }
-        calculatedStats.push({ word, count });
-      }
-      setStats(calculatedStats);
-
-      // 3. 差分の取得
-      if (isTauri()) {
-        const diff = await invoke('get_holidays_diff', {
-          oldText: fallbackJson,
-          newText: currentJson,
-        });
+      // 統計情報と差分の取得（Tauri環境では一括IPCを並列実行）
+      if (tauriEnv) {
+        const [wordCounts, diff] = await Promise.all([
+          invoke('get_word_counts', { text: currentJson, words: KEYWORDS }),
+          invoke('get_holidays_diff', { newText: currentJson }),
+        ]);
+        setStats(wordCounts);
         setDiffParts(diff);
       } else {
+        const calculatedStats = KEYWORDS.map((word) => {
+          const regex = new RegExp(word, 'gi');
+          return { word, count: (currentJson.match(regex) || []).length };
+        });
+        setStats(calculatedStats);
+
         const lines = currentJson.split('\n');
-        setDiffParts(lines.map(line => ({ diff_type: 'Unchanged', value: line })));
+        setDiffParts(lines.map((line) => ({ diff_type: 'Unchanged', value: line })));
       }
 
       setError(null);
@@ -270,11 +252,11 @@ export default function HolidaysManager({ onClose, onSaved }) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md"
+    <div
+      className="animate-modal-in fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/75"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[480px] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/20 dark:border-slate-800">
         {/* ヘッダー */}
@@ -524,6 +506,6 @@ export default function HolidaysManager({ onClose, onSaved }) {
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

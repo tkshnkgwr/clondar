@@ -109,3 +109,39 @@
   - 祝日の法改正に自動で追随するため、起動時にGitHubなどの特定サーバーから最新の `holidays.json` をバックグラウンドで自動取得・更新する仕組み。
 - [ ] **祝日・イベントデータのインポート/エクスポート (iCalendar / CSV / JSON)**
   - 外部カレンダーツール（GoogleカレンダーやOutlook等）とのデータ共有やバックアップを可能にする、iCal (.ics) / CSV / JSON 形式での入出力機能。
+
+---
+
+## 4. Ver.2.0 軽量化・アーキテクチャ刷新構想 (Ver.2.0 Roadmap)
+
+2026-11-16 の実測メモリ計測（全体約 424.7 MB / 固有メモリ約 197.6 MB：うち Rust 本体 **8.32 MB**・WebView2 群 **189.31 MB**）およびソースコード診断に基づき、無用な常時処理・描画負荷・メモリ消費を徹底削減するための次期メジャーアップデート構想。
+
+### 🚀 Phase A: フロントエンド再設計・無駄の削減
+- [x] **時計ステートの局所化 ＆ 再レンダリング範囲の分離 (`src/App.jsx`, `Calendar.jsx`)**
+  - 最上位 `App` での高頻度 `setTime(new Date())`（100ms〜250ms）による `WindowFrame` や `Calendar`（42セル）の巻き込み再描画を廃止し、`Clock` コンポーネント内部での更新（または `useRef` 直接 DOM 更新）と `React.memo` 化を行う。
+- [x] **画面のぼかし（`.glass` / `backdrop-filter: blur(16px)`）の廃止 (`src/index.css`, `Clock.jsx`, `Calendar.jsx`)**
+  - 背景透過 OFF 時にも常時適用されているぼかし処理を撤廃し、GPU コンポジタ負荷および `gpu-process` の常駐メモリ消費を削減する（シンプルな半透明単色または不透明スタイルへ統一）。
+- [x] **`framer-motion` 依存の完全撤廃 (`package.json`, `Clock.jsx`, `Calendar.jsx`, `App.jsx`)**
+  - 100ms 更新のアナログ針やツールチップ・モーダル開閉を軽量な CSS Transition / CSS `transform` 直更新へ置き換え、バンドルサイズとランタイム負荷を削減する。
+- [x] **5秒おきの常時 IPC 座標ポーリングの廃止 (`src/App.jsx`)**
+  - `listenToMove` のデバウンス保存および終了前保存へ一本化し、ウィンドウを動かしていない待機時の無用な `win.outerPosition()` IPC 通信と `localStorage` 書き込みをなくす。
+- [x] **毎フレーム・ループ内のオブジェクト生成抑制 (`src/components/Clock.jsx`, `Calendar.jsx`)**
+  - `DigitalClock` 内で 250ms ごとに新規生成されている `Intl.DateTimeFormat` インスタンスをキャッシュ・外部化し、さらに `Calendar`（42セル）および `YearlyView`（365セル）のループ内で毎回生成されている `new Date()` をループ外1回に集約して GC 負荷を抑える。
+- [x] **祝日データ3重定義・計算ロジック二重実装の整理 (`main.rs`, `holidays.js`, `public/config/holidays.json`)**
+  - 3箇所に重複しているデフォルト祝日定義と、JS・Rust 双方に存在する祝日計算ロジック（初回表示時の二重計算・上書き）を整理・一本化する。
+- [x] **デッドコード・起動時二重 `show()`・冗長処理のクリーンアップ (`lib.rs`, `tauri.conf.json`, `HolidaysManager.jsx`, `tailwind.config.js`)**
+  - どこからも呼ばれていない `src-tauri/src/lib.rs` と `tauri-plugin-log` 依存の整理、`visible: false` 起動＋座標復元後1回 `show()` への正常化、統計取得4回直列 IPC の一括化、除去済み旧フォント名（`Inter` / `JetBrains Mono`）の整理を行う。
+- [x] **モーダル群の完全遅延ロード (`React.lazy`)**
+  - `YearlyView`・`HolidaysManager`・`HelpModal` を初期バンドル・初期 DOM から切り離し、起動時メモリを削減する。
+
+### ⚡ Phase B: Tauri / WebView2 ランタイム最適化
+- [ ] **WebView2 起動引数の最適化 (`additional_browser_args`)**
+  - 時計・カレンダーウィジェットに不要なブラウザ機能（スペルチェック、メディア関連、バックグラウンド通信機能等）を無効化し、`utility` プロセス群等の基礎メモリを削減する。
+- [ ] **トレイ格納（非表示）時の WebView 破棄またはサスペンド (`src-tauri/src/main.rs`)**
+  - ウィンドウを閉じてトレイ常駐している間は WebView ウィンドウを破棄（再表示時に再生成）またはサスペンドさせ、バックグラウンド待機時の消費を Rust 本体の数〜十数 MB に抑える。
+- [ ] **フロントエンドの脱 React 検討**
+  - React 18 から Preact / SolidJS / バニラ TypeScript へ移行し、レンダラー側の JS ヒープとバンドルサイズを最小化する。
+
+### 🦀 Phase C: 抜本的アーキテクチャ刷新（最終目標オプション）
+- [ ] **脱 WebView2・Rust ネイティブ GUI 化の検討**
+  - 現行の固有メモリの約 96% を占める WebView2（Chromium）を脱却し、**Win32 + Direct2D / DirectComposition** や **Slint / iced / egui** 等の Rust ネイティブ描画へ移行することで、メモリ消費 **10〜30 MB 台** の超軽量常駐ウィジェットを目指す。

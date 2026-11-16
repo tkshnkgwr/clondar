@@ -16,11 +16,12 @@
 //!   - [`save_holidays_json`][]: 厳格なスキーマおよび範囲検証を行った上で祝日定義ファイルを安全に上書き保存。
 //!   - [`reset_holidays_json`][]: 祝日定義を内蔵の初期デフォルト設定で安全に強制上書き復元。
 //!   - [`get_holidays_diff`][]: 共有ライブラリ `common_lib` の LCS Diff アルゴリズムを用いた設定差分の計算。
-//!   - [`get_word_count`][]: 共有ライブラリ `common_lib` による特定キーワードの出現回数集計。
+//!   - [`get_word_counts`][]: 共有ライブラリ `common_lib` による複数キーワードの出現回数一括集計。
 
 // リリースビルド時にWindowsで追加のコンソールウィンドウが表示されるのを防ぎます。削除しないでください！
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -45,128 +46,10 @@ struct QuittingState(Mutex<bool>);
 /// アプリケーションに組み込まれている内蔵標準の祝日設定データ（JSON形式）。
 ///
 /// ## 特徴
+/// `src/config/holidays.json` を単一ソースとしてコンパイル時に埋め込みます。
 /// 外部祝日設定ファイル（`%LOCALAPPDATA%/com.clondar.pro/holidays.json`）が存在しない初期起動時、
 /// またはファイルが削除された場合に、本文字列から新規設定ファイルが自動生成されます。
-///
-/// ## 含まれるセクション
-/// - `fixed`: 年月日が固定された日本の祝日（元日、建国記念の日、こどもの日等）
-/// - `happy_mondays`: 2000年以降のハッピーマンデー制度（成人の日、海の日、敬老の日、スポーツの日）
-/// - `happy_mondays_legacy`: 1999年以前の旧祝日制度（1月15日成人の日、10月10日体育の日等）
-/// - `emperor_birthdays`: 歴代天皇誕生日の期間定義
-/// - `custom_overrides`: 東京オリンピック等の特定年限定の祝日移動・特例措置
-const DEFAULT_HOLIDAYS_JSON: &str = r#"{
-  "fixed": {
-    "01-01": "元日",
-    "02-11": "建国記念の日",
-    "04-29": "昭和の日",
-    "05-03": "憲法記念日",
-    "05-04": "みどりの日",
-    "05-05": "こどもの日",
-    "08-11": "山の日",
-    "11-03": "文化の日",
-    "11-23": "勤労感謝の日"
-  },
-  "happy_mondays": [
-    {
-      "month": 1,
-      "week": 2,
-      "name": "成人の日",
-      "start_year": 2000
-    },
-    {
-      "month": 7,
-      "week": 3,
-      "name": "海の日",
-      "start_year": 2003
-    },
-    {
-      "month": 9,
-      "week": 3,
-      "name": "敬老の日",
-      "start_year": 2003
-    },
-    {
-      "month": 10,
-      "week": 2,
-      "name": "スポーツの日",
-      "start_year": 2020
-    }
-  ],
-  "happy_mondays_legacy": [
-    {
-      "month": 1,
-      "day": 15,
-      "name": "成人の日",
-      "start_year": 1949,
-      "end_year": 1999
-    },
-    {
-      "month": 7,
-      "day": 20,
-      "name": "海の日",
-      "start_year": 1996,
-      "end_year": 2002
-    },
-    {
-      "month": 9,
-      "day": 15,
-      "name": "敬老の日",
-      "start_year": 1966,
-      "end_year": 2002
-    },
-    {
-      "month": 10,
-      "day": 10,
-      "name": "体育の日",
-      "start_year": 1966,
-      "end_year": 1999
-    },
-    {
-      "month": 10,
-      "week": 2,
-      "name": "体育の日",
-      "start_year": 2000,
-      "end_year": 2019
-    }
-  ],
-  "emperor_birthdays": [
-    {
-      "start_year": 1949,
-      "end_year": 1988,
-      "month": 4,
-      "day": 29
-    },
-    {
-      "start_year": 1989,
-      "end_year": 2018,
-      "month": 12,
-      "day": 23
-    },
-    {
-      "start_year": 2020,
-      "month": 2,
-      "day": 23
-    }
-  ],
-  "custom_overrides": {
-    "2020": {
-      "2020-07-23": "海の日",
-      "2020-07-24": "スポーツの日",
-      "2020-08-10": "山の日",
-      "2020-07-20": null,
-      "2020-08-11": null,
-      "2020-10-12": null
-    },
-    "2021": {
-      "2021-07-22": "海の日",
-      "2021-07-23": "スポーツの日",
-      "2021-08-08": "山の日",
-      "2021-07-19": null,
-      "2021-08-11": null,
-      "2021-10-11": null
-    }
-  }
-}"#;
+const DEFAULT_HOLIDAYS_JSON: &str = include_str!("../../src/config/holidays.json");
 
 /// 祝日設定ファイル（`holidays.json`）の保存先となるローカルデータ領域の絶対パスを取得します。
 ///
@@ -273,6 +156,15 @@ fn save_holidays_json(app: tauri::AppHandle, json_content: String) -> Result<(),
     Ok(())
 }
 
+/// キーワード出現回数の集計結果。
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+struct WordCountItem {
+    /// 検索対象キーワード
+    word: String,
+    /// 出現回数
+    count: usize,
+}
+
 /// 2つのテキスト（内蔵デフォルト設定と現在適用中の設定）間のテキスト行単位差分を計算する IPC コマンド。
 ///
 /// ## 連携
@@ -280,34 +172,42 @@ fn save_holidays_json(app: tauri::AppHandle, json_content: String) -> Result<(),
 /// 高速に追加行・削除行・変更なし行を判定・分類します。
 ///
 /// # 引数
-/// * `old_text` - 比較元テキスト（内蔵デフォルトの祝日 JSON など）
+/// * `old_text` - 比較元テキスト（省略時は内蔵デフォルト [`DEFAULT_HOLIDAYS_JSON`] を使用）
 /// * `new_text` - 比較先テキスト（ユーザーがカスタマイズした祝日 JSON など）
 ///
 /// # 戻り値
 /// * `Ok(Vec<common_lib::DiffPart>)` - 追加・削除・変更なしの差分パーツ配列
 #[tauri::command]
 fn get_holidays_diff(
-    old_text: String,
+    old_text: Option<String>,
     new_text: String,
 ) -> Result<Vec<common_lib::DiffPart>, String> {
-    Ok(common_lib::compute_diff(&old_text, &new_text))
+    let base = old_text.as_deref().unwrap_or(DEFAULT_HOLIDAYS_JSON);
+    Ok(common_lib::compute_diff(base, &new_text))
 }
 
-/// 指定されたテキスト全体の中から、特定の単語（祝日名称やキーワード）の出現回数を集計する IPC コマンド。
+/// 指定されたテキスト全体の中から、複数キーワードの出現回数を一括集計する IPC コマンド。
 ///
 /// ## 連携
-/// 共通ライブラリ `common_lib::count_occurrences` を呼び出して集計します。
-/// 祝日設定マネージャー画面における統計情報（「の日」の件数など）の表示に使用されます。
+/// 共通ライブラリ `common_lib::count_occurrences` を呼び出して一括集計し、
+/// IPC 往復回数とテキスト転送の重複を削減します。
 ///
 /// # 引数
 /// * `text` - 検索対象となるテキスト全体（JSON 文字列など）
-/// * `word` - カウントする検索キーワード（例: "の日", "天皇誕生日"）
+/// * `words` - カウントする検索キーワード一覧
 ///
 /// # 戻り値
-/// * `Ok(usize)` - キーワードの出現回数（件数）
+/// * `Ok(Vec<WordCountItem>)` - キーワードごとの出現回数一覧
 #[tauri::command]
-fn get_word_count(text: String, word: String) -> Result<usize, String> {
-    Ok(common_lib::count_occurrences(&text, &word))
+fn get_word_counts(text: String, words: Vec<String>) -> Result<Vec<WordCountItem>, String> {
+    let results = words
+        .into_iter()
+        .map(|word| {
+            let count = common_lib::count_occurrences(&text, &word);
+            WordCountItem { word, count }
+        })
+        .collect();
+    Ok(results)
 }
 
 /// アプリケーションのエントリーポイント。
@@ -343,7 +243,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             get_holidays,
             get_holidays_diff,
-            get_word_count,
+            get_word_counts,
             load_holidays_json,
             reset_holidays_json,
             save_holidays_json
@@ -361,8 +261,7 @@ fn main() {
             // 強制的に最前面に設定
             window.set_always_on_top(true).unwrap();
 
-            // ウィンドウを確実に表示
-            let _ = window.show();
+            // ウィンドウ表示はフロントエンドの座標復元完了後に1回だけ実行するため、ここでは呼ばない
 
             // ウィンドウが閉じられようとしたときは、破棄せずに非表示にする (常駐化対策)
             let app_handle = app.handle().clone();
@@ -507,11 +406,14 @@ mod tests {
         assert!(has_added, "変更後の行が追加として検出される必要があります");
     }
 
-    /// キーワード出現回数集計コマンド (`get_word_count`) のロジックをテストします。
+    /// キーワード出現回数一括集計コマンド (`get_word_counts`) のロジックをテストします。
     #[test]
-    fn test_word_count_logic() {
+    fn test_word_counts_logic() {
         let text = r#"{"fixed": {"01-01": "元日", "02-11": "建国記念の日", "04-29": "昭和の日"}}"#;
-        let count = common_lib::count_occurrences(text, "の日");
-        assert_eq!(count, 2, "「の日」が2件検出される必要があります");
+        let words = vec!["の日".to_string(), "元日".to_string()];
+        let results = get_word_counts(text.to_string(), words).unwrap();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].count, 2, "「の日」が2件検出される必要があります");
+        assert_eq!(results[1].count, 1, "「元日」が1件検出される必要があります");
     }
 }

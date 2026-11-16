@@ -109,3 +109,39 @@ There are currently no pending immediate tasks. All core features and verificati
   - Auto-fetch the latest `holidays.json` from GitHub in the background at startup to sync dates dynamically upon legislative amendments.
 - [ ] **Holiday / Event Import & Export (iCalendar / CSV / JSON)**
   - Provide data export and import tools supporting standard `.ics` (iCalendar), CSV, and JSON formats for seamless synchronization with Google Calendar or Outlook.
+
+---
+
+## 4. Ver.2.0 Lightweight Optimization & Architecture Roadmap
+
+A major optimization roadmap based on actual memory profiling on 2026-11-16 (~424.7 MB total working set / ~197.6 MB private memory: **8.32 MB** Rust core + **189.31 MB** WebView2 processes) and source code diagnostics to eliminate redundant background work and memory overhead.
+
+### 🚀 Phase A: Frontend Redesign & Redundancy Removal
+- [x] **Localize Clock State & Isolate Re-renders (`src/App.jsx`, `Calendar.jsx`)**
+  - Remove the root-level `setTime(new Date())` timer (100ms–250ms) that forces `WindowFrame` and `Calendar` (42 day cells) to re-render multiple times per second; encapsulate tick updates inside `Clock` (or use direct DOM updates via `useRef`) and apply `React.memo`.
+- [x] **Remove Backdrop Blur Effects (`.glass` / `backdrop-filter: blur(16px)`) (`src/index.css`, `Clock.jsx`, `Calendar.jsx`)**
+  - Eliminate continuous backdrop-blur compositing (currently applied even when background transparency is off) to reduce GPU compositor load and `gpu-process` private memory usage, replacing it with flat semi-transparent or solid backgrounds.
+- [x] **Eliminate `framer-motion` Dependency (`package.json`, `Clock.jsx`, `Calendar.jsx`, `App.jsx`)**
+  - Replace 100ms-ticking `<motion.div>` clock hands, hover tooltips, and modal transitions with lightweight CSS transitions and direct CSS `transform` updates to cut bundle size and runtime overhead.
+- [x] **Remove 5-Second Window Position IPC Polling (`src/App.jsx`)**
+  - Rely solely on debounced `listenToMove` events and pre-close persistence, eliminating periodic `win.outerPosition()` IPC calls and `localStorage` writes while idle.
+- [x] **Eliminate Per-Frame & Loop Object Allocations (`src/components/Clock.jsx`, `Calendar.jsx`)**
+  - Hoist/cache `Intl.DateTimeFormat` instances outside `DigitalClock`, and move `new Date()` "today" comparisons out of the 42-day (`Calendar`) and 365-day (`YearlyView`) render loops to minimize garbage collection pressure.
+- [x] **Deduplicate Holiday Config & Dual Calculation Logic (`main.rs`, `holidays.js`, `public/config/holidays.json`)**
+  - Consolidate the triplicated default holiday JSON definitions and eliminate redundant JS-plus-Rust double holiday calculation on initial render.
+- [x] **Clean Up Dead Code, Double `show()`, and Minor Redundancies (`lib.rs`, `tauri.conf.json`, `HolidaysManager.jsx`, `tailwind.config.js`)**
+  - Remove unused `src-tauri/src/lib.rs` (`run()`) and `tauri-plugin-log` dependency, start with `visible: false` so `restoreWindowPosition` calls `show()` once after positioning, batch the 4 sequential `get_word_count` IPC calls in `HolidaysManager`, and remove leftover Google Font names (`Inter` / `JetBrains Mono`).
+- [x] **Lazy-Load Modals (`React.lazy`)**
+  - Split `YearlyView`, `HolidaysManager`, and `HelpModal` out of the initial bundle and mount cycle to reduce baseline memory footprint.
+
+### ⚡ Phase B: Tauri / WebView2 Runtime Optimization
+- [ ] **Tune WebView2 Launch Arguments (`additional_browser_args`)**
+  - Disable browser features unnecessary for a desktop clock/calendar widget (spellchecking, media pipelines, background sync, etc.) to trim WebView2 `utility` process overhead.
+- [ ] **Destroy or Suspend WebView When Hidden to Tray (`src-tauri/src/main.rs`)**
+  - Instead of only calling `hide()`, destroy and recreate the WebView window (or suspend it) when minimized to the system tray so idle memory stays within the Rust core footprint (~8–15 MB).
+- [ ] **Evaluate React Alternatives**
+  - Consider migrating from React 18 to Preact, SolidJS, or Vanilla TypeScript to minimize renderer JS heap and runtime overhead.
+
+### 🦀 Phase C: Fundamental Architecture Overhaul (Long-Term Option)
+- [ ] **Evaluate Pure Rust Native GUI (No WebView2)**
+  - Since WebView2 accounts for ~96% of current private memory usage, explore migrating rendering to **Win32 + Direct2D / DirectComposition** or a lightweight Rust GUI framework (**Slint / iced / egui**) to achieve an ultra-lightweight **10–30 MB** resident widget.

@@ -2,88 +2,83 @@
 
 **English** | [日本語版](../ja/USER_GUIDE.md)
 
-Thank you for choosing Clondar Pro.  
-This guide provides detailed instructions on installing the application, basic operations, customizing the clocks and calendars, and using the "Holidays Manager".
+Thank you for choosing **Clondar Pro v2.0.0**.  
+This guide covers installation, basic widget controls, clock & calendar customization, and the built-in Holidays Manager.
 
 ---
 
-## 1. Installation & Booting
+## 1. Installation & Startup
 
-### 1.1 Requirements
-- **OS**: Windows 10 / 11 (64bit)
-- **Dependency**: Microsoft Edge WebView2 Runtime  
-  *Note: Installed by default on most modern Windows systems. If missing, a download wizard automatically launches during startup.*
+### 1.1 System Requirements
+- **OS**: Windows 10 / 11 (64-bit)
+- **External Runtimes**: None required (Pure Rust native binary — no WebView2 Runtime or Node.js required)
 
 ### 1.2 Installation Steps
-1. Double-click the installer package (`app_x.x.x_x64_en-US.msi` or `app-setup.exe`).
-2. When the language prompts appear (日本語 / English), select "English".
-3. Follow the installation wizard directives to choose target paths and complete setup.
-4. Launch **Clondar** from the desktop shortcut or your Start menu.
+1. Double-click the setup executable (`Clondar_Pro_2.0.0_x64-setup.exe`).
+2. Select your installer language (**English** or **日本語**).
+3. Follow the NSIS setup wizard (default location: `%LOCALAPPDATA%\Clondar Pro\Clondar.exe`).
+4. Launch **Clondar Pro** from the Start Menu.
+
+*(You can also place and run the standalone portable `Clondar.exe` binary directly.)*
 
 ---
 
 ## 2. Interface Layout & Basic Controls
 
-Clondar Pro functions as a transparent desktop widget blending natively into your wallpaper.
+Clondar Pro runs as a lightweight, borderless widget blending cleanly onto your desktop:
 
-- **Dragging/Repositioning**:  
-  Click and drag anywhere on the widget surface (e.g. transparent background spaces where no text displays) to reposition it on the screen.
-- **Set Always on Top (Pinning)**:  
-  Click the pin icon (📌) on the title bar to pin the widget above other active windows. Click it again to unpin it.
-- **Toggle Transparency**:  
-  Click the sun icon (☀️) to toggle background blur and glassmorphism transparency.
-- **Help & Information (❓)**:  
-  Click the help icon (❓) on the title bar to display an overlay modal showing application details, current version, and feature guidelines.
-- **Toggle Visibility**:  
-  Click the close button (`❌`) on the top right of the widget or press the `Esc` key on your keyboard to hide the window (if a modal is open, `Esc` closes the modal first). This does not terminate the app; you can restore the window from the system tray menu.
+- **Drag to Move**:  
+  Click and drag the title bar or background area to place the widget anywhere. Physical coordinates are saved automatically to `%LOCALAPPDATA%\com.clondar.pro\state.json`.
+- **Always on Top (Pin)**:  
+  Click the pin icon on the top-right title bar to keep the widget pinned above other windows.
+- **Background Transparency**:  
+  Click the sun/transparency icon on the title bar or bottom controls to toggle transparent background mode.
+- **Help & App Info (`?`)**:  
+  Click the help (`?`) icon on the title bar to view application info, version badge, and quick feature cards.
+- **Hide to System Tray**:  
+  Click the close (`✕`) icon or press `Esc` (if a modal is open, `Esc` closes the modal first) to minimize/hide the window to the system tray without terminating the app.
 
 ---
 
 ## 3. Clock & Calendar Customizations
 
-### 3.1 Swapping Clock Modes
-Click the tab buttons above the clock (`DIGITAL` / `ANALOG`) to swap styles.
-- **Digital Clock**: Displays monospaced tabular layouts using a bold `Impact`-inspired font.
-  - **12H/24H formats**: Click the "`24H` / `12H`" button below the clock to toggle between 12-hour (with AM/PM) and 24-hour formats.
-  - **Seconds visibility**: Click the "`秒表示: ON / OFF`" button below the clock to show or hide the seconds indicator.
-  - **Dark / Light Theme**: Click the sun/moon icon button below the clock to switch between dark and light themes instantly.
-- **Analog Clock**: Minimal sweep-second hand layout.
+### 3.1 Switching Clock Modes
+Use the centered `DIGITAL` / `ANALOG` tabs above the clock:
+- **Digital Clock**: Displays bold, high-contrast tabular numbers without horizontal jitter.
+  - **12H / 24H Format**: Click the "`24H` / `12H`" button below the clock to switch between 24-hour and 12-hour (AM/PM) formats. *(Disabled while Analog mode is active.)*
+  - **Seconds Toggle**: Click "`秒表示: ON / OFF`" to show or hide seconds.
+  - **Dark / Light Theme**: Click the theme icon button below the clock to switch between Dark and Light color palettes.
+- **Analog Clock**: Displays an enlarged circular analog clock with smooth sweep second-hand motion.
 
-### 3.2 Calendar Grids
-- **Monthly view**: Locks height structures to a steady **6-week (42-day)** grid layout to prevent height shifts across months. Public holidays are colored red; hover over them to view holiday labels inside tooltips. Click "**今月**" (This Month) to jump back to the current month.
-- **Yearly overlay**: Click the "**今年**" (This Year) button on the calendar header to display the full-screen yearly calendar modal. Use the arrows to browse previous and next years.
+### 3.2 Calendar Navigation
+- **Monthly View**: Locked to a **6-week (42-day)** grid layout so height remains fixed across all months. Japanese public holidays are highlighted in red with hover tooltips. Click "**今月**" (This Month) to jump back to today's month.
+- **Yearly View**: Click "**今年**" (This Year) in the calendar header to open a full-canvas 12-month overview modal with previous/next year controls.
 
 ---
 
 ## 4. Using the Holidays Manager
 
-Click the "**祝日設定**" (Holidays Config) button on the top right of the calendar to open the Holidays Manager dashboard.
+Click "**祝日設定**" (Holidays Config) in the top-right calendar header to open the Holidays Manager modal.
 
-### 4.1 Visual Holiday Editing & Raw Data Editing
-- **Adding Entries ("祝日の編集" / Edit Tab)**:  
-  Use the input form on the right side to define the date (`MM-DD` format, e.g., `07-07`) and holiday name, then click "リストに追加" (Add to List) to stage the item.
-- **Deleting Entries**:  
-  Click the trash can icon on the right of any item in the fixed holidays list to remove it.
-- **Raw Config Data ("設定生データ" / Raw Tab)**:  
-  Directly edit the underlying JSON configuration text. Syntax and schema validations are automatically performed when switching tabs or saving.
+### 4.1 Visual Editing & Raw JSON Editing
+- **Visual Editor**: Enter a date (`MM-DD`, e.g. `07-07`) and holiday name, then click add to append a custom fixed holiday, or delete existing items in one click.
+- **Raw Config Data (JSON)**: Directly inspect or edit the complete JSON rules (including Happy Mondays and year-specific overrides). Schema and date range validation run automatically before saving.
 
 ### 4.2 Comparison Diffs & Statistics
-- **Comparison Diffs ("変更差分 (Diff)" Tab)**: Compares your active configuration with the built-in default configuration (using LCS algorithms) and highlights line-by-line differences:
-  - **Green highlight (+)**: Newly added lines.
-  - **Red highlight (-)**: Deleted default lines.
-- **Configuration Statistics**: The left sidebar automatically counts and displays occurrences of key terms (such as "の日" or "天皇誕生日").
+- **Diff Tab**: Compares your active rules against built-in defaults (`config/holidays.json`) using LCS line diffing (highlighted additions/deletions).
+- **Statistics Bar**: Counts occurrences of key holiday types across your configuration.
 
-### 4.3 Saving & Resetting Configurations
-- **Save and Apply ("保存して適用")**: Click the "**保存して適用**" button at the top right to validate and save your changes to `%LOCALAPPDATA%/com.clondar.pro/holidays.json`. Changes take effect on the calendar grid immediately and persist across restarts.
-- **Reset ("初期化")**: Click the "**初期化**" button at the top right to safely restore the built-in default holiday configuration at any time.
+### 4.3 Saving & Resetting
+- **Save & Apply**: Validates and saves rules to `%LOCALAPPDATA%\com.clondar.pro\holidays.json`, updating the calendar immediately.
+- **Reset**: Restores the built-in default Japanese holiday rules safely at any time.
 
 ---
 
-## 5. System Tray Integrations
+## 5. System Tray Menu
 
-Clondar Pro resides inside your taskbar system tray menu. **Right-click** the tray icon to access controls:
+**Right-click** the Clondar Pro tray icon in the Windows notification area to access:
 
-- **Show / Hide ("表示 / 非表示")**: Toggles window visibility.
-- **Toggle Always on Top ("最前面表示の切替")**: Anchors the widget above other windows (synchronizes immediately with the pin icon on the window title bar).
-- **Reset Position ("位置をリセット")**: If the widget gets lost off-screen due to monitor changes or resolution updates, select this option to center the window on the primary display immediately.
-- **Exit ("終了")**: Completely shuts down the application and removes it from the system tray.
+- **Show / Hide**: Toggles widget visibility.
+- **Toggle Always on Top**: Toggles pinned state in sync with the title bar button.
+- **Reset Position**: Recenters the widget on the screen if moved off-display after monitor changes.
+- **Exit**: Saves settings and terminates Clondar Pro cleanly.

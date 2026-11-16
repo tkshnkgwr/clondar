@@ -2,41 +2,40 @@
 
 **English** | [日本語版](../ja/SECURITY.md)
 
-This document outlines the security policies, design principles, and vulnerability reporting procedures for the `Clondar Pro` project.
+This document outlines the security architecture, safety tenets, supported versions, and vulnerability reporting process for **Clondar Pro**.
 
 ---
 
 ## 1. Security Architecture & Principles
 
-`Clondar Pro` is engineered with the following security tenets to guarantee data isolation and application reliability:
+`Clondar Pro` (v2.0.0+) guarantees data isolation and safe local execution through a Pure Rust native architecture:
 
-1. **Sandboxing & Permission Isolation (Tauri v2 Capabilities)**:
-   - Frontend components (Webview) and Rust backend bindings are separated by Tauri's secure IPC bridge.
-   - Using `capabilities/default.json`, we configure permission maps to restrict core operations, explicitly whitelisting only the necessary system APIs (e.g., window drag triggers, coordinates fetching, window closures, and pinning).
+1. **Zero Browser Engine / Zero JS Runtime**:
+   - Starting with v2.0.0, Clondar Pro eliminates WebView2, Chromium subprocesses, and Node.js/JavaScript dependencies entirely, removing browser/IPC attack surfaces.
 2. **Rust-Enforced Memory Safety**:
-   - The backend program is compiled in Rust, which guarantees memory safety at compile-time, eliminating concerns regarding typical vulnerabilities (buffer overflows, null pointer dereferencing, race conditions, etc.).
+   - All application layers (UI rendering, configuration parsing, system tray handling, and Japanese holiday calculations) are compiled in safe Rust, eliminating buffer overflows, null dereferences, and data races at compile time.
 3. **Local-First & Offline Operations**:
-   - The application does not communicate with external network entities and operates completely offline. All parameters (e.g. customized holidays, preferences) are cached locally inside the user's LocalAppData folder, eliminating remote attack vectors.
+   - Clondar Pro performs zero network communication. Preferences (`state.json`) and custom holiday configurations (`holidays.json`) stay strictly within `%LOCALAPPDATA%\com.clondar.pro\`, protected by Serde schema and date-range validation before writes.
 
 ---
 
 ## 2. Supported Versions
 
-Security updates are actively supplied for the following release targets:
+Security updates are provided for the following release branches:
 
 | Version                            | Support Status |
 | :--------------------------------- | :------------: |
-| Latest Release (v1.4.x)            |  ✅ Supported  |
-| Outdated Releases (v1.3.x & older) | ❌ Unsupported |
+| Latest Release (v2.0.x)            |  ✅ Supported  |
+| Outdated Releases (v1.4.x & older) | ❌ Unsupported |
 
 ---
 
 ## 3. Reporting Vulnerabilities
 
-If you identify a security vulnerability in `Clondar Pro`, do not open a public issue. Instead, report it directly to the repository maintainer or security contact via email.
+If you discover a security vulnerability in `Clondar Pro`, please do not open a public GitHub issue. Contact the repository maintainer directly.
 
-Please provide the following details to help us investigate the issue:
-1. The affected application version and details about your execution environment (e.g., Windows OS build).
-2. A description of the vulnerability, along with step-by-step reproduction instructions (PoC code or operations).
+Please include:
+1. Affected application version and Windows execution environment details.
+2. A clear description of the issue and step-by-step reproduction instructions.
 
-Upon receipt, we will investigate the issue, develop patches, and release updates.
+We will investigate promptly and ship a patch release upon confirmation.

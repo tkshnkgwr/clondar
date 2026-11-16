@@ -2,40 +2,37 @@
 
 **English** | [日本語版](../ja/CONTRIBUTING.md)
 
-Thank you for your interest in contributing to the `Clondar` project!
-This document outlines guidelines for reporting bugs, suggesting features, and submitting pull requests.
+Thank you for your interest in contributing to the `Clondar` project!  
+This document outlines guidelines for reporting bugs, proposing features, and submitting pull requests.
 
 ---
 
 ## 1. Development Principles & Core Guidelines
 
-Please adhere to the following principles when contributing to this project.
+Please adhere to the following principles when contributing:
 
 1. **Local-First / Offline Operation Guarantee**:
-   - The application is designed to function entirely offline. Do not introduce CDNs or external asset URLs; bundle all assets locally using Vite.
+   - Clondar Pro is engineered to run completely offline. Do not introduce network calls, telemetry, or external asset dependencies.
 2. **Visual Consistency (Borderless, Transparent, Shadowless)**:
-   - Ensure you preserve the "ultimate minimalism" widget look. Keep borders, title bars, and OS window drop shadows completely removed.
+   - Preserve the minimalist desktop widget aesthetic without OS window frames or drop shadows, and render UI icons via vector primitives in `src/icons.rs` rather than OS emoji fonts.
 3. **Multi-language Documentation Synchronization**:
-   - When modifying specifications or introducing features, keep files under both `docs/ja/` and `docs/en/` updated in sync.
+   - Keep corresponding files under both `docs/ja/` and `docs/en/` synchronized whenever modifying specifications or features.
 
 ---
 
 ## 2. Environment Setup
 
-Building and running the project requires **Node.js (v26.4.0+ recommended)** and **Rust (1.96.0+ recommended)**. If working on the shared library `common_lib` concurrently, configure local path overrides.
+Building and running `Clondar Pro` requires **Rust (1.96.0+ recommended, Windows MSVC target)** and the sibling `common_lib` repository:
 
-1. **Clone the Repository**:
+1. **Clone Repositories Side-by-Side**:
    ```bash
    git clone https://github.com/tkshnkgwr/clondar.git
+   git clone https://github.com/tkshnkgwr/common_lib.git
    cd clondar
    ```
-2. **Install Dependencies**:
+2. **Launch in Development Mode**:
    ```bash
-   npm install
-   ```
-3. **Launch in Dev Mode**:
-   ```bash
-   cargo tauri dev
+   cargo run
    ```
 
 ---
@@ -43,21 +40,20 @@ Building and running the project requires **Node.js (v26.4.0+ recommended)** and
 ## 3. Commits & Pull Request Steps
 
 ### Commit Message Guidelines
-Use the Conventional Commits format for your commit messages:
+Use clear prefixes (e.g., Conventional Commits format):
 
-- `feat:` Introduces new features
-- `fix:` Fixes bugs
-- `docs:` Modifies documentation
-- `refactor:` Refactors code structure
-- `perf:` Optimizes performance
-- `test:` Adds or modifies unit testing
-- `chore:` Changes build configurations or automation scripts
+- `feat:` New feature
+- `fix:` Bug fix
+- `docs:` Documentation update
+- `refactor:` Code refactoring
+- `perf:` Performance or memory optimization
+- `test:` Adding or updating unit tests
+- `chore:` Build, CI, or tooling updates
 
 ### Pre-PR Checklist
-Before submitting a pull request, run the following verification checks and ensure all pass without warnings:
+Verify all checks pass cleanly with zero warnings before submitting a pull request:
 
-- [ ] `cargo test --manifest-path src-tauri/Cargo.toml` (Backend tests pass)
-- [ ] `npm test` (Frontend Vitest tests pass)
-- [ ] `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` (Clippy issues resolved)
-- [ ] `cargo fmt --manifest-path src-tauri/Cargo.toml --check` (Formatting rules applied)
-- [ ] `cargo doc --manifest-path src-tauri/Cargo.toml --no-deps --document-private-items` (Rustdoc compilation completes successfully)
+- [ ] `cargo fmt --check` (Formatting compliance)
+- [ ] `cargo clippy --all-targets -- -D warnings` (Clippy static analysis)
+- [ ] `cargo test` (Unit test suite)
+- [ ] `cargo doc --no-deps --document-private-items` (Rustdoc compilation)

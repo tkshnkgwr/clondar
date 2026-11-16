@@ -8,6 +8,6 @@ updates:
 
   # Maintain dependencies for Cargo (Rust)
   - package-ecosystem: "cargo"
-    directory: "/src-tauri"
+    directory: "/"
     schedule:
       interval: "weekly"

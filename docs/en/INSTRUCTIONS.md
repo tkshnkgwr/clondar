@@ -2,74 +2,69 @@
 
 **English** | [日本語版](../ja/INSTRUCTIONS.md)
 
-This document defines guidelines for coding styles, error handling conventions, component design principles, and output formatting that AI assistants must adhere to when maintaining or extending Clondar Pro source code (Rust backend / React frontend).
+This document defines the coding style, error handling policy, module boundaries, and documentation synchronization guidelines for AI assistants maintaining **Clondar Pro** (Pure Rust native codebase under `src/`).
 
 ---
 
 ## 1. Naming Conventions
 
-Maintain consistency with existing codebase patterns:
-
-### 1.1 Backend (Rust)
-- **Files / Modules**: `snake_case` (e.g. `main.rs`, `lib.rs`)
-- **Functions / Variables**: `snake_case` (e.g. `load_holidays_json`, `get_holidays_file_path`, `app_handle`, `win_clone`)
-- **Structs / Enums / Types**: `CamelCase` (e.g. `QuittingState`, `DiffPart`)
-- **Constants**: `UPPER_SNAKE_CASE` (e.g. `DEFAULT_HOLIDAYS_JSON`)
-- **Tauri Commands**: Defined as `snake_case` in Rust. Ensure invocations from frontend match exactly.
-
-### 1.2 Frontend (Vite / React / JavaScript)
-- **File Names**:
-  - UI Component files: `PascalCase.jsx` (e.g. `Calendar.jsx`, `Clock.jsx`, `HolidaysManager.jsx`)
-  - Utility / Helper files: `camelCase.js` (e.g. `holidays.js`, `tauri.js`)
-- **Component Functions**: `PascalCase` (e.g. `WindowFrame`, `App`, `DigitalClock`)
-- **Standard Functions / Variables**: `camelCase` (e.g. `initHolidays`, `reloadHolidays`)
+- **Files / Modules**: `snake_case` (e.g., `main.rs`, `clock_pane.rs`, `holidays_manager.rs`, `yearly_view.rs`)
+- **Functions / Variables**: `snake_case` (e.g., `calculate_holidays`, `load_or_default`, `render_digital_clock`)
+- **Structs / Enums / Traits**: `CamelCase` (e.g., `ClondarApp`, `AppStateConfig`, `ClockType`, `HolidayConfig`)
+- **Constants**: `UPPER_SNAKE_CASE` (e.g., `DEFAULT_HOLIDAYS_JSON`, `APP_MUTEX_NAME`)
+- **Comments & RustDoc**: Write module docs (`//!`), doc comments (`///`), and non-obvious inline rationale in Japanese (`AGENTS.md`).
 
 ---
 
 ## 2. Error Handling Policy
-- **Backend (Rust)**: Avoid `panic!` or bare `.unwrap()`. Handle recoverable errors gracefully by returning `Result<T, String>`.
-- **Frontend (React)**: Wrap all Tauri API invocations and IPC commands in `try-catch` blocks. Fall back safely to `fallbackConfig` upon failure.
+
+- Avoid `panic!` or bare `.unwrap()` in production paths; prefer `Result<T, String>` or safe fallbacks.
+- If `state.json` or `holidays.json` is absent or malformed, fall back cleanly to `AppStateConfig::default()` or `DEFAULT_HOLIDAYS_JSON` without blocking startup.
 
 ---
 
-## 3. Component & Module Boundaries
-- **`main.rs` (Main Process Logic)**: Window decorations (borderless, transparent, shadowless), system tray menu setup, and IPC command registration.
-- **`common_lib` (Shared Crate)**: Pure shared algorithms such as LCS text diffing and single-instance named mutex locking.
-- **Frontend Architecture**: Segregate into `src/components/` (view layer), `src/utils/` (logic & API layer), and `App.jsx` (orchestrator).
+## 3. Module Boundaries
+
+- **`main.rs`**: Application state management, borderless transparent window setup, tray event handling, calendar pane, and modal dispatch.
+- **`clock_pane.rs`**: Digital/Analog clock rendering and bottom toggle buttons.
+- **`holidays.rs` / `config.rs`**: Japanese holiday calculation engine, schema validation, and `%LOCALAPPDATA%\com.clondar.pro\` persistence I/O.
+- **`icons.rs` / `theme.rs` / `font.rs`**: Vector line icons, Light/Dark/Transparent color palettes, and Windows Japanese font loading.
+- **`yearly_view.rs` / `holidays_manager.rs` / `help_modal.rs`**: Full-canvas overlay modals.
+- **`tray.rs`**: `tray-icon` wrapper and context menu handling.
+- **`common_lib` (Shared Crate)**: LCS text diffing, occurrence counting, and Named Mutex single-instance locking.
 
 ---
 
 ## 4. Documentation Synchronization Rules
 
-When modifying source code, keep both Japanese (`docs/ja/`) and English (`docs/en/`) documentation in sync.
-Always place bidirectional language links at the top of each document.
-*(Note: Verification and automated document updates can be skipped when modifying `*.md` files only.)*
+When modifying source code, synchronize affected files under both `docs/ja/` and `docs/en/` and preserve bidirectional header links.  
+*(Note: Code verification checks may be skipped when modifying `*.md` documentation files only.)*
 
 | Document File                | Role            | Trigger for Update                                                 |
 | :--------------------------- | :-------------- | :----------------------------------------------------------------- |
 | `CHANGELOG.md`               | Release notes   | Features added, bugs fixed, optimizations applied, or code removed |
-| `TODO.md`                    | Task status     | Tasks completed (Done), started (In Progress), or proposed (Backlog)|
-| `SPECIFICATION.md`           | Specs & UI      | Screen layouts, data structures, or shortcuts changed              |
-| `ARCHITECTURE.md`            | System design   | System boundaries, IPC interfaces, or process lifecycles altered   |
-| `DEVELOPMENT.md`             | Dev guide       | Build processes, dependencies, or developer commands updated       |
-| `RELEASE.md`                 | Release manual  | Version bumping, tagging, or release pipeline changed              |
-| `USER_GUIDE.md`              | Operation guide | UI features, user options, or interactions changed                 |
-| `README.md` / `README_JA.md` | Overview        | Startup commands, requirements, or key highlights modified         |
-| `TEST_REPORT.md`             | Test logs       | Self-test executions, results recorded, or architecture diagrams  |
-| `TESTING.md`                 | Testing policy  | Test policies, runner configurations, or check processes changed   |
-| `FOOTPRINTS.md`              | Performance     | Binary dimensions, RAM footprint, or compile times updated         |
-| `CONTRIBUTING.md`            | Conventions     | Commit rules, PR guidelines, or setup instructions changed         |
-| `SECURITY.md`                | Security policy | Security architectures, supported releases, or report channels     |
+| `TODO.md`                    | Task status     | Tasks completed (Done), started (In Progress), or proposed         |
+| `SPECIFICATION.md`           | Specs & UI      | Layouts, data structures, or shortcuts modified                    |
+| `ARCHITECTURE.md`            | System design   | Module layout, persistence layer, or process flow altered          |
+| `DEVELOPMENT.md`             | Dev guide       | Build workflows, dependencies, or CLI setup changed                |
+| `RELEASE.md`                 | Release manual  | Versioning scripts, NSIS setup, or release pipeline changed        |
+| `USER_GUIDE.md`              | Operation guide | UI features, user options, or interactions modified                |
+| `README.md` / `README_JA.md` | Overview        | Requirements, build commands, or highlights updated                |
+| `TEST_REPORT.md`             | Test logs       | Verification results or system architecture diagrams updated       |
+| `TESTING.md`                 | Testing policy  | Test strategies, commands, or quality gates modified               |
+| `FOOTPRINTS.md`              | Performance     | Binary dimensions, RAM usage, or compile timings updated           |
+| `CONTRIBUTING.md`            | Conventions     | Commit formats, PR guidelines, or setup steps changed              |
+| `SECURITY.md`                | Security policy | Security architecture or supported versions updated                |
 
 ---
 
 ## 5. Quality Assurance & Verification Process
-*(Note: When modifying `*.md` files only, skip code verification commands for rapid turnaround.)*
-- **File Length Limit (1000 lines)**: When a single source file (`*.rs`, `*.jsx`, `*.js`) exceeds **1000 lines**, proactively refactor into modular components.
-- **Local Verification Checklist**: Ensure zero errors and zero warnings across:
-  1. `cargo test --manifest-path src-tauri/Cargo.toml`
-  2. `npm test`
-  3. `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
-  4. `cargo fmt --manifest-path src-tauri/Cargo.toml --check`
-  5. `npm run lint`
-- **Window Decorations on Windows**: Ensure `shadow: false` in `tauri.conf.json` and `window.set_shadow(false).unwrap();` in `main.rs` are strictly preserved.
+
+*(Skip code checks when editing `*.md` files only.)*
+- **File Length Target (1000 lines)**: Refactor and split modules proactively before any single Rust source file exceeds 1,000 lines.
+- **Pre-Commit Checklist**: Ensure zero errors and zero warnings across:
+  1. `cargo fmt --check`
+  2. `cargo clippy --all-targets -- -D warnings`
+  3. `cargo test`
+  4. `cargo doc --no-deps --document-private-items`
+- **Vertically Aligned Tables**: Align every Markdown table pipe (`|`) and header separator (`-`) for plain-text editor readability.

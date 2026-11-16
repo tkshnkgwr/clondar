@@ -1,14 +1,14 @@
-# Clondar Pro リリース手順書 (GitHub Actions Automation)
+# Clondar Pro リリース手順書 (GitHub Actions 自動化対応)
 
 [English Version](../en/RELEASE.md) | **日本語版**
 
-本ドキュメントは、Clondar Pro のバージョン更新方法、リリースビルドの実行手順、および GitHub Actions による自動リリースフローについて解説するガイドラインです。
+このドキュメントは、**Clondar Pro v2.0.0** のバージョン番号更新から本番用ビルド・NSIS インストーラー生成・GitHub Releases 公開までの一連のリリース手順を解説するガイドラインです。
 
 ---
 
-## 1. リリースフローの概要
+## 1. リリースパイプライン全体像
 
-Clondar Pro のリリースは、ローカル環境でのバージョンバンプと Git バージョンタグ（`v*`）のプッシュをトリガーとした **GitHub Actions による自動ビルド・デプロイ構成**となっています。
+Clondar Pro のリリース作業は、バージョンタグ（`v*`）の Push をトリガーとした **GitHub Actions による Pure Rust + NSIS 自動ビルドワークフロー** で運用されています。
 
 ```mermaid
 sequenceDiagram
@@ -16,78 +16,81 @@ sequenceDiagram
     participant LocalRepo as ローカルリポジトリ
     participant GitHub as GitHub リモート
     participant Actions as GitHub Actions (release.yml)
-    participant Releases as GitHub Releases (Published)
+    participant Releases as GitHub Releases (公開先)
 
     Developer->>LocalRepo: scripts/bump-version.ps1 [新バージョン]
-    Note over LocalRepo: Cargo.toml, tauri.conf.json,<br/>各Markdownのバージョン一括更新
-    Developer->>LocalRepo: git commit & git tag v[新バージョン]
+    Note over LocalRepo: Cargo.toml, installer/clondar.nsi,<br/>SPECIFICATION / TEST_REPORT を一括更新
+    Developer->>LocalRepo: git commit ＆ git tag v[新バージョン]
     Developer->>GitHub: git push origin main --tags
-    GitHub->>Actions: トリガー起動 (tags: v*)
-    Note over Actions: Windows環境でのビルド開始<br/>Tauri CLI によるパッケージング
-    Actions->>Releases: MSI/EXE アセットのアップロード
-    Note over Releases: リリースが自動的に一般公開される
+    GitHub->>Actions: タグプッシュ検知 (tags: v*)
+    Note over Actions: Windows Runner で Pure Rust ビルド<br/>cargo build --release & makensis
+    Actions->>Releases: setup.exe ＆ Clondar.exe をアップロード
+    Note over Releases: 自動でリリースページが公開
 ```
 
 ---
 
-## 2. ローカルでのリリース準備
+## 2. リリース準備作業（ローカル）
 
-リリースを行う前に、プロジェクト内のすべてのバージョン表記（`Cargo.toml`、`tauri.conf.json`、各種Markdownドキュメント）を統一して更新する必要があります。この作業を自動化するために PowerShell スクリプトが用意されています。
+リリースを作成する場合、事前に各ファイル（`Cargo.toml`、`installer/clondar.nsi`、仕様書等）のバージョン番号を一括更新します。
 
 ### 2.1 バージョン一括更新スクリプトの実行
 
-PowerShell を起動し、リポジトリのルートディレクトリで以下のスクリプトを実行します。
+PowerShell を開き、リポジトリルートで以下のスクリプトを実行します。
 
 ```powershell
-# 実行ポリシーを一時的に緩和してスクリプトを実行 (例: バージョン 1.4.3 へ更新する場合)
-powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.4.3
+# 実行ポリシーを一時的にバイパスしてスクリプト実行（例: バージョン 2.0.0 へ更新）
+powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 2.0.0
 ```
 
-- **スクリプトの動作**:
-  - `src-tauri/Cargo.toml` の `version = "..."` を更新。
-  - `src-tauri/tauri.conf.json` および `package.json` の `version` を更新。
-  - `docs/ja/SPECIFICATION.md` および `docs/en/SPECIFICATION.md` 内のバージョン表記（および内部バージョン表記）を更新。
-  - `docs/ja/TEST_REPORT.md` および `docs/en/TEST_REPORT.md` 内の適合バージョン表記を更新。
+- **スクリプトの動作内容**:
+  - ルート `Cargo.toml` の `version = "..."` を更新します。
+  - `installer/clondar.nsi` の `!define PRODUCT_VERSION "..."` を更新します。
+  - `docs/ja/SPECIFICATION.md` および `docs/en/SPECIFICATION.md` のバージョン表記を更新します。
+  - `docs/ja/TEST_REPORT.md` および `docs/en/TEST_REPORT.md` の対象バージョンを更新します。
+
+> [!NOTE]
+> スクリプト実行後は `CHANGELOG.md`（日英）や `FOOTPRINTS.md` に必要な更新履歴を追記し、`cargo test` 等で事前検証を完了させてください。
 
 ---
 
-## 3. バージョンタグの作成とプッシュ
+## 3. リリースタグの作成とプッシュ
 
-バージョンの更新スクリプトの実行が完了したら、コミットを行い、リリース対象のバージョンタグを作成して GitHub にプッシュします。
+ファイルの更新内容を確認してコミットし、バージョンタグを作成して GitHub へプッシュします。
 
 ```bash
-# 1. 変更内容をステージングしてコミット
+# 1. 変更をステージング・コミット
 git add .
-git commit -m "chore: バージョン 1.4.3 への更新"
+git commit -m "chore: バージョン 2.0.0 をリリース"
 
-# 2. バージョンタグを作成 (セマンティックバージョニングに準拠し、頭に v を付けます)
-git tag v1.4.3
+# 2. タグを付与（セマンティックバージョニングに従い、先頭に v を付ける）
+git tag v2.0.0
 
-# 3. コミットと作成したタグをリモートにプッシュ
+# 3. コミットとタグをリモートへプッシュ
 git push origin main
-git push origin v1.4.3
+git push origin v2.0.0
 ```
 
 ---
 
-## 4. GitHub Actions での自動ビルドとリリース公開
+## 4. GitHub Actions による自動ビルドと公開
 
-タグのプッシュを GitHub が検知すると、`.github/workflows/release.yml` が自動的に起動します。
+タグをプッシュすると、`.github/workflows/release.yml` が自動的に起動します。
 
-### 4.1 ワークフローの実行内容
-1. **環境セットアップ**: Node.js および Rust (MSVC ターゲット) 環境をランナー上に構築し、`clondar` および共有クレート `common_lib` をチェックアウトします。
-2. **フロントエンドビルド**: プロジェクトルートで `npm ci` を実行し、依存関係をセットアップします。
-3. **Tauri アプリのビルド**: `tauri build` を実行し、Windows 向けの最終アセットをコンパイル・パッケージングします。
-4. **リリース作成とアップロード**: `softprops/action-gh-release@v3` を用いて、GitHub 上にリリースを自動作成・公開（`draft: false`）し、ビルドされたアセットファイルを添付します。
+### 4.1 ワークフローの処理内容
+1. **チェックアウト ＆ Rust 環境構築**: `clondar` と並列に共有クレート `common_lib` をチェックアウトし、Rust ツールチェーン（MSVC ターゲット）をセットアップします。
+2. **ネイティブビルド (`cargo build --release`)**: LTO・サイズ最適化・シンボルストリップを有効化して `Clondar.exe` をビルドします（`build.rs` によりアイコン・バージョン情報も埋め込み）。
+3. **NSIS インストーラー生成**: Windows ランナー上の `makensis`（未導入時は Chocolatey 経由で取得）で `installer/clondar.nsi` をコンパイルし、`installer/Clondar_Pro_<version>_x64-setup.exe` を生成します。
+4. **GitHub Releases への公開**: `softprops/action-gh-release` を使用し、成果物を添付してリリースページを公開します（`draft: false`）。
 
-### 4.2 生成されるリリースアセット
-ビルド成功時、以下のパスに出力されたアセットが GitHub Releases にアップロードされます。
-- `clondar/src-tauri/target/release/bundle/nsis/*.exe` （NSIS サイレントインストーラー）
-- `clondar/src-tauri/target/release/bundle/wix/*.msi` （WiX インストーラーパッケージ）
+### 4.2 公開される成果物
+リリース完了後、以下の実行ファイルおよびインストーラーが自動で添付されます：
+- `clondar/installer/Clondar_Pro_<version>_x64-setup.exe`（NSIS 日英対応インストーラー）
+- `clondar/target/release/Clondar.exe`（ポータブル実行バイナリ）
 
 ---
 
-## 5. リリースの確認
+## 5. リリース後の確認
 
-1. リポジトリの GitHub ページを開き、「**Releases**」にアクセスします。
-2. `v1.4.3` のリリースが公開され、MSI / EXE インストーラーアセットが正常に添付されていることを確認します。
+1. GitHub リポジトリ画面の「**Releases**」ページを開きます。
+2. 対象バージョンのリリースが作成され、NSIS インストーラーおよび `Clondar.exe` が添付されていることを確認します。

@@ -1,18 +1,11 @@
 # Rust (Cargo) 関連の除外
 /target/
-/src-tauri/target/
-/native-proto/target/
-/src-tauri/gen/schemas/
+/src-tauri/
+/native-proto/
 **/*.rs.bk
 
-# Node.js (フロントエンド) 関連の除外
-node_modules/
-.pnpm-store/
-.env
-.env.*
-!.env.example
-dist/
-build/
+# NSIS インストーラー生成物
+/installer/*.exe
 
 # OS・エディタ関連の除外
 .DS_Store

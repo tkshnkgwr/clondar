@@ -1,72 +1,73 @@
-# Clondar Pro AI 開発指示書 (INSTRUCTIONS.md)
+# Clondar Pro AI開発指示書 (INSTRUCTIONS.md)
 
 [English Version](../en/INSTRUCTIONS.md) | **日本語版**
 
-本ドキュメントは、AIアシスタントが Clondar Pro のソースコード（Rust バックエンド / React フロントエンド）を修正・追加する際に厳守すべきコーディングスタイル、エラーハンドリング方針、コンポーネント設計、および出力フォーマットを定義したガイドラインです。
+本ドキュメントは、AIアシスタントが Clondar Pro のソースコード（Pure Rust ネイティブアプリ：`src/`）を保守・拡張する際に出力フォーマット、コーディング規約、エラーハンドリング、およびドキュメント連携について遵守すべきルールを定めます。
 
 ---
 
-## 1. 命名規則
-既存コードのスタイルを一貫して維持するため、以下の規則を厳守してください。
+## 1. コーディング・命名規則
 
-### 1.1 バックエンド (Rust)
-- **ファイル名 / モジュール名**: `snake_case` (例: `main.rs`, `lib.rs`)
-- **関数名 / 変数名**: `snake_case` (例: `load_holidays_json`, `get_holidays_file_path`, `app_handle`, `win_clone`)
-- **構造体 / 列挙型 / 型名**: `CamelCase` (例: `QuittingState`, `DiffPart`)
-- **定数**: `UPPER_SNAKE_CASE` (例: `DEFAULT_HOLIDAYS_JSON`)
-- **Tauri コマンド名**: Rust側で定義するコマンド関数名は `snake_case` です。呼び出し文字列のミスマッチに注意してください。
+既存のコードベースとスタイルを統一するため、以下の命名規則に従ってください。
 
-### 1.2 フロントエンド (Vite / React / JavaScript)
-- **ファイル名**:
-  - UIコンポーネントファイル: `PascalCase.jsx` (例: `Calendar.jsx`, `Clock.jsx`, `HolidaysManager.jsx`)
-  - ユーティリティ / その他ファイル: `camelCase.js` (例: `holidays.js`, `tauri.js`)
-- **コンポーネント関数名**: `PascalCase` (例: `WindowFrame`, `App`, `DigitalClock`)
-- **一般関数名 / 変数名**: `camelCase` (例: `initHolidays`, `reloadHolidays`)
+- **ファイル名・モジュール名**: `snake_case`（例: `main.rs`, `clock_pane.rs`, `holidays_manager.rs`, `yearly_view.rs`）
+- **関数名・変数名**: `snake_case`（例: `calculate_holidays`, `load_or_default`, `render_digital_clock`）
+- **構造体・列挙型・トレイト名**: `CamelCase`（例: `ClondarApp`, `AppStateConfig`, `ClockType`, `HolidayConfig`）
+- **定数**: `UPPER_SNAKE_CASE`（例: `DEFAULT_HOLIDAYS_JSON`, `APP_MUTEX_NAME`）
+- **RustDoc / コメント**: 日本語で明確なロール・背景（「なぜそうするか」）を記述する
 
 ---
 
 ## 2. エラーハンドリング方針
-- **バックエンド (Rust)**: `panic!` や `unwrap()` の使用は極力避け、回復可能なエラーは `Result<T, String>` などの戻り値で処理してください。
-- **フロントエンド (React)**: Tauri API や Rust コマンドの呼び出しなどは、必ず `try-catch` ブロックで保護してください。失敗時はデフォルト設定（`fallbackConfig`）を適用します。
+
+- `panic!` や無防備な `.unwrap()` の使用は避け、回復可能なエラーは `Result<T, String>` またはフォールバック処理で安全にハンドリングする。
+- 設定ファイル（`state.json`, `holidays.json`）が欠損・破損している場合も、内蔵デフォルト設定（`AppStateConfig::default()` / `DEFAULT_HOLIDAYS_JSON`）へ安全にフォールバックして起動を継続させる。
 
 ---
 
-## 3. コンポーネント・モジュール分割基準
-- **`main.rs` (メインプロセスロジック)**: アプリケーションのセットアップ、ウィンドウ装飾（枠・影・透過）の制御、常駐トレイメニューの構築、およびIPCコマンドの登録を行います。
-- **`common_lib` (共有クレート)**: カレンダー処理、Diff計算、二重起動チェックなど、共有可能な純粋なロジックをここに集約します。
-- **フロントエンドの構造**: `src/components/` (ビュー層)、`src/utils/` (ロジック・API層)、`App.jsx` (オーケストレーター) に明確に分割します。
+## 3. モジュール分割とアーキテクチャ境界
+
+- **`main.rs`**: アプリ全体の状態保持、枠なし透過ウィンドウ設定、トレイイベント処理、カレンダーペインおよびモーダルディスパッチ。
+- **`clock_pane.rs`**: 左ペインのデジタル／アナログ時計描画および表示切替ボタン群。
+- **`holidays.rs` / `config.rs`**: 日本の祝日計算エンジン、JSON スキーマ検証、および `%LOCALAPPDATA%\com.clondar.pro\` 永続化 I/O。
+- **`icons.rs` / `theme.rs` / `font.rs`**: ベクターアイコン描画、ダーク/ライト/透過パレット定義、日本語システムフォント読み込み。
+- **`yearly_view.rs` / `holidays_manager.rs` / `help_modal.rs`**: 各種フルスクリーン・オーバーレイモーダル UI。
+- **`tray.rs`**: `tray-icon` 制御およびコンテキストメニュー管理。
+- **`common_lib`（外部共有クレート）**: テキスト差分計算（LCS）・出現回数集計・Named Mutex 多重起動防止。
 
 ---
 
-## 4. 自動ドキュメンテーションと更新ルール (モジュール化退避)
-コード修正時に同期更新すべきドキュメント (日本語版 `docs/ja/` / 英語版 `docs/en/` の双方を更新):
-最上部には相互言語リンク（例: `[English Version](../en/SPECIFICATION.md) | **日本語版**`）を配置する。
-※**`.md` ファイルのみの変更時は、自動ドキュメント更新および事前検証プロセスはすべてスキップ可**。
+## 4. ドキュメント同期ルール
 
-| 対象ドキュメント             | 役割             | 更新タイミング                                                                 |
-| :--------------------------- | :--------------- | :----------------------------------------------------------------------------- |
-| `CHANGELOG.md`               | 変更履歴         | 機能追加・修正・パフォーマンス改善・削除完了時                                 |
-| `TODO.md`                    | タスクステータス | タスク完了 (Done)、進行中 (In Progress/Todo)、拡張提案 (Backlog) の変更時に更新 |
-| `SPECIFICATION.md`           | 機能仕様・UI     | 画面レイアウト・データ構造・ショートカット変更時                               |
-| `ARCHITECTURE.md`            | アーキテクチャ   | システム境界・IPC通信・プロセス構造の変更時                                    |
-| `DEVELOPMENT.md`             | 開発ガイド       | ビルド手順・依存関係・開発コマンド変更時                                       |
-| `RELEASE.md`                 | リリース手順書   | バージョン更新、ビルド手順、タグ打ち手順の変更時に更新                         |
-| `USER_GUIDE.md`              | 操作・UIガイド   | UI仕様・操作方法の変更時                                                       |
-| `README.md` / `README_JA.md` | 概要・実行手順   | 起動オプション、ビルド手順、動作要件等の変更時                                 |
-| `TEST_REPORT.md`             | テスト結果記録   | テスト実行時の検証手順・結果記録                                               |
-| `TESTING.md`                 | テスト方針ガイド | テスト方針・検証環境基準・ローカル検証プロセスの変更時                         |
-| `FOOTPRINTS.md`              | パフォーマンス   | バイナリサイズ・RAM使用量等の変更時                                            |
-| `CONTRIBUTING.md`            | 開発規約         | コミット規約・PR送信プロセス・セットアップ要件の変更時                         |
-| `SECURITY.md`                | セキュリティ方針 | セキュリティ設計基準・脆弱性報告プロセスの変更時                               |
+ソースコードを変更した際は、変更内容に応じて `docs/ja/` および `docs/en/` の両方の該当ドキュメントを同期して更新してください。
+すべてのドキュメントの先頭には日英の相互リンクを配置します。
+*(※なお、Markdown ファイル `*.md` のみの軽微な修正時は事前テストコマンドの実行は省略可能です)*
+
+| ドキュメント名               | 役割         | 更新が必要なタイミング                                     |
+| :--------------------------- | :----------- | :--------------------------------------------------------- |
+| `CHANGELOG.md`               | 変更履歴     | 機能の追加、不具合修正、最適化、不要コード削除を実施時     |
+| `TODO.md`                    | タスク管理   | タスクの完了（Done）、新規着手（In Progress）、追加提案時  |
+| `SPECIFICATION.md`           | 製品仕様書   | 画面構成、データ構造、ショートカットキー等に変更を加えた時 |
+| `ARCHITECTURE.md`            | 構造設計書   | モジュール分割、永続化層、処理フローを変更した時           |
+| `DEVELOPMENT.md`             | 開発者ガイド | ビルド手順、依存クレート、開発環境設定を変更した時         |
+| `RELEASE.md`                 | リリース手順 | リリースフロー、NSIS 手順、バージョンスクリプト変更時      |
+| `USER_GUIDE.md`              | 操作ガイド   | UI 変更、ユーザー設定項目、操作方法を変更・追加した時      |
+| `README.md` / `README_JA.md` | 総合概要     | 起動方法、システム要件、主要機能ハイライトに変更がある時   |
+| `TEST_REPORT.md`             | テスト報告   | セルフテスト実施、テスト結果記録、システム構成図更新時     |
+| `TESTING.md`                 | テスト指針   | テスト実行ポリシー、コマンド、チェック項目を変更した時     |
+| `FOOTPRINTS.md`              | リソース計測 | バイナリサイズ、メモリ使用量、ビルド時間を計測・更新した時 |
+| `CONTRIBUTING.md`            | 貢献規約     | コミット規約、PR 手順、環境構築ルールを更新した時          |
+| `SECURITY.md`                | 安全性方針   | セキュリティ設計、サポートバージョン範囲を更新した時       |
 
 ---
 
-## 5. 品質管理・検証プロセス (モジュール化退避)
-※**`.md` ファイルのみの修正・追加時は、以下のローカル事前検証プロセスはすべてスキップして迅速に対応すること。**
-- **1000行超えの検知と推奨**: 単一のソースファイルの行数が **1000行を超えた場合**、AIはモジュール分割やコンポーネント抽出によるリファクタリングを積極的に検討・提案する。
-- **ローカル事前検証**: タスク完了前に以下をローカル実行し、すべて合格（エラー・警告ゼロ）を確認する：
-  1. `cargo test` （テスト合格）
-  2. `cargo clippy --all-targets -- -D warnings` （Clippy警告・エラーゼロ）
-  3. `cargo fmt --check` （コードフォーマット完全準拠）
-  4. `cargo doc --no-deps --document-private-items` （Rustdoc警告・エラーゼロ）
-- **ウィンドウの影と枠を消す (Windows)**: `tauri.conf.json` での `"shadow": false` 等と、`main.rs` での `window.set_shadow(false).unwrap();` の呼び出しを維持する。
+## 5. 品質保証と検証プロセス
+
+*(※ドキュメント `*.md` のみの修正時は実行不要)*
+- **ファイル規模上限 (1000行目安)**: 単一ファイルが 1000行を超えた場合は適切にモジュール分割を行う。
+- **事前検証**: ソースコードの変更を伴うタスクの完了報告前には、必ず以下のコマンドを実行し、エラー・警告がゼロであることを確認する（詳細: [.agents/skills/tauri-verification/SKILL.md](../../.agents/skills/tauri-verification/SKILL.md)）：
+  1. `cargo fmt --check`
+  2. `cargo clippy --all-targets -- -D warnings`
+  3. `cargo test`
+  4. `cargo doc --no-deps --document-private-items`
+- **ドキュメント上のテーブル整列**: Markdown 内の表組みは、生テキスト（gVim 等）での視認性を保つためパイプ `|` とハイフン `-` の位置を必ず垂直に整列させる。

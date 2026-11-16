@@ -1,148 +1,135 @@
-# Clondar Pro Developer Guide (Vite React Edition)
+# Clondar Pro Developer Guide (Pure Rust / egui + glow Edition)
 
 **English** | [日本語版](../ja/DEVELOPMENT.md)
 
-This document is a developer-focused guide explaining the internal architecture, source code organization, system tray implementation, and external holidays definition file structures of Clondar Pro.
+This document explains the developer setup, source module organization, build commands, system tray integration, and holiday configuration mechanisms of **Clondar Pro v2.0.0**.
 
 ---
 
 ## 1. Architectural Overview
 
-To deliver a desktop widget experience that remains operational even when the PC is completely offline, Clondar Pro utilizes a **local bundling build setup powered by Vite, React, and Tailwind CSS**.
+To provide a low-footprint, zero-external-dependency desktop widget, Clondar Pro v2.0.0 runs as a **100% Pure Rust native binary powered by egui (`eframe 0.37.0`) and the `glow` (OpenGL) backend**.
 
 ```mermaid
 graph TD
     subgraph OS [Windows OS]
-        TrayAPI[Windows Tray API]
+        TrayAPI["Windows Tray API"]
+        WinRes["build.rs (winres icon & metadata)"]
     end
 
-    subgraph Backend [Rust / Tauri v2]
-        MainRS[main.rs]
-        Cargo[Cargo.toml: rust-version 1.96.0]
-        Conf[tauri.conf.json]
+    subgraph App [Clondar Pro / Pure Rust]
+        MainRS["main.rs (ClondarApp / Window Frame)"]
+        ClockRS["clock_pane.rs (Digital & Analog Clock)"]
+        HolidaysRS["holidays.rs (Holiday Engine & Validator)"]
+        ModalsRS["yearly_view / holidays_manager / help_modal"]
+        TrayRS["tray.rs (System Tray Dispatcher)"]
+        FontTheme["font.rs / theme.rs / icons.rs"]
+        ConfigRS["config.rs (state.json / holidays.json)"]
     end
 
-    subgraph Frontend [React / JSX / Vite]
-        HTML[index.html]
-        AppJSX[App.jsx]
-        ClockJSX[components/Clock.jsx]
-        CalendarJSX[components/Calendar.jsx]
-        HolidaysJS[utils/holidays.js]
-        TauriJS[utils/tauri.js]
+    subgraph BuiltinConfig [Embedded Default Config]
+        HolidaysJSON["config/holidays.json"]
     end
 
-    subgraph Config [Config File]
-        HolidaysJSON[public/config/holidays.json]
-    end
-
-    TrayAPI <--> MainRS
-    MainRS -- Event: always-on-top / reset --> AppJSX
-    HTML --> AppJSX
-    AppJSX --> ClockJSX
-    AppJSX --> CalendarJSX
-    CalendarJSX --> HolidaysJS
-    HolidaysJS -- Fetch --> HolidaysJSON
-    AppJSX --> TauriJS
+    TrayAPI <--> TrayRS
+    TrayRS -->|"Visibility / Pin / Reset / Exit"| MainRS
+    WinRes --> MainRS
+    MainRS --> ClockRS
+    MainRS --> HolidaysRS
+    MainRS --> ModalsRS
+    MainRS --> FontTheme
+    MainRS --> ConfigRS
+    HolidaysJSON -.->|"Embedded via include_str!"| ConfigRS
 ```
 
-### Technology Stack Choices
-* **Vite / ESM**:
-  Provides fast Hot Module Replacement (HMR) during local development and bundles all assets locally into the `dist/` directory during compilation.
-* **React & Tailwind CSS (v3)**:
-  Enables component-driven UI design and utility-first styling utilizing packages stored entirely within local `node_modules`. This ensures the UI launches immediately without external web dependencies.
-* **Tauri v2 JS API**:
-  Integrates safe, typed OS calls (window state storage, pinning, termination, etc.) through the `@tauri-apps/api` JS packages.
+### Technology Highlights
+* **eframe / egui + `glow` Backend**:
+  Explicitly selecting the OpenGL-only `glow` feature instead of `eframe`'s default `wgpu` avoids loading bulky D3D12, Vulkan, and DXC shader compiler DLLs, cutting resident private memory dramatically.
+* **Custom Vector Line Icons (`icons.rs`)**:
+  Replaces OS-dependent emoji glyphs (which can degrade into tofu boxes) with crisp painter-drawn vector icons across the title bar and modals.
+* **Zero External Runtime Dependencies**:
+  Bundles `config/holidays.json` at compile time via `include_str!` while persisting user customizations locally under `%LOCALAPPDATA%\com.clondar.pro\`.
 
 ---
 
 ## 2. Directory Layout
 
-The frontend source code and configurations are located directly under the project root, modularized as follows:
-
-```
+```text
 clondar/
-├── index.html           # Entry HTML (Vite main)
-├── vite.config.js       # Vite configurations (Target build: dist)
-├── tailwind.config.js   # Tailwind CSS v3 configuration
-├── postcss.config.js    # CSS processor config
-├── package.json         # Frontend package dependencies
-├── public/
-│   └── config/
-│       └── holidays.json # External holidays file (Copied to dist/config/ during builds)
+├── Cargo.toml                  # Crate manifest & dependencies (`Clondar` v2.0.0)
+├── build.rs                    # Windows icon & version metadata embedder (winres)
+├── config/
+│   └── holidays.json           # Built-in default holiday configuration
+├── icons/
+│   └── icon.ico                # Application & installer icon
+├── installer/
+│   └── clondar.nsi             # NSIS installer script (JA/EN, HKCU local install)
+├── scripts/
+│   └── bump-version.ps1        # Batch version bump PowerShell script
 └── src/
-    ├── main.jsx         # React mount entry point
-    ├── App.jsx          # Shell layout, state controls, tray event subscriptions
-    ├── index.css        # Tailwind directives + custom styles
-    ├── components/
-    │   ├── Clock.jsx           # Digital & Analog clock renderings
-    │   ├── Calendar.jsx        # Calendar grids, holiday indications, tooltips
-    │   ├── HelpModal.jsx       # Help & app info modal component
-    │   └── HolidaysManager.jsx # Visual holiday editor, diffs & statistics component
-    └── utils/
-        ├── holidays.js         # Async holidays fetch and date calculations
-        └── tauri.js            # Safe wrapper abstractions for Tauri v2 APIs
+    ├── main.rs                 # Entrypoint, window frame, tray bridge, calendar pane
+    ├── clock_pane.rs           # Digital & Analog clock and control chip rendering
+    ├── holidays.rs             # Japanese holiday calculation engine & JSON validator
+    ├── holidays_manager.rs     # Holidays Manager modal (Edit / Raw JSON / Diff / Stats)
+    ├── yearly_view.rs          # 12-month yearly calendar overlay modal
+    ├── help_modal.rs           # Help & application info modal
+    ├── icons.rs                # Vector icon primitives
+    ├── theme.rs                # Dark / Light / Transparent palettes & modal overlays
+    ├── tray.rs                 # tray-icon wrapper & context menu actions
+    ├── font.rs                 # Windows Japanese font loader (Yu Gothic UI, etc.)
+    └── config.rs               # state.json & holidays.json persistence
 ```
 
 ---
 
-## 3. Setup & Development Server Launch
+## 3. Setup, Verification & Build Commands
 
-Building and running this application requires **Node.js (v26.4.0+ recommended)** and **Rust (1.96.0+ recommended)**.
+Building and running Clondar Pro v2.0.0 requires **Rust (1.96.0+ recommended, MSVC target)** and **NSIS (`makensis`)** (only when creating the Windows setup executable). Node.js is no longer required.
 
-It also utilizes the shared library `common_lib` as a build dependency.
-
-### Resolving `common_lib` Dependencies
-This project depends on the external shared library `common_lib`. For fast local development and compilation, the dependency is configured as a relative path in `src-tauri/Cargo.toml`:
+### Resolving `common_lib`
+`Cargo.toml` references the shared utility crate `common_lib` using a relative sibling path:
 ```toml
-common_lib = { path = "../../common_lib" }
+common_lib = { path = "../common_lib", features = ["windows_desktop"] }
 ```
 
-Ensure that the `common_lib` repository is checked out in the sibling directory (`../../common_lib`) alongside `clondar` (in GitHub Actions CI/CD, `common_lib` is checked out in parallel automatically).
+Ensure `common_lib` is checked out in the sibling directory (`../common_lib`) alongside `clondar`.
 
-
-### 1. Install Dependencies
-Run the following inside the project root:
+### 1. Run in Development Mode
 ```bash
-# Install frontend packages
-npm install
+cargo run
 ```
 
-### 2. Launch in Development Mode
-Vite development server configurations are integrated directly into Tauri. Run:
+### 2. Run Pre-Verification Checks
 ```bash
-cargo tauri dev
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
 ```
-Hot-reloading is triggered automatically for both Rust backend and React frontend changes.
 
-### 3. Production Release Build
-```bash
-cargo tauri build
+### 3. Production Release Build & NSIS Installer
+```powershell
+cargo build --release
+# Output binary: target\release\Clondar.exe
+
+# Build NSIS installer
+makensis installer\clondar.nsi
+# Output installer: installer\Clondar_Pro_2.0.0_x64-setup.exe
 ```
-Vite compiles and packages frontend files into `dist/`, followed by Tauri creating native Windows MSI and EXE installers.
 
 ---
 
 ## 4. Technical Highlights
 
-### ① System Tray Residence
-The Rust backend [main.rs](../../src-tauri/src/main.rs) uses `TrayIconBuilder` to configure a system tray icon.
-Users can right-click the icon to control visibility, toggle Always on Top, reset coordinates, or terminate the application.
-Always on Top toggles and coordinate resets instantly dispatch events through Tauri's event bus (`always-on-top-toggled`, `position-reset`) to sync frontend states.
+### ① System Tray Residency & Single Instance Guard
+[tray.rs](../../src/tray.rs) and [main.rs](../../src/main.rs) manage the Windows system tray icon (`tray-icon`), allowing users to minimize/hide the widget instead of terminating it. At boot, `common_lib::check_single_instance("com.clondar.pro.mutex", "Clondar")` blocks duplicate instances cleanly.
 
-### ② External Holiday Configuration (`holidays.json`)
-Calculations for Japanese national holidays are configured inside `public/config/holidays.json`.
-[holidays.js](../../src/utils/holidays.js) fetches this dynamically during boot, applying calculations for fixed dates, Happy Mondays, Emperors' birthdays, and Olympic special schedule modifications. Adjusting dates inside the JSON updates the calendar without modifying React application code.
+### ② Single-Source Holiday Rules (`holidays.json`)
+User-customized holiday settings are saved under `%LOCALAPPDATA%\com.clondar.pro\holidays.json`. Built-in defaults reside in a single canonical file, [config/holidays.json](../../config/holidays.json), shared via `include_str!` between [config.rs](../../src/config.rs) and unit tests in [holidays.rs](../../src/holidays.rs).
 
 ---
 
 ## 5. Coding & Documentation Standards
 
-To maintain code readability and maintainability, the project implements the following documentation guidelines:
-
-### ① Creating & Synchronizing Document Comments (RustDoc / JSDoc)
-When writing new code or modifying existing interfaces, update document comments (RustDoc / JSDoc):
-* **Rust**: Document crates, modules, structs, enums, functions, and methods using `///` or `//!` comments.
-* **JavaScript / React**: Document components, hooks, and helpers using `/** ... */` comments. Define `@param` and `@returns` explicitly.
-
-### ② Inline Comment Language
-All code comments and documentation tags must be written in **Japanese**. Translate any leftover English comments to Japanese during development updates.
+* **RustDoc Comments**: Document modules (`//!`), public structs, and functions (`///`) clearly.
+* **Japanese Inline Comments**: Project inline comments and docstrings are maintained in **Japanese** (`AGENTS.md`).
+* **Modular File Size Target**: Proactively split any source file before it exceeds 1,000 lines.

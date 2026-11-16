@@ -30,11 +30,6 @@ jobs:
           path: common_lib
           token: ${{ secrets.PAT || github.token }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: lts/*
-
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -43,25 +38,13 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: 'clondar/src-tauri -> clondar/src-tauri/target'
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Run frontend unit tests
-        run: npm test
-
-      - name: Build frontend
-        run: npm run build
+          workspaces: 'clondar -> clondar/target'
 
       - name: Cargo fmt
         run: cargo fmt --check
-        working-directory: clondar/src-tauri
 
       - name: Cargo clippy
         run: cargo clippy --all-targets -- -D warnings
-        working-directory: clondar/src-tauri
 
       - name: Cargo test
         run: cargo test
-        working-directory: clondar/src-tauri

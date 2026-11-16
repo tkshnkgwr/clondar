@@ -2,57 +2,58 @@
 
 **English** | [日本語版](../ja/FOOTPRINTS.md)
 
-This document records binary sizes, memory footprint resources, and compiler performance indicators during release builds of `Clondar Pro`.
+This document records binary sizes, real-hardware RAM/CPU benchmarks, and release compilation optimizations for **Clondar Pro v2.0.0** (Pure Rust / `egui + glow` edition).
 
 ---
 
 ## 1. Measurement Environment
 
 - **OS**: Windows 11 64-bit
-- **Toolchain**: Rust stable (`x86_64-pc-windows-msvc`), Node.js v26.4.0
+- **Toolchain**: Rust stable (`x86_64-pc-windows-msvc`), NSIS (`makensis`)
 - **Target Assets**:
-  - Application Executable: `src-tauri/target/release/clondar.exe`
-  - Installer Packages: `src-tauri/target/release/bundle/nsis/*.exe` / `wix/*.msi`
+  - Application Executable: `target/release/Clondar.exe`
+  - Installer Package: `installer/Clondar_Pro_2.0.0_x64-setup.exe`
 
 ---
 
 ## 2. Footprint Records
 
-### 2.1 Binary & Package Sizes
+### 2.1 Binary & Package Sizes (Verified on v2.0.0 Build)
 
-| Build Type / Asset Name |      Size       | Notes                                            |
-| :---------------------- | :-------------: | :----------------------------------------------- |
-| `clondar.exe` (Debug)   |  ~ 45 - 60 MB   | Contains debug symbols and verbose log pipelines |
-| `clondar.exe` (Release) |  ~ 10 - 15 MB   | LTO and symbol stripping configurations active   |
-| NSIS Installer (`.exe`) | ~ 5.0 - 7.5 MB  | Compressed single silent installer executable    |
-| WiX Installer (`.msi`)  | ~ 4.5 - 6.5 MB  | Isolated regional localized MSI packages         |
+| Build Type / Asset Name                  |           Size            | Notes                                             |
+| :--------------------------------------- | :-----------------------: | :------------------------------------------------ |
+| `Clondar.exe` (Release)                  | **4.89 MB** (5,125,120 B) | LTO, `opt-level = 'z'`, stripped, embedded icon   |
+| `Clondar_Pro_2.0.0_x64-setup.exe` (NSIS) | **2.59 MB** (2,714,117 B) | Bilingual JA/EN NSIS installer (zlib compression) |
 
-> **Highlights**: By utilizing OS-native WebView2 runtimes as shared platform dependencies rather than embedding whole chromium platforms (like Electron shells which exceed 100MB+ raw binary size), Clondar Pro achieves an incredibly lightweight package footprint.
-
-### 2.2 Memory Footprint (RAM)
-
-- **Main Process (Rust Core)**: ~ 3.0 MB - 5.0 MB
-- **Renderer Process (WebView2 / Edge)**: ~ 25 MB - 45 MB
-- **Total Resident Execution Memory (Total Peak)**: ~ 30 MB - 55 MB
-
-> **Highlights**: Optimized local asset loaders, regulated polling intervals, and regulated layout repaint scopes ensure that this resident clock & calendar widget runs in the background without affecting CPU or RAM performance.
-
-### 2.3 Compilation Performance (Local Estimation)
-
-- **Clean compilation (`cargo tauri build`)**: ~ 60s - 120s
-- **Incremental reloading (`cargo tauri dev`)**: ~ 1.0s - 3.5s
+> **Highlights**: By adopting `egui + glow` (OpenGL only) with zero WebView2 dependency, the standalone executable weighs only **4.89 MB** and the installer **2.59 MB** (~3 MB smaller than the `wgpu` prototype binary at `7.91 MB`).
 
 ---
 
-## 3. Release Compilation Optimization Configuration
+### 2.2 Live Simultaneous Memory & CPU Benchmark (2026-11-16 16:38:13)
 
-To maximize binary size reductions and regulate runtime resource footprint overheads, the following optimization matrices are applied in `src-tauri/Cargo.toml`:
+Real Windows desktop measurements comparing legacy Tauri/WebView2 builds against Phase C (`wgpu` vs. `glow`):
+
+| Build / Architecture                | Processes | Private Memory |  WorkingSet   | Cumulative CPU Time |
+| :---------------------------------- | :-------: | :------------: | :-----------: | :------------------ |
+| **Legacy (`v1.4.1`, WebView2)**     |     7     |   207.51 MB    |   192.17 MB   | 34.30 s (~100 min)  |
+| **Phase B (`v1.4.4`, Active View)** |     7     |   190.74 MB    |   364.81 MB   | 25.03 s (~35 min)   |
+| **Phase C Proto (`egui + wgpu`)**   |     1     |   293.06 MB    |   349.54 MB   | 6.17 s (~2 min)     |
+| **Phase C Adopted (`egui + glow`)** |   **1**   |  **68.45 MB**  | **115.76 MB** | **1.78 s** (~2 min) |
+
+* **vs. `wgpu` Prototype**: **`293.06 MB` → `68.45 MB`** (**`-224.61 MB` / -76.6% reduction**)
+* **vs. Phase B WebView2 (Active)**: **`190.74 MB` → `68.45 MB`** (**`-122.29 MB` / -64.1% reduction**)
+* **vs. Legacy `v1.4.1`**: **`-139.06 MB`** (**-67.0% reduction**)
+* **Root Cause Eliminated**: `eframe 0.37.0`'s default `wgpu` feature loads D3D12, Vulkan, and shader compiler DLLs (`igd12um64xel.dll`, `igvk64.dll`, `dxcompiler.dll`, etc.) consuming >200 MB of driver allocations. Explicitly selecting **`glow` (OpenGL only)** removes all of them completely.
+
+---
+
+## 3. Release Compilation Optimization Configuration (`Cargo.toml`)
 
 ```toml
 [profile.release]
-opt-level = 'z'     # Optimize for size
+opt-level = 'z'     # Optimize for binary size
 lto = true          # Enable Link-Time Optimization
-codegen-units = 1   # Reduce compilation units for better optimizations
-panic = 'abort'     # Omit panic call stack tracing to trim binary size
+codegen-units = 1   # Maximize cross-crate optimization
+panic = 'abort'     # Omit unwinding tables
 strip = true        # Strip symbol tables and debug entries
 ```

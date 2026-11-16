@@ -1,132 +1,112 @@
-# 🕒 Clondar Pro
+# Clondar Pro (v2.0.0)
 
-**English** | [日本語版](./README_JA.md)
+**English** | [日本語版](README_JA.md)
 
-[![CI Status](https://github.com/tkshnkgwr/clondar/actions/workflows/ci.yml/badge.svg)](https://github.com/tkshnkgwr/clondar/actions)
-[![Build Status](https://github.com/tkshnkgwr/clondar/actions/workflows/release.yml/badge.svg)](https://github.com/tkshnkgwr/clondar/actions)
-[![Latest Release](https://img.shields.io/github/v/release/tkshnkgwr/clondar)](https://github.com/tkshnkgwr/clondar/releases)
-[![Rust Version](https://img.shields.io/badge/rust-1.96.0-orange.svg)](https://www.rust-lang.org/)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D26.4.0-green.svg)](https://nodejs.org/)
-[![Tauri Version](https://img.shields.io/badge/tauri-v2-blue.svg)](https://v2.tauri.app/)
-[![License](https://img.shields.io/github/license/tkshnkgwr/clondar)](LICENSE)
+**Clondar Pro** is a minimalist, borderless, shadowless desktop clock & calendar widget for Windows—built with **100% Pure Rust (`egui` / `eframe` + `glow`)** for single-process, low-memory, completely offline residency.
 
-**Clondar Pro** is an ultra-minimal desktop widget clock & calendar application that seamlessly blends into your Windows desktop with transparent, borderless, and shadowless styling.
+![Clondar Pro Preview](docs/assets/screenshot.png)
 
-Powered by Tauri v2, it operates with extremely low resource consumption (approx. 30–55 MB RAM), stays "Always on Top" if desired, and lets you check your schedules and current time in a streamlined, distraction-free view.
-
-![Clondar Showcase](./docs/assets/screenshot.png)
+> [!NOTE]
+> Starting with **v2.0.0**, Clondar Pro migrated away from Tauri v2 + WebView2 + React to a single-process Pure Rust native GUI (`egui + glow`). The legacy Tauri v1.4.4 codebase is preserved on the `legacy/tauri-v1` branch.
 
 ---
 
-## ✨ Features
+## ✨ Key Features
 
-- **Desktop-Integrated Minimalist Design (Borderless & Shadowless)**:
-  - Eliminates all default OS window borders and title bars, with Windows native shadows physically disabled.
-  - Background transparency toggle (☀️) instantly applies a sleek glassmorphic blur canvas.
-  - Seamless window dragging anywhere across the widget via `data-tauri-drag-region`.
-- **Clock Section**:
-  - **Digital Clock**: Monospaced tabular digits (`Impact` typeface) prevent jitter during seconds updates. Supports 12H/24H format and seconds ON/OFF toggling.
-  - **Analog Clock**: Smooth sweep-second hand motion calibrated with millisecond precision.
-  - **Theme Toggle**: One-click instant switching between Light and Dark themes.
-- **Calendar Section**:
-  - **Fixed 6-Week Grid**: Locked 42-day calendar layout guarantees zero widget dimension jumping between months.
-  - **Full Japanese Holiday Support**: Accurate computation of fixed dates, Happy Mondays, Emperors' Birthdays, astronomical Equinoxes, substitute holidays, national bridge days, and special overrides.
-  - **Yearly View**: Full-screen modal presenting all 12 months with smooth previous/next year pagination.
-- **Holidays Manager**:
-  - Visual editor to add, inspect, and remove custom fixed holiday definitions.
-  - Visual line-by-line diff comparison against default rules powered by `common_lib`'s LCS algorithm.
-  - Keyword frequency statistics (e.g. occurrences of specific holiday keywords).
-  - One-click restore to built-in factory defaults.
-- **Help & App Info Modal (❓)**:
-  - Quick-access guide modal presenting dynamic version badge and operational cheat sheets.
-- **System Tray Residence**:
-  - Closing the widget safely minimizes it to the Windows system tray without terminating the process.
-  - Right-click tray menu provides "Show / Hide", "Always on Top", "Reset Position", and "Quit".
-- **DPI-Aware Coordinate Restoration & Startup Guard**:
-  - Preserves absolute physical coordinates across multi-monitor setups.
-  - Built-in startup protection lock (`isRestoringRef`) prevents race conditions and accidental coordinate overwrites.
-- **Offline Complete**:
-  - Zero external CDN or internet dependencies; runs 100% offline out-of-the-box.
+- **Borderless, Shadowless & Wallpaper-Integrated UI**:
+  - Eliminates OS window chrome and drop shadows, with optional background transparency mode and Light/Dark palettes.
+- **Digital & Analog Clocks**:
+  - **Digital Mode**: High-contrast bold tabular digits with zero horizontal jitter, 12H/24H (AM/PM) toggle, and seconds toggle.
+  - **Analog Mode**: Enlarged circular dial with smooth sweep second-hand rotation (automatically disables the `24H` toggle while active).
+  - Locked bottom control positions across clock modes.
+- **6-Week Fixed Calendar & Japanese Holiday Engine (`holidays.rs`)**:
+  - Locked 42-day (6-week) monthly layout prevents vertical window jumps across months.
+  - Native Rust calculation for Japanese fixed holidays, Happy Mondays, Vernal/Autumnal Equinoxes, Emperors' Birthdays, substitute holidays, bridge national holidays, and special overrides.
+  - Built-in **12-Month Yearly Overlay** and **Holidays Manager** (visual editing, Raw JSON editing, LCS diff comparison, keyword occurrence metrics, Reset, and validation before saving).
+- **Custom Vector Line Icons & Crisp Japanese Typography**:
+  - Draws crisp painter-based vector icons (`icons.rs`) to avoid OS emoji/tofu glyph fallbacks, paired with system Japanese fonts (`font.rs`).
+- **System Tray, Pinning & Persistence**:
+  - Hide to system tray via `Esc` or close button; restore, pin Always on Top, reset position, or quit cleanly from the tray context menu.
+  - Single-instance lock via Windows Named Mutex (`com.clondar.pro.mutex`) and local state/coordinate persistence in `%LOCALAPPDATA%\com.clondar.pro\state.json`.
+  - 100% offline with zero external network requests.
 
 ---
 
-## 🖥️ System Requirements
+## 📊 Performance & Footprint Highlights (v2.0.0)
 
-| Item                  | Requirement                                                           |
-| :-------------------- | :-------------------------------------------------------------------- |
-| Supported OS          | Windows 10 / 11 (64-bit)                                              |
-| Runtime               | Microsoft Edge WebView2 Runtime (Pre-installed on Windows 10/11)      |
-| Recommended Dev Tools | Node.js v26.4.0+, Rust 1.96.0+                                        |
+Real Windows 11 simultaneous comparison benchmark (`2026-11-16`):
 
----
+| Architecture / Version               | Processes | Private Memory |  WorkingSet   | Notes                                                 |
+| :----------------------------------- | :-------: | :------------: | :-----------: | :---------------------------------------------------- |
+| **v2.0.0 / Phase C (`egui + glow`)** |   **1**   |  **68.45 MB**  | **115.76 MB** | Pure Rust OpenGL backend (`Clondar.exe`: **4.89 MB**) |
+| Phase C Proto (`egui + wgpu`)        |     1     |   293.06 MB    |   349.54 MB   | Heavy D3D12/Vulkan/DXC shader DLL overhead            |
+| Phase B (`v1.4.4`, Tauri + WebView2) |     7     |   190.74 MB    |   364.81 MB   | Active WebView2 multi-process baseline                |
+| Legacy (`v1.4.1`, WebView2)          |     7     |   207.51 MB    |   192.17 MB   | Pre-optimization Tauri + React baseline               |
 
-## 🚀 Quick Start & Key Controls
-
-### Keyboard & Mouse Controls
-
-| Action                    | Behavior                                                                                |
-| :------------------------ | :-------------------------------------------------------------------------------------- |
-| **Window Dragging**       | Drag any unoccupied area of the widget to reposition it freely                          |
-| **Always on Top (📌)**     | Toggle pinning the window above all other desktop applications                          |
-| **Glass Transparency (☀️)**| Toggle background glassmorphism blur effect                                             |
-| **Help Modal (❓)**       | Open operational cheat sheets and version specifications                                |
-| **Close (❌) / Esc Key**   | Hide window to system tray (closes active modal if one is open without closing the app) |
+* **Private memory reduced by 64.1%** (`-122.29 MB`) vs. Phase B WebView2 and **76.6%** (`-224.61 MB`) vs. `wgpu`.
+* NSIS bilingual installer (`Clondar_Pro_2.0.0_x64-setup.exe`): **2.59 MB**.
 
 ---
 
-## 🛠️ Development & Build
+## 💻 System Requirements
 
-### 1. Install Dependencies
+### End Users
+- **OS**: Windows 10 / 11 (64-bit)
+- **Runtime Dependencies**: None required (standalone native executable; WebView2 not needed)
 
-```powershell
-npm install
-```
+### Developers
+- **Rust**: `1.96.0+` (`x86_64-pc-windows-msvc`)
+- **NSIS (`makensis`)**: Required only for building the Windows setup installer (`installer/clondar.nsi`)
+- **Shared Crate**: Clone [`common_lib`](https://github.com/tkshnkgwr/common_lib) side-by-side at `../common_lib`
 
-### 2. Start Development Mode (with Hot Reload)
+---
 
-```powershell
-cargo tauri dev
-```
-
-### 3. Run Automated Tests
-
-```powershell
-# Frontend test suite (Vitest)
-npm test
-
-# Backend test suite (Rust)
-cargo test --manifest-path src-tauri/Cargo.toml
-```
-
-### 4. Production Build (MSI / EXE)
+## 🚀 Build, Verification & Packaging Commands
 
 ```powershell
-cargo tauri build
+# Clone clondar alongside common_lib
+git clone https://github.com/tkshnkgwr/clondar.git
+git clone https://github.com/tkshnkgwr/common_lib.git
+cd clondar
+
+# Run in development mode
+cargo run
+
+# Quality & Verification Suite
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+cargo doc --no-deps --document-private-items
+
+# Production release binary (outputs target\release\Clondar.exe)
+cargo build --release
+
+# Build bilingual NSIS installer (outputs installer\Clondar_Pro_2.0.0_x64-setup.exe)
+makensis installer\clondar.nsi
 ```
 
 ---
 
-## 📚 Documentation Index
+## 📖 Documentation Index
 
-For comprehensive technical specifications and operational guidelines, refer to the documentation below:
-
-| Document                                                      | Language | Description                                                  |
-| :------------------------------------------------------------ | :------: | :----------------------------------------------------------- |
-| [Specification (SPECIFICATION.md)](./docs/en/SPECIFICATION.md) | English  | Functional specifications, UI/UX architecture, packaging     |
-| [Architecture (ARCHITECTURE.md)](./docs/en/ARCHITECTURE.md)   | English  | Process model, IPC communication, data flow, state persistence |
-| [User Guide (USER_GUIDE.md)](./docs/en/USER_GUIDE.md)         | English  | Installation walkthrough, operational cheat sheet            |
-| [Development Guide (DEVELOPMENT.md)](./docs/en/DEVELOPMENT.md)| English  | Developer setup, codebase structure, documentation standards |
-| [Testing Policy (TESTING.md)](./docs/en/TESTING.md)           | English  | Unit testing workflow, verification scripts, quality checks  |
-| [Test Report (TEST_REPORT.md)](./docs/en/TEST_REPORT.md)       | English  | Self-test matrix (34/34 PASS) and Mermaid architecture diagram|
-| [Todo Backlog (TODO.md)](./docs/en/TODO.md)                   | English  | Completed features, immediate tasks, and future backlog      |
-| [Changelog (CHANGELOG.md)](./docs/en/CHANGELOG.md)             | English  | Version release notes and change histories                   |
-| [Release Guide (RELEASE.md)](./docs/en/RELEASE.md)             | English  | Version bumping, tagging, and automated release pipeline     |
-| [Contributing (CONTRIBUTING.md)](./docs/en/CONTRIBUTING.md)   | English  | Commit guidelines, PR processes, and development conventions |
-| [Security Policy (SECURITY.md)](./docs/en/SECURITY.md)         | English  | Security principles, supported versions, vulnerability reports|
-| [Footprint Log (FOOTPRINTS.md)](./docs/en/FOOTPRINTS.md)       | English  | Binary size, RAM usage, and compile performance metrics      |
+| Document            | English                                      | 日本語                                       |
+| :------------------ | :------------------------------------------- | :------------------------------------------- |
+| **Product Spec**    | [SPECIFICATION.md](docs/en/SPECIFICATION.md) | [SPECIFICATION.md](docs/ja/SPECIFICATION.md) |
+| **Architecture**    | [ARCHITECTURE.md](docs/en/ARCHITECTURE.md)   | [ARCHITECTURE.md](docs/ja/ARCHITECTURE.md)   |
+| **User Guide**      | [USER_GUIDE.md](docs/en/USER_GUIDE.md)       | [USER_GUIDE.md](docs/ja/USER_GUIDE.md)       |
+| **Developer Guide** | [DEVELOPMENT.md](docs/en/DEVELOPMENT.md)     | [DEVELOPMENT.md](docs/ja/DEVELOPMENT.md)     |
+| **Release Guide**   | [RELEASE.md](docs/en/RELEASE.md)             | [RELEASE.md](docs/ja/RELEASE.md)             |
+| **Testing Policy**  | [TESTING.md](docs/en/TESTING.md)             | [TESTING.md](docs/ja/TESTING.md)             |
+| **Test Report**     | [TEST_REPORT.md](docs/en/TEST_REPORT.md)     | [TEST_REPORT.md](docs/ja/TEST_REPORT.md)     |
+| **Footprints**      | [FOOTPRINTS.md](docs/en/FOOTPRINTS.md)       | [FOOTPRINTS.md](docs/ja/FOOTPRINTS.md)       |
+| **Changelog**       | [CHANGELOG.md](docs/en/CHANGELOG.md)         | [CHANGELOG.md](docs/ja/CHANGELOG.md)         |
+| **Roadmap & TODO**  | [TODO.md](docs/en/TODO.md)                   | [TODO.md](docs/ja/TODO.md)                   |
+| **Contributing**    | [CONTRIBUTING.md](docs/en/CONTRIBUTING.md)   | [CONTRIBUTING.md](docs/ja/CONTRIBUTING.md)   |
+| **Security Policy** | [SECURITY.md](docs/en/SECURITY.md)           | [SECURITY.md](docs/ja/SECURITY.md)           |
+| **AI Instructions** | [INSTRUCTIONS.md](docs/en/INSTRUCTIONS.md)   | [INSTRUCTIONS.md](docs/ja/INSTRUCTIONS.md)   |
 
 ---
 
-## 📄 License
+## 📜 License
 
-This project is licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later) - Copyright (c) 2026 tkshnkgwr. See the [LICENSE](LICENSE) file for details.
+Licensed under the **GNU General Public License v3.0 or later ([GPL-3.0-or-later](LICENSE))**.

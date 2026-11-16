@@ -1,135 +1,79 @@
-# セルフテストレポート & システム構成図 (Obsidian連携)
+# セルフテスト実施報告書 ＆ システム構成図
 
 [English Version](../en/TEST_REPORT.md) | **日本語版**
 
-## 1. セルフテスト結果 (Self-Test Report)
+## 1. テスト実施結果（セルフテストレポート）
 
-### テスト環境
-- **OS**: Windows 11 (低リソース・スペック制限環境を想定したシミュレーション)
-- **Runtime**: Tauri v2, Rust 1.96.0, Node.js v26.4.0
-- **表示モード**: 透過ウィンドウ、Always on Top (最前面表示固定)、枠なし (Decorations: false)、システムトレイ常駐
-- **フロントエンドアーキテクチャ**: Local Bundled SPA (Vite + React)
+### テスト実施環境
+- **OS**: Windows 11 (64-bit)
+- **ツールチェイン**: Pure Rust (`rust-version = "1.96.0"`), `eframe 0.37.0` (`egui` + `glow`), NSIS (`makensis`)
+- **構成**: 単一プロセスネイティブ GUI、枠なし・影なし・背景透過、システムトレイ常駐、Named Mutex 排他制御
 
-### テスト項目および検証結果
+### 検証マトリクス ＆ 結果一覧 (v2.0.0)
 
-| テストItemID | テスト項目                                  | 期待される挙動                                                                                                                                               | 検証結果                                                                                                                                                                                                                                 |   判定   |
-| :----------- | :------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------: |
-| TS-001       | 起動時の位置復元                            | 前回の終了位置（絶対物理座標）に正確に復帰すること。                                                                                                         | Tauri v2 規格の `setPosition` への移行、`getCurrentWebviewWindow` によるオブジェクト取得の最適化、および終了時の明示的な位置保存により、DPIスケール環境(125%/150%)を含め、完全に前回と同じ物理位置へ一貫して復帰することを確認。         | **PASS** |
-| TS-002       | 起動初期位置競合ガード                      | 起動直後の自動センター配置とJSの位置復帰処理のラグ中に、一時的な座標を誤検知してLocalStorageを上書き破壊しないこと。                                         | `isRestoringRef`ガードにより起動後1秒間は監視と書き込みを遮断。無限上書きループを完全終息。                                                                                                                                              | **PASS** |
-| TS-003       | 最前面自動維持 (Always on Top)              | ウィンドウを常に最前面に維持し、他のアプリの背後に隠れないこと。                                                                                             | トグルおよび初期読み込み時に正しく最前面に常時固定されることを検証。                                                                                                                                                                     | **PASS** |
-| TS-004       | 透過背景 & シャドウ除去                     | ウィンドウ背景が完全に透過し、不要な白い枠線やOS標準のドロップシャドウが完全に除去されていること。                                                           | Rustの`set_shadow(false)`呼び出しと設定ファイルの`shadow: false`設定により、完全なボーダーレス・フラット透過が実現。                                                                                                                     | **PASS** |
-| TS-005       | ドラッグ操作追従                            | 背景が透明であっても、data-tauri-drag-regionでのドラッグ移動が滑らかに行えること。                                                                           | `pointer-events: auto`の指定により、透過領域でもマウス操作が吸い込まれず正確なドラッグ追従を維持。                                                                                                                                       | **PASS** |
-| TS-006       | セキュリティ特権の検証                      | 必要な core API (位置取得・設定、常時最前面) が適切に認可され、ビルドエラーが発生しないこと。                                                                 | `allow-set-outer-position` を除外し、Tauri v2規格に合わせた `allow-outer-position` および `allow-set-position` のみに最適化。コンパイル・ビルドが100%成功。                                                                              | **PASS** |
-| TS-007       | GitHub Actionsリリース検証                  | `v*` タグプッシュ時に GitHub Actions の自動ビルド・リリースドラフト作成ワークフローが起動し、文法エラーがないこと。                                         | YAMLスキーマ検証およびTauri v2のアクション引数との整合性を確認。                                                                                                                                                                         | **PASS** |
-| TS-008       | Dependabot設定の検証                        | CargoとGitHub Actionsの依存関係週次アップデート設定に構文エラーがないこと。                                                                                   | `.github/dependabot.yml` のスキーマ検証を実施。                                                                                                                                                                                          | **PASS** |
-| TS-009       | エディタ設定の統一                          | `.editorconfig` と `.vscode/settings.json` の設定が有効であり、特にPowerShellスクリプトのエンコーディングがBOM付きUTF-8として正しく認識されること。          | VS Codeおよび他エディタでの文字コード・インデント適用の挙動を確認。                                                                                                                                                                      | **PASS** |
-| TS-010       | システムトレイメニューの動作                | トレイアイコンの右クリックから、ウィンドウ表示切替、最前面切替、位置リセット、終了が機能すること。                                                           | `tray-icon` フィーチャーを有効化し、`main.rs` で `TrayIconBuilder` とメニューイベントハンドラを実装。各項目が正常に動作し、イベントを介してフロントエンドと最前面・位置データが即時同期されることを検証。                                | **PASS** |
-| TS-011       | 外部祝日の動的ロード                        | 外部 JSON から祝日の定義を読み込み、正しくカレンダーに描画されること。                                                                                       | `public/config/holidays.json` をロードし、ハッピーマンデー、天皇誕生日、カスタム上書きを計算・解決してカレンダーに赤字およびツールチップで描画されることを確認。                                                                         | **PASS** |
-| TS-012       | ローカルビルド（Vite）整合性                | すべてのフロントエンド依存関係がローカルパッケージ化され、オフラインでも正常動作すること。                                                                   | `npm install` 実行後に Vite によるビルド（`npm run build`）を行い、オフライン状態でも React/Tailwind/Framer Motion 等の依存関係を含め、アプリが正常に起動・動作することを確認。                                                         | **PASS** |
-| TS-013       | 共有クレート (common_lib) 統合              | `common_lib` への依存関係が正しく解決され、単体テストが完全に成功すること。                                                                                   | `cargo test` の実行により、`it_works`, `test_compute_diff`, `test_count_occurrences` のすべてがパスすることを確認。                                                                                                                      | **PASS** |
-| TS-014       | 祝日設定マネージャーの動作                  | `fallbackConfig` と `holidays.json` の差分を Rust バックエンドで計算し、追加・削除をカラーハイライト表示すること。また統計カウントが正しく表示されること。   | Tauriコマンド `get_holidays_diff` および `get_word_count` が正常に呼び出され、UI 上で追加（緑背景・+）、削除（赤背景・-）、統計情報が正確に表示されることを検証。                                                                       | **PASS** |
-| TS-015       | 祝日のビジュアル編集（追加・削除）          | 祝日設定マネージャー画面で、固定祝日の追加と削除が正常に行え、インメモリで一時保持されること。                                                                 | UI フォームに入力して追加、およびゴミ箱アイコンクリックでの削除がインメモリ状態で正確に機能することを確認。                                                                                                                               | **PASS** |
-| TS-016       | 祝日データのローカル永続化（LocalAppData）  | 保存時に `%LOCALAPPDATA%/com.clondar.pro/holidays.json` に正しく上書き保存され、次回起動時やカレンダー表示に即座に反映されること。                           | 保存ボタンの押下時に `save_holidays_json` が走り、ファイルが書き換わると同時にカレンダーが即時リロードされ、再起動後も正しく設定が維持されていることを検証。                                                                               | **PASS** |
-| TS-017       | 祝日設定マネージャーのダークモード配色      | ダークモード時に、定義数カードやタイトルヘッダー、「現在の固定祝日一覧」の背景やタイトルが白色にならず、ダークモードに適合した配色になっていること。         | Tailwindの無効なカラークラス `slate-850` を標準の `slate-800` に修正。ダークモードの適用時に正常に暗色（`slate-800`）背景およびホバー色が機能することを確認。                                                                             | **PASS** |
-| TS-018       | 共有ライブラリのパス依存解決                | `Cargo.toml` において `common_lib` を Git 依存からローカルパス依存に戻し、ローカルで正常にコンパイル・テストが通ること。                                       | `cargo test --manifest-path src-tauri/Cargo.toml` により、ローカルパス参照が正しく解決されテストが完全にパスすることを確認。                                                                                                             | **PASS** |
-| TS-019       | 手動バンプ＆タグリリース構成                | `bump-version.yml` を削除し、手動で `scripts/bump-version.ps1` を実行した後に Git タグ（`v*`）をプッシュしてリリースをビルド・デプロイする構成に変更すること。 | 自動バンプワークフローを削除。手動実行スクリプト `bump-version.ps1` がローカルで正常に機能し、また `release.yml` がタグプッシュでのみリリースビルドを起動することを確認。                                                                | **PASS** |
-| TS-020       | リリースビルドのサイズ最適化                | `[profile.release]` の最適化オプション（LTO、シンボル削除等）を追加し、ビルドエラーが発生しないこと。                                                         | `cargo build --release --manifest-path src-tauri/Cargo.toml` にて、最適化オプションを適用した状態でコンパイル・リンクが成功することを確認。                                                                                               | **PASS** |
-| TS-021       | Viteビルド時の警告解消                      | `npm run build` 実行時に `@tauri-apps/api/core` などの動的インポートによる「Viteチャンク分割不能警告」が発生しないこと。                                     | `HolidaysManager.jsx` と `holidays.js` で動的インポートされていた箇所を、すべてファイル上部での静的インポートに修正。ビルド実行時に警告が一切出力されず、クリーンにビルドが成功することを確認。                                         | **PASS** |
-| TS-022       | コメントの日本語化検証                      | ソースコード（Rust、JS）内の英語コメントが分かりやすい日本語に翻訳され、ビルドが正常に通ること。                                                               | `src-tauri/src/main.rs`、`src/utils/holidays.js`、`src/utils/tauri.js` の英語コメントを日本語に修正し、フロントエンドのビルド（`npm run build`）およびバックエンドのコードチェック（`cargo clippy`）がエラーなく成功することを確認。   | **PASS** |
-| TS-023       | GitHub Actions CIワークフロー検証           | プッシュやプルリクエスト時に `ci.yml` がトリガーされ、`cargo fmt`、`cargo clippy`、`cargo test` が自動検証されること。                                         | `ci.yml` のスキーマ定義が正しく、ジョブレベルの作業ディレクトリ指定（`clondar`）や `git config insteadOf` の認証トークン設定を含め、GitHub Actions上で正常に実行可能な構造であることを検証。                                             | **PASS** |
-| TS-024       | 二重起動防止機能の検証                      | 二重起動防止の Named Mutex が正しく働き、多重起動時に2つ目のプロセスが安全に即座に終了すること。                                                             | `common_lib::check_single_instance` の API 設計変更（Result を返す仕様）に合わせて組み込み、すでにインスタンスが存在する時に 2 つ目のアプリが起動せずに即座に終了することを確認。                                                       | **PASS** |
-| TS-025       | 祝日計算・ライフサイクル単体テスト (Vitest) | フロントエンドでの固定祝日、新旧ハッピーマンデー、歴代天皇誕生日、春分・秋分、振替休日、国民の休日、2020/2021特例、境界値、設定ロード/リセットの計算が正確。 | `npm test` の実行により、`holidays.test.js` 内の全10テストケースが 100% 合格することを確認。                                                                                                                                            | **PASS** |
-| TS-026       | バックエンドデフォルトJSON検証テスト        | 内蔵の標準祝日定義JSON (`DEFAULT_HOLIDAYS_JSON`) が構文エラーなく、全必須フィールドを保持していること。                                                     | `cargo test --manifest-path src-tauri/Cargo.toml` において `test_default_holidays_json_validity` が成功することを確認。                                                                                                                 | **PASS** |
-| TS-027       | 設定生データ編集・事前バリデーション        | 祝日設定画面の Raw JSON 直接編集時、不正な構文やデータ型の入力に対して即座にエラー警告が表示され、不正保存が防止されること。                                   | 壊れた JSON や必須キー欠落の入力を検知してアラートを出力し、安全に保存処理がブロックされることを検証。                                                                                                                                   | **PASS** |
-| TS-028       | Rust 祝日計算エンジン検証 (holidays.rs)     | 固定祝日、新旧ハッピーマンデー、歴代天皇誕生日、春分・秋分、振替休日、国民の休日、2020/2021特例、アルゴリズムヘルパーが正確に算出されること。                 | `cargo test --manifest-path src-tauri/Cargo.toml` において `calculate_holidays` 関連のテストケースがすべてパスすることを確認。                                                                                                           | **PASS** |
-| TS-029       | Rust 祝日スキーマ・範囲バリデーション       | Serde 構造体 `HolidayConfig` により、不正な月（13月等）や不正な週番号（6週等）の入力が検知されエラーを返却すること。                                        | `test_validation_error_handling` により、不正な月・週番号が確実にエラー検出され保存が遮断されることを検証。                                                                                                                              | **PASS** |
-| TS-030       | 初期設定復元コマンド検証 (Reset)            | `reset_holidays_json` コマンドにより、内蔵デフォルト設定で祝日設定ファイルが安全に上書き復元されること。                                                     | 祝日マネージャーの「初期化」ボタン実行時、ファイルが内蔵デフォルトに上書きされ、UI およびカレンダーが即時初期化されることを検証。                                                                                                         | **PASS** |
-| TS-031       | Tauri ラッパー単体テスト (Vitest)           | `tauri.js` の環境判定（`isTauri`）、ウィンドウ取得、バージョン取得フォールバック、安全終了処理が例外なく正しく動作すること。                               | `npm test` の実行により、`tauri.test.js` 内の全テストケースが 100% 合格することを確認。                                                                                                                                                  | **PASS** |
-| TS-032       | ヘルプ＆アプリ情報モーダル検証              | タイトルバーのヘルプボタン（❓）クリック時にモーダルが開き、バージョン番号・機能説明が正確に表示され、安全に閉じられること。                                 | `HelpModal.jsx` がマウントされ、動的バージョンバッジや機能一覧カードが表示されること、閉じるボタン・外側クリック・Escキーで正常に閉じることを検証。                                                                                      | **PASS** |
-| TS-033       | Tauri公式標準フォルダ構成への統一検証       | `ui/` ディレクトリを廃止し、ルート直下の `src/` と `src-tauri/` による公式標準構成でビルド・テストが正常に動作すること。                                     | ルート直下での `npm test`（16件全勝）、`npm run build`（エラーなし）、`cargo check`、`cargo test`、`cargo clippy`、`cargo fmt` の全パスを確認。                                                                                         | **PASS** |
-| TS-034       | バックエンド差分・単語集計単体テスト        | `common_lib` を利用した差分計算 (`test_holidays_diff_logic`) およびキーワード出現回数集計 (`test_word_count_logic`) の単体テスト。                           | `cargo test --manifest-path src-tauri/Cargo.toml` において新設した 2 件のテストが成功し、全12件がすべて合格することを確認。                                                                                                             | **PASS** |
+| テスト項目ID | テスト対象機能              | 期待される動作                                                                      | 検証結果                                                                                                             | 判定     |
+| :----------- | :-------------------------- | :---------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------- | :------- |
+| TS-001       | Pure Rust 祝日計算エンジン  | 固定・ハッピーマンデー・春分秋分・天皇・振替・国民の休日・特例を正確に算出する      | `cargo test` (`holidays::tests`) の全計算ケースがパス                                                                | **PASS** |
+| TS-002       | 内蔵 JSON 整合性・範囲検証  | `config/holidays.json` の読み込みおよび不正月日・週番号（範囲外）をエラー検知する   | `test_default_holidays_json_validity`・`test_validation_error_handling`・`holidays_manager::tests` がパス            | **PASS** |
+| TS-003       | `common_lib` 連携ロジック   | LCS テキスト差分計算（`compute_diff`）とキーワード出現集計が正しく動作する          | `test_holidays_diff_logic`・`test_word_count_logic` を含む全 12件の `cargo test` がエラーゼロでパス                  | **PASS** |
+| TS-004       | フォーマット ＆ Clippy 解析 | Rust コーディング規約準拠および静的解析警告ゼロであること                           | `cargo fmt --check` および `cargo clippy --all-targets -- -D warnings` が終了コード 0 でパス                         | **PASS** |
+| TS-005       | RustDoc 生成確認            | 全モジュール・非公開要素を含むドキュメントビルドがエラーなく完了すること            | `cargo doc --no-deps --document-private-items` が終了コード 0 で完了                                                 | **PASS** |
+| TS-006       | 正式リリースバイナリビルド  | `winres` (`build.rs`) でアイコン・メタデータを埋め込み `Clondar.exe` を生成すること | `cargo build --release` が終了コード 0 で完了し、`target/release/Clondar.exe` (**4.89 MB**) を生成                   | **PASS** |
+| TS-007       | NSIS インストーラー生成     | 日英対応の NSIS スクリプトが警告・エラーゼロで `setup.exe` を生成すること           | `makensis installer\clondar.nsi` (UTF-8 BOM) が警告 0 で成功し `Clondar_Pro_2.0.0_x64-setup.exe` (**2.59 MB**) 生成  | **PASS** |
+| TS-008       | `glow` 移行によるメモリ削減 | `wgpu` ではなく `glow` で単一プロセス・軽量動作すること                             | 2026-11-16 実機計測で 1プロセス・固有メモリ **68.45 MB** を確認（Phase B `190.74 MB` / `wgpu` `293.06 MB` 比大幅減） | **PASS** |
+
+> *(※ Tauri v2 / WebView2 時代のテスト項目 TS-001〜TS-034 の過去履歴は `legacy/tauri-v1` ブランチに保持されています。)*
 
 ---
 
-## 2. 構成図 (System Architecture Diagram)
-
-以下は、ObsidianなどのMarkdownビューアーで即座に表示可能なMermaid形式のシステム構成図です。
+## 2. システム構成図 (Mermaid)
 
 ```mermaid
 graph TD
-    %% スタイリング定義
-    classDef frontend fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0f172a;
-    classDef backend fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a;
+    classDef ui fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0f172a;
+    classDef core fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a;
     classDef storage fill:#bbf7d0,stroke:#16a34a,stroke-width:2px,color:#0f172a;
     classDef platform fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#334155;
     classDef config fill:#edd1ff,stroke:#a855f7,stroke-width:2px,color:#0f172a;
 
-    subgraph OS_Platform [Windows / OS環境]
-        TauriRuntime["Tauri v2 Core Webview (Rust runtime)"]:::platform
-        TrayAPI["OS System Tray (タスクトレイ)"]:::platform
+    subgraph OS_Platform [Windows OS]
+        OpenGL["OpenGL (glow) / DWM 枠なし透過"]:::platform
+        TrayAPI["Windows トレイ API"]:::platform
+        MutexAPI["Named Mutex: com.clondar.pro.mutex"]:::platform
     end
 
-    subgraph DesktopWidget [低リソースデスクトップウィジェット]
-        subgraph FrontEnd [フロントエンド領域 (React / Vite / JSX)]
-            WebUI["UI 画面 (index.html)"]:::frontend
-            AppJSX["メインロジック (App.jsx)"]:::frontend
-            ClockJSX["時計コンポーネント (Clock.jsx)"]:::frontend
-            CalendarJSX["カレンダーコンポーネント (Calendar.jsx)"]:::frontend
-            HelpModal["ヘルプモーダル (HelpModal.jsx)"]:::frontend
-            HolidaysManager["祝日マネージャー (HolidaysManager.jsx)"]:::frontend
-            TauriJS["Tauriラッパー (tauri.js)"]:::frontend
-            LocalStorage["localStorage<br/>- windowPosition (Physical座標)<br/>- keepsAlwaysOnTop"]:::storage
-        end
-
-        subgraph BackEnd [バックエンド領域 (Rust / Tauri Core / 共有クレート)]
-            TauriConf["設定ファイル (tauri.conf.json)<br/>- shadow: false<br/>- transparent: true<br/>- decorations: false"]:::backend
-            Capabilities["権限設定 (default.json)<br/>- allow-outer-position<br/>- allow-set-position<br/>- allow-close"]:::backend
-            RustMain["Rust ロジック (main.rs)<br/>- System Tray Menu Builder<br/>- rust-version: 1.96.0"]:::backend
-            HolidaysRS["祝日エンジン (holidays.rs)<br/>- calculate_holidays<br/>- validate_and_parse_config"]:::backend
-            CommonLib["共有クレート (common_lib)<br/>- compute_diff<br/>- count_occurrences"]:::backend
-        end
-
-        subgraph ConfigLayer [設定データレイヤー]
-            HolidaysJSON["外部祝日設定 (LocalAppData/holidays.json)"]:::config
-        end
+    subgraph ClondarApp [Pure Rust 単一バイナリ: Clondar.exe]
+        MainRS["main.rs: ClondarApp / カレンダーペイン"]:::core
+        ClockRS["clock_pane.rs: デジタル / アナログ時計"]:::ui
+        ModalsRS["yearly_view / holidays_manager / help_modal"]:::ui
+        VisualRS["icons.rs / theme.rs / font.rs"]:::ui
+        TrayRS["tray.rs: システムトレイ制御"]:::core
+        HolidaysRS["holidays.rs: 祝日計算・JSON 検証"]:::core
+        ConfigRS["config.rs: 永続化 I/O"]:::core
+        CommonLib["common_lib: Mutex / Diff / Count"]:::core
     end
 
-    %% データフローの接続
-    WebUI --> AppJSX
-    AppJSX --> ClockJSX
-    AppJSX --> CalendarJSX
-    AppJSX --> HelpModal
-    AppJSX --> HolidaysManager
-    CalendarJSX -->|"祝日定義のロード"| HolidaysJSON
-    HolidaysManager -->|"Tauri経由での読込・保存・リセット"| HolidaysJSON
-    HolidaysManager -->|"差分・統計計算コマンド"| TauriRuntime
-    TauriRuntime -->|"コマンド実行"| RustMain
-    RustMain -->|"祝日算出・検証"| HolidaysRS
-    RustMain -->|"共有ロジック呼び出し"| CommonLib
+    subgraph LocalStorage [ローカル設定・データ]
+        BuiltinJSON["config/holidays.json (内蔵)"]:::config
+        StateJSON["%LOCALAPPDATA%/com.clondar.pro/state.json"]:::storage
+        HolidaysJSON["%LOCALAPPDATA%/com.clondar.pro/holidays.json"]:::storage
+    end
 
-    AppJSX -->|"Window位置/最前面設定 復元"| LocalStorage
-    TauriJS -->|"位置復元/最前面設定"| TauriRuntime
-
-    TauriRuntime -->|"位置/サイズAPIの認可"| Capabilities
-    Capabilities -->|"制御シグナル"| TauriConf
-
-    RustMain -->|"OSネイティブ描画設定"| TauriRuntime
-    RustMain <-->|"トレイメニュー操作"| TrayAPI
-    RustMain -->|"イベント送信 (最前面トグル / 位置リセット)"| AppJSX
-
-    TauriJS -->|"位置変化検知 (tauri://move)"| LocalStorage
-    TauriJS -->|"ドラッグイベント登録"| TauriRuntime
-    TauriRuntime -->|"座標変更 / 最前面反映"| OS_Platform
-
-    %% クラスの割当
-    class WebUI,AppJSX,ClockJSX,CalendarJSX,HelpModal,HolidaysManager,TauriJS frontend;
-    class TauriConf,Capabilities,RustMain,HolidaysRS,CommonLib backend;
-    class LocalStorage storage;
-    class HolidaysJSON config;
+    MutexAPI --> CommonLib
+    MainRS <--> OpenGL
+    TrayAPI <--> TrayRS
+    TrayRS --> MainRS
+    MainRS --> ClockRS
+    MainRS --> ModalsRS
+    MainRS --> VisualRS
+    MainRS --> HolidaysRS
+    HolidaysRS --> CommonLib
+    BuiltinJSON -.-> ConfigRS
+    ConfigRS <--> StateJSON
+    ConfigRS <--> HolidaysJSON
 ```
 
 ---
 **作成日**: 2026年7月10日  
-**最終更新日**: 2026年9月8日  
-**適合バージョン**: Widget v1.4.3 (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)
-
+**最終更新日**: 2026年11月16日  
+**適合バージョン**: Widget v2.0.0 (Pure Rust Native GUI with egui + glow)

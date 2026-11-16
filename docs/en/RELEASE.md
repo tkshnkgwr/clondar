@@ -2,13 +2,13 @@
 
 **English** | [日本語版](../ja/RELEASE.md)
 
-This document is a guideline explaining how to update versions, build release packages, and manage the automated release pipeline via GitHub Actions for Clondar Pro.
+This document explains how to bump versions, build the Pure Rust binary and NSIS installer, and manage automated releases via GitHub Actions for **Clondar Pro v2.0.0**.
 
 ---
 
 ## 1. Release Pipeline Overview
 
-Releases of Clondar Pro are managed through a **GitHub Actions automated compilation workflow** triggered by pushing a local version tag (`v*`).
+Releases are driven by **GitHub Actions Pure Rust + NSIS automation**, triggered whenever a semantic version tag (`v*`) is pushed.
 
 ```mermaid
 sequenceDiagram
@@ -19,75 +19,72 @@ sequenceDiagram
     participant Releases as GitHub Releases (Published)
 
     Developer->>LocalRepo: scripts/bump-version.ps1 [New Version]
-    Note over LocalRepo: Batch version updates in Cargo.toml,<br/>tauri.conf.json, and Markdowns
+    Note over LocalRepo: Updates Cargo.toml, installer/clondar.nsi,<br/>SPECIFICATION & TEST_REPORT
     Developer->>LocalRepo: git commit & git tag v[New Version]
     Developer->>GitHub: git push origin main --tags
-    GitHub->>Actions: Trigger action execution (tags: v*)
-    Note over Actions: Start Windows build runner<br/>Package app using Tauri CLI
-    Actions->>Releases: Upload MSI/EXE binaries
-    Note over Releases: Release is published automatically
+    GitHub->>Actions: Trigger workflow (tags: v*)
+    Note over Actions: Windows Runner builds Pure Rust binary<br/>cargo build --release & makensis
+    Actions->>Releases: Upload setup.exe & Clondar.exe
+    Note over Releases: Release published automatically
 ```
 
 ---
 
 ## 2. Preparing Releases Locally
 
-Before packaging a release, all project-wide version designations (`Cargo.toml`, `tauri.conf.json`, technical Markdown files) must be incremented. A PowerShell script is provided to automate this batch update.
+Before creating a release tag, run the PowerShell bump script to synchronize versions across the crate manifest, NSIS script, and documentation.
 
 ### 2.1 Running the Batch Version Update Script
 
-Launch PowerShell and execute the version bump script in the root directory:
-
 ```powershell
-# Temporarily bypass script execution policy (e.g., updating version to 1.4.3)
-powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 1.4.3
+# Temporarily bypass script execution policy (e.g., setting version 2.0.0)
+powershell -ExecutionPolicy Bypass -File .\scripts\bump-version.ps1 2.0.0
 ```
 
 - **Script Behavior**:
-  - Updates `version = "..."` inside `src-tauri/Cargo.toml`.
-  - Updates `version` mappings inside `src-tauri/tauri.conf.json` and `package.json`.
-  - Updates version and internal version fields in `docs/ja/SPECIFICATION.md` and `docs/en/SPECIFICATION.md`.
-  - Updates the matching version field in `docs/ja/TEST_REPORT.md` and `docs/en/TEST_REPORT.md`.
+  - Updates `version = "..."` inside root `Cargo.toml`.
+  - Updates `!define PRODUCT_VERSION "..."` inside `installer/clondar.nsi`.
+  - Updates version fields in `docs/ja/SPECIFICATION.md` and `docs/en/SPECIFICATION.md`.
+  - Updates target version fields in `docs/ja/TEST_REPORT.md` and `docs/en/TEST_REPORT.md`.
 
 ---
 
 ## 3. Creating & Pushing Version Tags
 
-Once files are updated, stage and commit the changes, tag the commit with the target version number, and push them to the GitHub repository:
+Commit the updated files, tag the commit, and push both the branch and tag to GitHub:
 
 ```bash
-# 1. Stage and commit update changes
+# 1. Stage and commit changes
 git add .
-git commit -m "chore: release version 1.4.3"
+git commit -m "chore: release version 2.0.0"
 
-# 2. Tag target commit (following semantic version naming conventions, prefixed with 'v')
-git tag v1.4.3
+# 2. Tag target commit
+git tag v2.0.0
 
-# 3. Push commit and tagging attributes to the remote origin
+# 3. Push commit and tag to remote origin
 git push origin main
-git push origin v1.4.3
+git push origin v2.0.0
 ```
 
 ---
 
 ## 4. Automated Build & Release Publication via GitHub Actions
 
-Once GitHub detects a tagged push, `.github/workflows/release.yml` triggers automatically.
+Pushing a `v*` tag triggers `.github/workflows/release.yml`.
 
-### 4.1 Actions Workflow Processes
-1. **Environment Setup**: Provisions Node.js and Rust (MSVC targets) runners and checks out `clondar` alongside the shared crate `common_lib`.
-2. **Frontend Dependency Setup**: Runs `npm ci` inside the project root.
-3. **Tauri App Compilation**: Runs `tauri build` to package native Windows executable binaries.
-4. **Release Publication**: Uses `softprops/action-gh-release@v3` to publish a GitHub Release (`draft: false`) and attach the compiled installation binaries.
+### 4.1 Workflow Steps
+1. **Checkout & Rust Toolchain**: Checks out `clondar` and `common_lib` side-by-side and configures Rust (`x86_64-pc-windows-msvc`).
+2. **Release Compilation (`cargo build --release`)**: Compiles `Clondar.exe` with size optimization, LTO, symbol stripping, and `build.rs` icon/version embedding.
+3. **NSIS Packaging**: Runs `makensis installer/clondar.nsi` (installing NSIS via Chocolatey if not already present) to build `installer/Clondar_Pro_<version>_x64-setup.exe`.
+4. **Release Publication**: Uses `softprops/action-gh-release` to publish the release (`draft: false`) and attach the deliverables.
 
-### 4.2 Compiled Release Assets
-Upon successful compilation, the following binaries are uploaded to the GitHub Release:
-- `clondar/src-tauri/target/release/bundle/nsis/*.exe` (NSIS silent executable installer)
-- `clondar/src-tauri/target/release/bundle/wix/*.msi` (WiX installer package)
+### 4.2 Released Assets
+- `clondar/installer/Clondar_Pro_<version>_x64-setup.exe` (Bilingual JA/EN NSIS Installer)
+- `clondar/target/release/Clondar.exe` (Standalone portable binary)
 
 ---
 
 ## 5. Verifying Releases
 
-1. Open the repository on GitHub and navigate to "**Releases**".
-2. Confirm the published release for version `v1.4.3` exists and the MSI / EXE installer assets are attached.
+1. Open "**Releases**" in the GitHub repository.
+2. Confirm the release for the target tag exists with both the NSIS installer and `Clondar.exe` attached.

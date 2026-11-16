@@ -1,167 +1,98 @@
-# Clondar Pro Product Specification (Tauri v2 Edition)
+# Clondar Pro Product Specification (Pure Rust / egui + glow Edition)
 
 **English** | [日本語版](../ja/SPECIFICATION.md)
 
 ## 1. Product Overview
-**Clondar Pro** is a Tauri v2-powered desktop widget application featuring an integrated clock & calendar designed specifically for Windows.
-Embodying the concept of "wallpaper integration", it strives for ultimate visual minimalism by removing standard window decorations, borders, and drop shadows on transparent backgrounds.
+**Clondar Pro** is a Pure Rust (`eframe 0.37.0` / `egui` + `glow`) desktop clock & calendar widget designed exclusively for Windows.  
+Embodying "wallpaper integration," it eliminates standard window borders and drop shadows over transparent backgrounds while delivering single-process, WebView2-free lightweight execution.
 
 ---
 
 ## 2. System Architecture Diagram (Mermaid)
 
-### 2.1 Component Architecture
 ```mermaid
 graph TD
     subgraph OS_Layer [Windows OS]
-        WinAPI[Win32 API: Shadow/Decorations Off]
-        TrayAPI[Windows Tray API]
-    end
-    
-    subgraph Tauri_Backend [Rust / Tauri v2]
-        MainRS[main.rs: Window Setup & Tray Icon]
-        Conf[tauri.conf.json: Config]
-        Cap[capabilities/default.json: Permissions]
-    end
-    
-    subgraph Frontend_UI [React / Vite / JSX]
-        HTML[index.html: Entrypoint]
-        CSS[src/index.css: Tailwind & Styles]
-        AppJSX[App.jsx: State & Event Listener]
-        ClockJSX[Clock.jsx: Digital/Analog UI]
-        CalendarJSX[Calendar.jsx: Month/Yearly UI]
-        HelpModalJSX[HelpModal.jsx: Help & Version UI]
-        HolidaysManagerJSX[HolidaysManager.jsx: Holiday Editor UI]
+        OpenGL["OpenGL (glow) / DWM Borderless Transparent"]
+        TrayAPI["Windows Tray API"]
+        Mutex["Named Mutex: com.clondar.pro.mutex"]
     end
 
-    subgraph Config_Data [Data Layer]
-        HolidaysJSON[holidays.json: External Holidays]
+    subgraph App_Layer [Pure Rust Application: src/]
+        MainRS["main.rs: ClondarApp / Frame & Monthly Calendar"]
+        ClockRS["clock_pane.rs: Digital & Analog Clock Pane"]
+        HolidaysRS["holidays.rs: Holiday Engine & JSON Validator"]
+        ModalsRS["yearly_view.rs / holidays_manager.rs / help_modal.rs"]
+        VisualRS["icons.rs / theme.rs / font.rs: Vector Icons & Fonts"]
+        TrayRS["tray.rs: System Tray Menu"]
+        ConfigRS["config.rs: State & Holiday Persistence I/O"]
     end
 
-    WinAPI <--> MainRS
-    TrayAPI <--> MainRS
-    MainRS --- Conf
-    Conf --- HTML
-    Cap -- Grant Permissions --> HTML
-    HTML --> AppJSX
-    AppJSX --> ClockJSX
-    AppJSX --> CalendarJSX
-    AppJSX --> HelpModalJSX
-    AppJSX --> HolidaysManagerJSX
-    CalendarJSX --> HolidaysJSON
-    HTML --> CSS
+    subgraph Shared_Crate [Shared Crate]
+        CommonLib["common_lib: Mutex / LCS Diff / Counts"]
+    end
+
+    subgraph Data_Layer [Local Data]
+        BuiltinJSON["config/holidays.json (Compiled-in Default)"]
+        StateJSON["%LOCALAPPDATA%\\com.clondar.pro\\state.json"]
+        HolidaysJSON["%LOCALAPPDATA%\\com.clondar.pro\\holidays.json"]
+    end
+
+    Mutex --> CommonLib
+    MainRS --> OpenGL
+    TrayAPI <--> TrayRS
+    TrayRS --> MainRS
+    MainRS --> ClockRS
+    MainRS --> HolidaysRS
+    MainRS --> ModalsRS
+    MainRS --> VisualRS
+    HolidaysRS --> CommonLib
+    BuiltinJSON -.->|"include_str!"| ConfigRS
+    ConfigRS <--> StateJSON
+    ConfigRS <--> HolidaysJSON
 ```
 
 ---
 
 ## 3. Core Features Detail
 
-### 3.1 Widget Behavior (Desktop Widget)
-* **Window Transparency**: Background is rendered 100% transparently, projecting elements directly onto the desktop wallpaper.
-* **Borderless & Shadowless**: Physical OS-native title bars, window borders, and drop shadows are completely removed.
-* **Always on Top**: Keeps the widget anchored above other application windows for quick referencing.
-* **Drag-to-Move**: Map the entire widget canvas to a draggable region (`data-tauri-drag-region`), allowing users to reposition the widget freely.
-* **Exit Operation**: Exit the application instantly by pressing the `Esc` key or clicking the `❌` button in the UI.
-* **System Tray Resident Menu**:
-  - Resides inside the system tray to retain controls if the window is hidden or lost off-screen.
-  - Right-click context menus allow users to toggle visibility, toggle Always on Top, reset coordinates to the screen center, or exit the application.
+### 3.1 Desktop Widget Behavior
+* **Window Transparency**: Renders typography and calendar cells transparently directly onto the wallpaper when transparency mode is enabled.
+* **Borderless & Shadowless**: Removes OS window chrome, title bars, and drop shadows.
+* **Always on Top (Pin)**: Keeps the widget pinned above other open application windows.
+* **Drag-to-Move**: Drag anywhere on the title bar or background area to reposition freely.
+* **Hide to Tray**: Pressing `Esc` (dismissing any open modal first) or clicking close minimizes/hides the widget into the system tray.
+* **System Tray Context Menu**: Supports Show/Hide, Toggle Always on Top, Reset Position, and clean Exit.
 
-### 3.2 Clock Section
-* **Digital Clock**:
-  - **Font**: Utilizes a bold, muscular sans-serif design inspired by `Impact`.
-  - **Stability**: Monospaced tabular numbering configurations prevent elements shifting during updates.
-  - **Formats**: Toggle between 12-hour and 24-hour style guides, and show/hide the seconds indicator.
-* **Analog Clock**:
-  - Smooth sweep-second hand rotation.
-  - Minimal visual styling matching dark themes.
+### 3.2 Clock Pane (`clock_pane.rs`)
+* **Mode Switcher**: Centered `DIGITAL` / `ANALOG` pill tabs.
+* **Digital Clock**: High-contrast bold tabular digits without layout shift during updates, plus 12H/24H (AM/PM) and seconds visibility toggles.
+* **Analog Clock**: Enlarged circular dial with smooth sweep second-hand rotation (automatically disables the `24H` control button while Analog mode is active).
+* **Locked Bottom Control Row**: Bottom control chips (`24H`, seconds toggle, theme toggle) stay vertically aligned across mode and 12H/24H transitions.
 
-### 3.3 Calendar Section
-* **Visual Stability**: Maintains a locked **6-week (42-day)** grid layout regardless of the length of the month.
-* **External Holiday Loading & Saving (Persistence) & Rust Calculation Engine**:
-  - Fetches configuration files from user local directories (`%LOCALAPPDATA%/com.clondar.pro/holidays.json`) during boot (routed through Tauri IPC command `load_holidays_json`).
-  - If files are missing, the backend generates a default template automatically (falls back to traditional AJAX `fetch` in web browsers).
-  - **Rust Holiday Engine (`holidays.rs`)**: Provides the IPC command `get_holidays` to calculate all Japanese public holidays (fixed holidays, Happy Mondays, Emperors' birthdays, Equinoxes, substitute holidays, national bridge holidays, and custom overrides) on the Rust backend fast and type-safely.
-  - Adjust definitions or custom items directly from the visual interface.
-* **Yearly Overlay**: Full-screen yearly calendar viewer with previous/next year navigation controls.
-* **Holidays Manager**:
-  - Connects to the shared Rust library `common_lib`.
-  - **Visual Editing**: Edit fixed holidays (add dates/names or delete entries in one click) in the UI. Click "Save and Apply" to write coordinates to file using `save_holidays_json` and reload calendar grids.
-  - **Serde Strong Typing & Range Validation**: Validates month (1-12), day (1-31), week (1-5), and date format on the Rust backend via `HolidayConfig` upon saving to prevent configuration file corruption.
-  - **Reset to Built-in Defaults**: Provides the `reset_holidays_json` IPC command to safely restore built-in default settings via the "Reset" UI button.
-  - **Line-by-Line Diffs**: Compares active configuration changes with built-in fallbacks. Uses `common_lib::compute_diff` (LCS algorithm) on the backend to render additions (green) and deletions (red) visually.
-  - **Definitions Statistics**: Scans configuration files using `common_lib::count_occurrences` to compile instances matching labels (such as "Day", "Birthday", "Substitute Holiday", "National Press Holiday") in a tabular grid.
+### 3.3 Calendar & Holiday Features (`main.rs`, `yearly_view.rs`, `holidays_manager.rs`, `holidays.rs`)
+* **Fixed 6-Week Grid**: Always renders 42 day cells so widget height never jumps between months.
+* **Japanese Holiday Engine (`holidays.rs`)**: Evaluates fixed dates, Happy Mondays, Vernal/Autumnal Equinoxes, Emperors' Birthdays, substitute holidays, bridge national holidays, and year overrides natively in Rust.
+* **Yearly Overlay (`yearly_view.rs`)**: Full-canvas 12-month view with previous/next year controls.
+* **Holidays Manager (`holidays_manager.rs`)**: Integrates with `common_lib` to provide visual fixed-holiday editing, Raw JSON editing, LCS diff visualization, keyword occurrence metrics, Reset to built-in defaults, and Save/Apply to `%LOCALAPPDATA%\com.clondar.pro\holidays.json` with strict Serde date/week bounds validation.
 
-### 3.4 State Persistence
-* **Preference Memory**: Preserves preferences inside `localStorage` to restore configurations on relaunch:
-  - 12H/24H formats
-  - Seconds visibility
-  - Clock selection (Digital / Analog)
-  - Dark Mode status
-  - Transparent backgrounds
-  - Always on Top status
-* **Window Coordinate Persistence**:
-  - Captures and records physical absolute coordinates (`PhysicalPosition`) at exit, restoring coordinates at relaunch using Tauri v2 `setPosition` APIs.
-  - **Startup Race Guard**: Locks coordinate saves for 1 second during boot using `isRestoringRef` to prevent centering routines or scale updates from overwriting clean position states.
-  - **Tray Coordinate Synchronization**: Updates memory coordinates immediately when resetting positions from the system tray menu.
+### 3.4 State Persistence (`config.rs`)
+* Persists `is_24_hour`, `show_seconds`, `clock_type`, `is_dark_mode`, `is_transparent`, `is_pinned`, and `window_pos` locally inside `%LOCALAPPDATA%\com.clondar.pro\state.json`.
 
-### 3.5 Help & App Info Feature (HelpModal)
-* **Title Bar Trigger**: Click the `HelpCircle` (❓) icon button located on the title bar.
-* **Information Display**:
-  - Shows application branding (`Clondar Pro`) and dynamic versioning badge (e.g. `v1.4.3`) synced from `tauri.conf.json`.
-  - App overview explaining the borderless, transparent desktop widget philosophy.
-  - Six core feature cards: Clock Modes, Calendar, Always on Top, Transparency, Widget Dragging, and Shortcuts.
-* **Safe Controls**:
-  - Dismissible via background overlay clicks, the top-right close button (✕), footer close button, or the `Esc` key.
-  - Esc key interceptor prevents the main widget from closing accidentally while the help modal is open.
+### 3.5 Help & App Info (`help_modal.rs`)
+* Opened via the title bar `?` icon, presenting dynamic versioning (`CARGO_PKG_VERSION`), architecture overview, and six uniform-height feature cards.
 
 ---
 
-## 4. Visual Styles & UI/UX Specifications
+## 4. Visual & Build Specifications
 
-### 4.1 Visual Design
-* **Glassmorphism**: Soft background-blur filters maintain layout readability against desktop wallpapers.
-* **Borderless Look**: Employs no physical borders. In Always on Top mode, a soft blue outline (Ring) surrounds the widget.
-* **Typography**: Paired combination of `Inter` for UI layouts and `JetBrains Mono` for clock/calendar numbers.
-
-### 4.2 User Interaction
-* **Blocked Context Menus**: Disables standard browser right-click menus to preserve widget integrity (the system tray shows customized menus instead).
-* **Hover Details**: Displays holiday labels inside standard tooltips.
+* **Custom Vector Line Icons (`icons.rs`)**: Prevents OS emoji font fallbacks and tofu glyphs.
+* **System Japanese Typography (`font.rs`)**: Loads Windows Yu Gothic UI fonts with tuned alignment.
+* **Release Profile (`Cargo.toml`)**: Applies `opt-level = 'z'`, `lto = true`, `codegen-units = 1`, `panic = 'abort'`, and `strip = true`.
+* **Packaging (`build.rs` & `installer/clondar.nsi`)**: Embeds `icons/icon.ico` and version metadata via `winres` into `Clondar.exe` and compiles a bilingual Japanese/English NSIS installer targeting `%LOCALAPPDATA%\Clondar Pro\`.
 
 ---
 
-## 5. Technology Stack
-* **Backend**: Rust (Tauri v2) integrated with the shared crate `common_lib`.
-* **Frontend**: React 18 (Vite), Tailwind CSS (v3)
-* **Architecture**: Local Bundled SPA (Offline Complete)
-* **Animation**: Framer Motion
-* **Permissions**: Tauri v2 Capabilities System
-* **CI/CD**: GitHub Actions (Automated Release Builds), Dependabot (Weekly dependency checking)
-
----
-
-## 6. Notable Implementation Details
-1. **Local Bundled SPA (Offline Complete)**:
-   Bundles all packages using Vite. Ensures the application operates flawlessly without requiring internet connectivity or CDN asset loads.
-2. **System Tray Integration**:
-   Bridges Rust tray events and React states using Tauri's IPC event buses (`emit` / `listen`) to sync coordinates and toggle Always on Top status.
-3. **Shadow Removal**: Combines backend WinAPI configurations `set_shadow(false)` with Tauri config settings `shadow: false` to remove transparent window borders completely.
-4. **DPI-Aware Coordinate Restoration**: Stores physical pixels (`type: pos.type || 'Physical'`) instead of scaled logical points to ensure accurate window placement in mixed multi-monitor setups.
-5. **Shared Crate Integration (common_lib)**:
-   Imports text matching and LCS processing algorithms from `common_lib` to power Tauri command systems (`get_holidays_diff`, `get_word_count`), avoiding code duplication.
-
----
-
-## 7. Package Compilation Specifications
-
-* **NSIS (EXE Installer)**:
-  - Multi-language installer support for English and Japanese.
-  - Prompts language selections during execution, parsing system locales automatically.
-* **WiX (MSI Installer)**:
-  - Parallel compilation workflow generating distinct packages for Japanese (`ja-JP`) and English (`en-US`).
-
----
-
-**Last Updated**: September 8, 2026  
-**Version**: 1.4.4
-**Internal Version**: 1.4.4.0
-
+**Last Updated**: November 16, 2026  
+**Version**: 2.0.0
+**Internal Version**: 2.0.0.0

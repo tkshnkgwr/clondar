@@ -2,68 +2,67 @@
 
 **English** | [日本語版](../ja/TESTING.md)
 
-This document details testing strategies, quality check policies, and execution procedures for the `Clondar Pro` project.
+This document describes the testing strategy, quality gate policies, and verification commands for **Clondar Pro v2.0.0** (Pure Rust edition).
 
 ---
 
 ## 1. Testing Overview
 
-`Clondar Pro` coordinates backend tasks (Rust / Tauri) alongside frontend components (React / Vitest). We utilize comprehensive test cases to verify widget responsiveness and algorithm accuracy.
+Because v2.0.0 unifies both core logic and native GUI rendering inside a single Rust crate at the repository root, all verification is executed directly via standard `cargo` tooling.
 
-Key testing targets include:
-- **Holiday Calculation Algorithms (Frontend & Backend)**:
-  - Verifies date calculations for fixed holidays, Happy Mondays, Vernal/Autumnal Equinoxes, Emperors' Birthdays, substitute holidays, and custom overrides across both `src/utils/holidays.js` (JS) and `src-tauri/src/holidays.rs` (Rust), verified by `holidays.test.js` and Rust native unit tests.
-- **Data Load Consistency & Schema Validation (Backend)**:
-  - Validates structures of built-in fallback holiday JSON templates (`test_default_holidays_json_validity`) and ensures invalid month/day/week inputs are rejected cleanly via Serde schema validation (`test_validation_error_handling`).
-- **Shared Crate `common_lib` Integration**:
-  - Validates LCS string alignments for line diff displays, and checks keyword occurrences metric calculations.
-- **Physical Coordinates Management & Tauri API Wrappers**:
-  - Ensures correct captures of absolute physical positions at exit, coordinate restoration on boot, and confirms startup race protection guards (`isRestoringRef`) in mixed multi-monitor setups (verified by `tauri.test.js`).
-- **Single Instance Verification (Named Mutex)**:
-  - Validates the Named Mutex lock, confirming duplicate processes terminate cleanly.
+Primary testing targets include:
+- **Japanese Holiday Calculation Engine (`src/holidays.rs`)**:
+  - Verifies fixed holidays, legacy and current Happy Mondays, Vernal/Autumnal Equinoxes, Emperors' Birthdays, substitute holidays, bridge national holidays, and year-specific overrides.
+- **Built-In Config & Schema Validation (`src/holidays.rs`)**:
+  - Validates that embedded `config/holidays.json` parses cleanly (`test_default_holidays_json_validity`) and confirms out-of-range months/days/weeks or malformed date strings are rejected (`test_validation_error_handling`).
+- **Shared Crate `common_lib` Integration (`test_holidays_diff_logic`, `test_word_count_logic`)**:
+  - Verifies line-by-line LCS diff computation and keyword occurrence counting.
+- **Release Binary & NSIS Packaging Verification**:
+  - Ensures `cargo build --release` (with `build.rs` / `winres` resource embedding) and `makensis installer/clondar.nsi` succeed without errors.
 
 ---
 
 ## 2. Test Execution Procedures
 
-Run the following routines in local development environments to verify code states:
+Run the following commands from the project root:
 
-### 2.1 Backend Tests (Rust)
+### 2.1 Unit Tests
 ```bash
-# Run Rust unit tests
-cargo test --manifest-path src-tauri/Cargo.toml
+cargo test
 ```
 
-### 2.2 Frontend Tests (React / Vitest)
+### 2.2 Pre-Commit Quality Pipeline
+Run every check below with zero warnings and zero errors after modifying Rust source code:
+
 ```bash
-# Run Vitest test suites
-npm test
+# 1. Formatting check
+cargo fmt --check
+
+# 2. Static analysis / Clippy (warnings denied)
+cargo clippy --all-targets -- -D warnings
+
+# 3. Unit tests
+cargo test
+
+# 4. Rustdoc verification
+cargo doc --no-deps --document-private-items
+
+# 5. Release build check (recommended before tagging)
+cargo build --release
 ```
 
-### 2.3 Quality Verification Pipeline (Pre-Commit checklist)
-Before committing updates or submitting pull requests, run the following verification checks:
-
-```bash
-# 1. Run backend tests
-cargo test --manifest-path src-tauri/Cargo.toml
-
-# 2. Run static analysis checks (Clippy)
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-
-# 3. Check format compliance
-cargo fmt --manifest-path src-tauri/Cargo.toml --check
-
-# 4. Validate Rustdoc builds
-cargo doc --manifest-path src-tauri/Cargo.toml --no-deps --document-private-items
+### 2.3 NSIS Installer Verification (Windows)
+```powershell
+makensis installer\clondar.nsi
 ```
 
 ---
 
-## 3. Test Writing Directives
+## 3. Test Maintenance Guidelines
 
-1. **Expanding Holiday Test Metrics**:
-   * If legislation updates public holidays, insert corresponding test assertions in `src/utils/holidays.test.js` to verify calculation offsets.
-2. **Boundary Auditing**:
-   - Ensure comprehensive coverage of edge cases, including year-end wrap-arounds (Dec 31st to Jan 1st), leap years, and multiple consecutive substitute holidays (e.g. May Golden Week slots).
-3. **OS-Dependent Scoping**:
-   - Wrap Windows-specific Mutex or system tray tests inside `#[cfg(windows)]` directives to prevent compilation errors on non-Windows test runners (e.g. GitHub Actions CI VMs).
+1. **Updating Holiday Coverage**:
+   - Whenever Japanese public holiday legislation changes, update `config/holidays.json` and add matching regression tests in `src/holidays.rs`.
+2. **Edge Case Verification**:
+   - Cover year boundaries, leap years, and consecutive Golden Week substitute holidays.
+3. **Hermetic Test Isolation**:
+   - Keep unit tests self-contained so they never mutate user `%LOCALAPPDATA%` directories during automated CI runs.

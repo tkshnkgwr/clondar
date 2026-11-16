@@ -1,11 +1,11 @@
-param (
+﻿param (
     [Parameter(Mandatory=$true)]
     [string]$NewVersion
 )
 
 # セマンティックバージョン (X.Y.Z) のバリデーション
 if ($NewVersion -notmatch '^\d+\.\d+\.\d+$') {
-    Write-Error "Error: Version must be in semantic versioning format (e.g. 1.2.3)"
+    Write-Error "Error: Version must be in semantic versioning format (e.g. 2.0.0)"
     exit 1
 }
 
@@ -19,8 +19,8 @@ $versionLabel  = [char]0x30d0 + [char]0x30fc + [char]0x30b8 + [char]0x30e7 + [ch
 $internalLabel = [char]0x5185 + [char]0x90e8 + $versionLabel                                     # "内部バージョン"
 $suitableLabel = [char]0x9069 + [char]0x5408 + $versionLabel                                     # "適合バージョン"
 
-# 1. src-tauri/Cargo.toml
-$cargoPath = "src-tauri/Cargo.toml"
+# 1. Cargo.toml (ルート直下)
+$cargoPath = "Cargo.toml"
 if (Test-Path $cargoPath) {
     Write-Host "Updating $cargoPath..."
     $lines = [System.IO.File]::ReadAllLines($cargoPath, $utf8)
@@ -35,26 +35,16 @@ if (Test-Path $cargoPath) {
     Write-Warning "$cargoPath not found."
 }
 
-# 2. src-tauri/tauri.conf.json
-$tauriPath = "src-tauri/tauri.conf.json"
-if (Test-Path $tauriPath) {
-    Write-Host "Updating $tauriPath..."
-    $content = [System.IO.File]::ReadAllText($tauriPath, $utf8)
-    $content = $content -replace '"version"\s*:\s*"[^"]+"', "`"version`": `"$NewVersion`""
-    [System.IO.File]::WriteAllText($tauriPath, $content, $utf8)
+# 2. installer/clondar.nsi (NSIS が確実に UTF-8 として認識できるよう BOM 付き UTF-8 で保存)
+$nsiPath = "installer/clondar.nsi"
+if (Test-Path $nsiPath) {
+    Write-Host "Updating $nsiPath..."
+    $utf8Bom = New-Object System.Text.UTF8Encoding($true)
+    $content = [System.IO.File]::ReadAllText($nsiPath, $utf8Bom)
+    $content = $content -replace '!define PRODUCT_VERSION "[^"]+"', "!define PRODUCT_VERSION `"$NewVersion`""
+    [System.IO.File]::WriteAllText($nsiPath, $content, $utf8Bom)
 } else {
-    Write-Warning "$tauriPath not found."
-}
-
-# 2.1 package.json
-$pkgPath = "package.json"
-if (Test-Path $pkgPath) {
-    Write-Host "Updating $pkgPath..."
-    $content = [System.IO.File]::ReadAllText($pkgPath, $utf8)
-    $content = $content -replace '"version"\s*:\s*"[^"]+"', "`"version`": `"$NewVersion`""
-    [System.IO.File]::WriteAllText($pkgPath, $content, $utf8)
-} else {
-    Write-Warning "$pkgPath not found."
+    Write-Warning "$nsiPath not found."
 }
 
 # 3. docs/ja/SPECIFICATION.md & docs/en/SPECIFICATION.md の更新
@@ -64,7 +54,7 @@ foreach ($specPath in $specPaths) {
         Write-Host "Updating $specPath..."
         $lines = [System.IO.File]::ReadAllLines($specPath, $utf8)
         $newLines = [System.Collections.Generic.List[string]]::new()
-        
+
         $hasInternal = $false
         for ($i = 0; $i -lt $lines.Length; $i++) {
             if ($lines[$i] -match "\*\*$internalLabel\*\*" -or $lines[$i] -match "\*\*Internal Version\*\*") {
@@ -72,7 +62,7 @@ foreach ($specPath in $specPaths) {
                 break
             }
         }
-        
+
         for ($i = 0; $i -lt $lines.Length; $i++) {
             $line = $lines[$i]
             if ($line -match "\*\*$versionLabel\*\*") {
@@ -111,10 +101,10 @@ foreach ($testPath in $testPaths) {
         $lines = [System.IO.File]::ReadAllLines($testPath, $utf8)
         for ($i = 0; $i -lt $lines.Length; $i++) {
             if ($lines[$i] -match "\*\*$suitableLabel\*\*") {
-                $lines[$i] = "**$suitableLabel**: Widget v$NewVersion (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)"
+                $lines[$i] = "**$suitableLabel**: Widget v$NewVersion (Pure Rust Native GUI with egui + glow)"
                 break
             } elseif ($lines[$i] -match "\*\*(Suitable|Target) Version\*\*") {
-                $lines[$i] = "**Target Version**: Widget v$NewVersion (DPI-Aware Physical Coordination Model with Tauri v2 compatibility)"
+                $lines[$i] = "**Target Version**: Widget v$NewVersion (Pure Rust Native GUI with egui + glow)"
                 break
             }
         }

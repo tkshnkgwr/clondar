@@ -1,167 +1,105 @@
-# Clondar Pro 最終製品仕様書 (Tauri v2 Edition)
+# Clondar Pro 製品仕様書 (Pure Rust / egui + glow 版)
 
 [English Version](../en/SPECIFICATION.md) | **日本語版**
 
 ## 1. 製品概要
-**Clondar Pro** は、Tauri v2 を基盤とした Windows デスクトップ専用のウィジェット型時計＆カレンダーアプリケーションです。
-「デスクトップに溶け込む」ことをコンセプトに、透過背景、枠なし（Borderless）、影なし（Shadowless）のデザインを極限まで追求しています。
+**Clondar Pro** は、Pure Rust (`eframe 0.37.0` / `egui` + `glow`) で構築された Windows 専用の常駐型時計・カレンダーウィジェットアプリケーションです。  
+「壁紙一体化」をコンセプトとし、透過背景上でウィンドウの枠線や OS 標準の影（ドロップシャドウ）を完全に排除したミニマルデザインと、WebView2 を持たない単一ネイティブバイナリによる低メモリ常駐を実現しています。
 
 ---
 
 ## 2. システム構成図 (Mermaid)
 
-### 2.1 アーキテクチャ構成
 ```mermaid
 graph TD
     subgraph OS_Layer [Windows OS]
-        WinAPI[Win32 API: Shadow/Decorations Off]
-        TrayAPI[Windows Tray API]
-    end
-    
-    subgraph Tauri_Backend [Rust / Tauri v2]
-        MainRS[main.rs: Window Setup & Tray Icon]
-        Conf[tauri.conf.json: Config]
-        Cap[capabilities/default.json: Permissions]
-    end
-    
-    subgraph Frontend_UI [React / Vite / JSX]
-        HTML[index.html: Entrypoint]
-        CSS[src/index.css: Tailwind & Styles]
-        AppJSX[App.jsx: State & Event Listener]
-        ClockJSX[Clock.jsx: Digital/Analog UI]
-        CalendarJSX[Calendar.jsx: Month/Yearly UI]
-        HelpModalJSX[HelpModal.jsx: Help & Version UI]
-        HolidaysManagerJSX[HolidaysManager.jsx: Holiday Editor UI]
+        OpenGL["OpenGL (glow) / DWM 透過・枠なし・影なし"]
+        TrayAPI["Windows トレイ API"]
+        Mutex["Named Mutex: com.clondar.pro.mutex"]
     end
 
-    subgraph Config_Data [Data Layer]
-        HolidaysJSON[holidays.json: External Holidays]
+    subgraph App_Layer [Pure Rust アプリケーション: src/]
+        MainRS["main.rs: ClondarApp / メインウィンドウ ＆ 月間カレンダー"]
+        ClockRS["clock_pane.rs: デジタル / アナログ時計ペイン"]
+        HolidaysRS["holidays.rs: 祝日計算エンジン ＆ JSON スキーマ検証"]
+        ModalsRS["yearly_view.rs / holidays_manager.rs / help_modal.rs"]
+        VisualRS["icons.rs / theme.rs / font.rs: ベクター描画 ＆ 日本語フォント"]
+        TrayRS["tray.rs: システムトレイメニュー管理"]
+        ConfigRS["config.rs: 設定永続化 I/O"]
     end
 
-    WinAPI <--> MainRS
-    TrayAPI <--> MainRS
-    MainRS --- Conf
-    Conf --- HTML
-    Cap -- 権限付与 --> HTML
-    HTML --> AppJSX
-    AppJSX --> ClockJSX
-    AppJSX --> CalendarJSX
-    AppJSX --> HelpModalJSX
-    AppJSX --> HolidaysManagerJSX
-    CalendarJSX --> HolidaysJSON
-    HTML --> CSS
+    subgraph Shared_Crate [共有クレート]
+        CommonLib["common_lib: Mutex / LCS Diff / 集計"]
+    end
+
+    subgraph Data_Layer [ローカルデータ]
+        BuiltinJSON["config/holidays.json (バイナリ内蔵)"]
+        StateJSON["%LOCALAPPDATA%\\com.clondar.pro\\state.json"]
+        HolidaysJSON["%LOCALAPPDATA%\\com.clondar.pro\\holidays.json"]
+    end
+
+    Mutex --> CommonLib
+    MainRS --> OpenGL
+    TrayAPI <--> TrayRS
+    TrayRS --> MainRS
+    MainRS --> ClockRS
+    MainRS --> HolidaysRS
+    MainRS --> ModalsRS
+    MainRS --> VisualRS
+    HolidaysRS --> CommonLib
+    BuiltinJSON -.->|"include_str!"| ConfigRS
+    ConfigRS <--> StateJSON
+    ConfigRS <--> HolidaysJSON
 ```
 
 ---
 
 ## 3. 主要機能詳細
 
-### 3.1 ウィジェット動作 (Desktop Widget)
-* **透過ウィンドウ**: 背景を完全に透過させ、デスクトップ壁紙の上に直接表示。
-* **枠なし・影なし**: Windows 標準のタイトルバー、枠線、影をすべて物理的に除去。
-* **常時最前面 (Always on Top)**: 他のウィンドウに隠れることなく、常に情報を確認可能。
-* **ドラッグ移動**: ウィンドウのほぼ全域をドラッグ可能領域 (`data-tauri-drag-region`) とし、自由な配置が可能。
-* **終了操作**: `Esc` キーまたは UI 内の `❌` ボタンによる即座な終了。
-* **システムトレイ（タスクトレイ）メニュー**:
-  - ウィンドウ非表示時や画面外紛失時でもコントロール可能なように、システムトレイへ常駐。
-  - 右クリックメニューより「表示/非表示」、「最前面表示の切替」、「位置をリセット（画面中央へ）」、「終了」の操作が可能。
+### 3.1 ウィジェット動作（デスクトップ常駐）
+* **透過ウィンドウ**: 背景透過モード ON 時、透過背景上に文字とカレンダーのみを浮かび上がらせて表示します。
+* **枠なし・影なし (Shadowless)**: OS 標準のタイトルバーやウィンドウ枠、ドロップシャドウを表示しません。
+* **最前面表示 (Always on Top)**: 他のアプリケーションの後ろに隠れないよう常に最前面へピン留めできます。
+* **ドラッグ移動**: タイトルバーおよび背景余白のドラッグで画面上の任意の位置へ移動できます。
+* **トレイ格納（非表示）**: `Esc` キー（モーダル表示中はモーダル優先で閉じる）または閉じるボタンでウィンドウをトレイへ格納します。
+* **システムトレイ常駐メニュー**:
+  - ウィンドウが隠れてもタスクトレイから制御可能です。
+  - 右クリックメニューから「表示/非表示」「最前面表示切替」「位置リセット（画面中央復帰）」「終了」を実行できます。
 
-### 3.2 時計機能 (Clock Section)
-* **デジタル時計**:
-  - **フォント**: `Impact` 風の力強いサンセリフ体を採用。
-  - **安定性**: 等幅フォント設定により、秒の更新による数字の揺れを防止。
-  - **表示形式**: 12H/24H 切り替え、秒表示の ON/OFF が可能。
-* **アナログ時計**:
-  - スムーズなスイープ運針アニメーション。
-  - ダークモードに最適化されたミニマルデザイン。
+### 3.2 時計機能 (`clock_pane.rs`)
+* **モード切替**: 中央配置の `DIGITAL` / `ANALOG` ピルタブで表示を切り替えます。
+* **デジタル時計**: 太字で視認性の高い数字表示と等幅数字配列により、時刻更新による横揺れが発生しません。12H/24H 表記（AM/PM 表示対応）および秒表示 ON/OFF をワンクリックで切り替えられます。
+* **アナログ時計**: 視認性を高めた拡大アナログ盤面と滑らかなスイープ運針を備えています（アナログ表示中、`24H` ボタンは自動的に操作無効化されます）。
+* **下部コントロール座標固定**: モード切替・12H/24H 切替を行っても下部のボタン群（`24H`・`秒表示`・テーマ切替）の位置が上下に動かないよう配置を固定しています。
 
-### 3.3 カレンダー機能 (Calendar Section)
-* **表示安定性**: 月の長さに関わらず、常に **6週間 (42日間)** を固定表示。
-* **外部祝日設定のロードと保存 (永続化) & Rust 計算エンジン**:
-  - アプリ起動時、ローカルデータ領域（`%LOCALAPPDATA%/com.clondar.pro/holidays.json`）から定義ファイルをロード（Tauri コマンド `load_holidays_json` を経由）。
-  - 設定ファイルが存在しない場合は、アプリ内蔵の標準定義を自動生成して保存・読み込みます（非Tauriブラウザ環境時は従来の `fetch` にフォールバック）。
-  - **Rust祝日エンジン (`holidays.rs`)**: 固定祝日、ハッピーマンデー、天皇誕生日、天文計算（春分・秋分）、振替休日、国民の休日、カスタム上書き（オリンピック特例等）を Rust バックエンド側で一括・高速に計算する IPC コマンド `get_holidays` を提供。
-  - 法改正やユーザーのカスタム時は、アプリ内から自由に変更・保存可能。
-* **年間表示**: 全画面の年間カレンダーモーダルを搭載（前年・翌年のナビゲーションに対応）。
-* **祝日設定マネージャー (Holidays Manager)**:
-  - プロジェクト間共有クレート `common_lib` と連携。
-  - **ビジュアル編集機能**: 固定祝日の追加（日付・名称指定）および削除（ワンクリック削除）を画面上で行え、「保存して適用」ボタンでバックエンドコマンド `save_holidays_json` を介してローカルファイルを自動更新し、カレンダー表示を即時リロード。
-  - **Serde による強型付け・範囲バリデーション**: 保存時に Rust 側の `HolidayConfig` で構文・月日範囲・週番号を厳格にチェックし、設定ファイルの破損を未然に防止。
-  - **初期設定への強制復元（リセット）**: 「初期化」ボタンより、内蔵デフォルト設定でファイルを安全に上書き復元する `reset_holidays_json` コマンドを実装。
-  - **差分表示**: アプリ内蔵のデフォルト祝日設定と、適用中の外部設定ファイル（`holidays.json`）の行単位差分を `common_lib::compute_diff` (LCSアルゴリズム) を用いて Rust バックエンド側で計算し、追加（緑）・削除（赤）を視覚的にカラーハイライト表示。
-  - **統計分析**: 祝日定義の統計情報を `common_lib::count_occurrences` でカウントし、特定キーワード（「の日」「天皇誕生日」「振替休日」「国民の休日」）の定義件数を表形式で表示。
+### 3.3 カレンダー機能 (`main.rs` / `yearly_view.rs` / `holidays_manager.rs` / `holidays.rs`)
+* **安定した6週間表示**: 月によって縦幅が変わらないよう、常に **42日（6週間）固定** のグリッドレイアウトを採用しています。
+* **日本の祝日計算エンジン (`holidays.rs`)**:
+  - 固定祝日、ハッピーマンデー（新旧制度）、春分の日・秋分の日、天皇誕生日、振替休日、国民の休日、年別特例定義を Rust で高速に計算します。
+  - ホバーツールチップで祝日名を表示し、「今月」ボタンで当月へ即座に復帰できます。
+* **年間カレンダー (`yearly_view.rs`)**: 「今年」ボタンから1年分（12ヶ月）のオーバーレイ表示を開き、前年/翌年のブラウズが可能です。
+* **祝日設定マネージャー (`holidays_manager.rs`)**:
+  - `common_lib` と連携し、固定祝日の GUI 追加・削除、JSON 生データ直接編集、標準設定との LCS 行差分（追加：緑／削除：赤）表示、キーワード統計カウント、初期化（リセット）、`%LOCALAPPDATA%\com.clondar.pro\holidays.json` への保存・即時適用を行います。
+  - 保存時は Serde による厳格な型・月日・週番号（1〜5）範囲検証を実施し、不正値による設定破損を防ぎます。
 
-### 3.4 永続化機能 (State Persistence)
-* **設定の保存**: 以下の設定を `localStorage` に保存し、次回起動時に復元。
-  - 12H/24H 表示設定
-  - 秒表示の ON/OFF
-  - 時計タイプ（デジタル/アナログ）
-  - ダークモード設定
-  - 背景透過状態
-  - 最前面表示（ピン留め）状態
-* **ウィンドウ位置の復元 (ロバスト設計)**:
-  - 終了時のウィンドウの物理絶対座標 (`PhysicalPosition`) を記憶し、次回起動時にその位置へ自動的に移動（Tauri v2 規格の `setPosition` API を使用）。
-  - **位置検出ガード**: 起動直前の配置や位置復元中の過渡的移動によって発生する位置の誤上書きを完全に防ぐ、状態ロード・セキュリティロック設計（`isRestoringRef` による書き込み制限）を搭載。
-  - **トレイリセット連携**: システムトレイから位置をリセットした際にも、即座に `localStorage` の記憶座標を更新。
+### 3.4 状態永続化 (`config.rs`)
+* **ユーザー設定・物理座標の保存**:
+  - `%LOCALAPPDATA%\com.clondar.pro\state.json` へ、`is_24_hour`、`show_seconds`、`clock_type`、`is_dark_mode`、`is_transparent`、`is_pinned`、`window_pos` を保存し、次回起動時に自動復元します。
 
-### 3.5 ヘルプ＆アプリ情報機能 (Help & App Info Modal)
-* **タイトルバー連携**: タイトルバー右側の `HelpCircle`（❓）ボタンからワンクリックで起動。
-* **情報表示**:
-  - アプリケーション名（`Clondar Pro`）および `tauri.conf.json` と連動した動的バージョンバッジ（例: `v1.4.3`）を表示。
-  - アプリのコンセプト概要（透過・枠なし・ミニマルデザイン）。
-  - 主要機能カード（時計、カレンダー、最前面ピン留め、背景透過、ウィンドウ配置、ショートカット）。
-* **操作性と安全設計**:
-  - モーダル外クリック、右上の閉じるボタン（✕）、フッターの閉じるボタン、および `Esc` キーで安全にクローズ。
-  - モーダル表示中の `Esc` キー押下時はアプリ終了をガードし、モーダルのみを閉じる親切設計。
+### 3.5 ヘルプ＆アプリ情報 (`help_modal.rs`)
+* タイトルバーの「?」アイコンから起動し、アプリ名（`Clondar Pro`）、`Cargo.toml` 連動のバージョンバッジ（`v2.0.0`）、コンセプト説明、および高さを揃えた 6枚の機能紹介カードを閲覧できます。
 
 ---
 
-## 4. デザイン・UI/UX 仕様
+## 4. ビジュアル＆技術仕様
 
-### 4.1 ビジュアルデザイン
-* **グラスモーフィズム**: 背景ぼかし（Blur）を適用し、透過しつつも視認性を確保。
-* **ボーダレス**: 物理的な枠線を排除し、ピン留め時のみ青いリング（Ring）で状態を表現。
-* **タイポグラフィ**: `Inter` (UI) と `JetBrains Mono` (数値) の組み合わせ。
-
-### 4.2 インタラクション
-* **コンテキストメニュー禁止**: 右クリックメニューを無効化し、ウィジェットとしての純粋性を維持（システムトレイは独自のメニューを表示）。
-* **ホバーエフェクト**: 祝日名などの情報をツールチップで表示。
+* **カスタムベクター線画アイコン (`icons.rs`)**: 絵文字の豆腐化を防ぐため、UI アイコンをすべてベクター線画で描画しています。
+* **フォント管理 (`font.rs`)**: 游ゴシック UI 等の Windows 標準日本語フォントを組み込み、垂直センタリングと視認性を最適化しています。
+* **リリース最適化 (`Cargo.toml`)**: `opt-level = 'z'`、`lto = true`、`codegen-units = 1`、`panic = 'abort'`、`strip = true` を適用し、実行ファイルサイズを最小化しています。
+* **パッケージング (`build.rs` / `installer/clondar.nsi`)**: `winres` により `Clondar.exe` へアイコンと製品メタデータを埋め込み、NSIS で日本語・英語対応の `%LOCALAPPDATA%\Clondar Pro\` インストーラーを生成します。
 
 ---
 
-## 5. 技術スタック
-* **Backend**: Rust (Tauri v2), 共有クレート (common_lib) 統合
-* **Frontend**: React 18 (Vite), Tailwind CSS (v3)
-* **Architecture**: Local Bundled SPA (Offline Complete)
-* **Animation**: Framer Motion
-* **Permissions**: Tauri v2 Capabilities System
-* **CI/CD**: GitHub Actions (Automatic Release Build), Dependabot (Weekly updates)
-
----
-
-## 6. 特筆すべき実装
-1. **Local Bundled SPA (Offline Complete)**:
-   すべての依存ライブラリを Vite によってローカルパッケージとしてバンドル。これにより CDN やインターネット環境に一切依存せず、完全な offline 状態でも起動・動作する堅牢なデスクトップアプリを実現。
-2. **System Tray Integration**:
-   Rust 側のトレイメニューとフロントエンド React を Tauri のイベントバス (`emit` / `listen`) で接続し、最前面ピン留め状態や位置リセット座標の双方向同期を達成。
-3. **Shadow Removal**: Rust 側の `set_shadow(false)` と Config 側の `shadow: false` の二重設定により、透過時の「薄い枠」を完全に除去。
-4. **DPI-Aware Coordinate Restoration**: 座標復帰時に `type: pos.type || 'Physical'`（物理ピクセル座標）を保持・適用することで、DPIスケーリングの異なるマルチモニター環境へのポータビリティを確保。
-5. **Shared Crate Integration (common_lib)**:
-   プロジェクト間で共通化された Rust ロジックを `common_lib` からインポートし、Tauri コマンド (`get_holidays_diff`, `get_word_count`) 経由で React UI と連携。これにより同一仕様の文字列処理ロジックを効率よく安全に再利用。
-
----
-
-## 7. パッケージング・配布仕様
-
-* **NSIS (EXE インストーラー)**:
-  - 英語と日本語の多言語（Multi-language）に対応。
-  - 起動時に言語選択ダイアログを表示し、システムロケールに基づく自動言語選択も連動。
-* **WiX (MSI インストーラー)**:
-  - 日本語（`ja-JP`）専用および英語（`en-US`）専用の個別の MSI パッケージを並行ビルド。
-
----
-
-**最終更新日**: 2026年9月8日  
-**バージョン**: 1.4.3
-**内部バージョン**: 1.4.3.0
-
+**最終更新日**: 2026年11月16日  
+**バージョン**: 2.0.0
+**内部バージョン**: 2.0.0.0

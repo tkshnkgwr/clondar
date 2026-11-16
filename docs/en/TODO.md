@@ -61,6 +61,10 @@ This document manages development progress, current tasks, and future feature ba
   - [x] Synchronized version fallback badge in `HelpModal.jsx` with `tauri.js` (`0.0.0-dev`).
   - [x] Added null-safe unlisten guards in `App.jsx` lifecycle teardowns.
   - [x] Comprehensive overhaul of `README.md` / `README_JA.md` and complete technical documentation alignment.
+- [x] **Pure Rust Native GUI Migration & Official Release Setup (v2.0.0)**
+  - [x] Implemented Phase C single-process WebView2-free native GUI on `eframe 0.37.0` (`egui` + `glow`) and preserved legacy Tauri code on branch `legacy/tauri-v1`.
+  - [x] Replaced emoji glyphs with vector line icons (`icons.rs`), refined Japanese font rendering (`font.rs`), polished UI layouts, and ported Yearly View, Holidays Manager, and Help Modal natively.
+  - [x] Embedded icon/metadata into `Clondar.exe` via `build.rs` (`winres`), created `installer/clondar.nsi`, and updated CI/CD & `bump-version.ps1` for Pure Rust.
 
 ---
 
@@ -92,15 +96,15 @@ There are currently no pending immediate tasks. All core features and verificati
 
 ### ⚡ Usability & System Integration
 - [ ] **Global Hotkey Integration (Instant Show/Hide)**
-  - Register global keyboard shortcuts (e.g. `Alt+Shift+C`) to instantly summon, hide, or pin the desktop widget during other desktop tasks.
+  - Register global keyboard shortcuts (e.g. `Alt+Shift+C`) to instantly summon, hide, or pin the desktop widget during other desktop tasks (e.g. via the `global-hotkey` crate).
 - [ ] **System Startup Integration**
-  - Integrate autostart toggles into the settings panel (e.g., using Tauri's autostart plugin) for direct startup enrollment.
+  - Integrate autostart toggles into the settings/tray menu (managing Windows `HKCU\...\Run` registry entries natively in Rust).
 - [ ] **Ghost / Click-Through Transparency Mode**
   - Temporarily increase transparency on mouse hover or allow mouse events to click through to underlying desktop windows.
 - [ ] **Automatic Update Checker via GitHub Releases**
   - Check for newer releases in the background at startup or within the Help Modal, notifying users with an unobtrusive update badge.
-- [ ] **Complete Frontend Integration of Rust Holiday Engine (`get_holidays`)**
-  - Unify dual holiday calculation logic by routing Tauri frontend requests directly through the Rust `get_holidays` command for maximal execution speed and maintainability.
+- [x] **Unified Rust Holiday Engine (`holidays.rs`)**
+  - Consolidated completely into `src/holidays.rs` with the v2.0.0 Pure Rust architecture, eliminating legacy dual JS implementations.
 
 ### 📅 Scheduling & Data Interoperability
 - [ ] **Monospace Widget Planner & Desktop Reminders**
@@ -142,6 +146,7 @@ A major optimization roadmap based on actual memory profiling on 2026-11-16 (~42
 - [x] **Evaluate React Alternatives**
   - Evaluated migrating from React 18 (which accounts for most of the 184.21 kB main bundle) to Preact, SolidJS, or Vanilla JS/TS (Vanilla JS/TS or Preact identified as strongest candidates for minimal JS heap and zero/tiny runtime overhead).
 
-### 🦀 Phase C: Fundamental Architecture Overhaul (Long-Term Option)
-- [ ] **Evaluate Pure Rust Native GUI (No WebView2)**
-  - Since WebView2 accounts for ~96% of current private memory usage, explore migrating rendering to **Win32 + Direct2D / DirectComposition** or a lightweight Rust GUI framework (**Slint / iced / egui**) to achieve an ultra-lightweight **10–30 MB** resident widget.
+### 🦀 Phase C: Fundamental Architecture Overhaul (Implemented & Shipped in v2.0.0)
+- [x] **Pure Rust Native GUI Migration (`eframe 0.37.0` / `egui` + `glow`)**
+  - Eliminated WebView2 (which accounted for ~96% of legacy private memory) and migrated to a single-process Pure Rust GUI powered by `egui + glow` (OpenGL only).
+  - Switching from `wgpu` (`293.06 MB`) to `glow` reduced memory to **1 process / `68.45 MB` private memory** (**`-122.29 MB` / -64.1%** vs. Phase B WebView2), promoted as the official v2.0.0 release.

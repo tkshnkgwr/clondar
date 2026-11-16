@@ -32,11 +32,6 @@ jobs:
           path: common_lib
           token: ${{ secrets.PAT || github.token }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: lts/*
-
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -45,23 +40,39 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: 'clondar/src-tauri -> clondar/src-tauri/target'
+          workspaces: 'clondar -> clondar/target'
 
-      - name: Install frontend dependencies
-        run: npm ci
+      - name: Build release binary
+        run: cargo build --release
 
-      - name: Install Tauri CLI
-        run: npm install -g @tauri-apps/cli@latest
-
-      - name: Build Tauri app
-        run: tauri build
+      - name: Build NSIS installer
+        shell: pwsh
+        run: |
+          $makensis = Get-Command makensis -ErrorAction SilentlyContinue
+          if (-not $makensis) {
+            $candidates = @(
+              "C:\Program Files (x86)\NSIS\makensis.exe",
+              "C:\Program Files\NSIS\makensis.exe"
+            )
+            foreach ($c in $candidates) {
+              if (Test-Path $c) { $makensis = $c; break }
+            }
+          } else {
+            $makensis = $makensis.Source
+          }
+          if (-not $makensis) {
+            choco install nsis -y
+            $makensis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          }
+          & $makensis "installer/clondar.nsi"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            clondar/src-tauri/target/release/bundle/nsis/*.exe
-            clondar/src-tauri/target/release/bundle/wix/*.msi
+            clondar/installer/*.exe
+            clondar/target/release/Clondar.exe
           tag_name: ${{ github.ref_name }}
           name: 'Clondar Pro ${{ github.ref_name }}'
           body: 'Please refer to CHANGELOG.md for details of this release.'

@@ -2,6 +2,27 @@
 
 **English** | [日本語版](../ja/CHANGELOG.md)
 
+## [2.0.0] - 2026-11-16
+### Changed (Breaking / Architecture Overhaul)
+- **Pure Rust Native GUI Migration (WebView2, React & Node.js Removed)**:
+  - Migrated to a single-process Pure Rust native GUI built on **egui (`eframe 0.37.0`) + `glow` (OpenGL)** (Phase C), removing `src-tauri`, WebView2, React, Vite, and Node.js assets (legacy Tauri v1.4.4 preserved on branch `legacy/tauri-v1`).
+  - Switched from `eframe`'s default `wgpu` backend (`293.06 MB` private memory) to lightweight **`glow` (OpenGL only)**, achieving **1 process** and **`68.45 MB` private memory** (**`-122.29 MB` / -64.1%** vs. Phase B WebView2 `190.74 MB` across 7 processes, **`-139.06 MB` / -67.0%** vs. v1.4.1).
+- **Root Promotion & Modular Architecture**:
+  - Promoted native Rust sources to repository root `src/`, organized into focused single-responsibility modules: `main.rs`, `clock_pane.rs`, `holidays.rs`, `holidays_manager.rs`, `yearly_view.rs`, `help_modal.rs`, `icons.rs`, `theme.rs`, `tray.rs`, `font.rs`, and `config.rs`.
+  - Implemented pure Rust state & physical coordinate persistence in `%LOCALAPPDATA%\com.clondar.pro\state.json` (`config.rs`).
+- **Pure Rust + NSIS Build, Packaging & CI/CD**:
+  - Added `build.rs` (`winres`) to embed `icons/icon.ico` and Windows version metadata directly into `Clondar.exe`.
+  - Created `installer/clondar.nsi` for bilingual (Japanese / English) NSIS installer generation (`$LOCALAPPDATA\Clondar Pro\Clondar.exe`, Start Menu shortcuts, HKCU uninstaller registration).
+  - Updated `scripts/bump-version.ps1`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, and `.github/dependabot.yml` for Pure Rust + NSIS workflows.
+
+### Added & Improved
+- **Custom Vector Line Icons & System Font Loading**:
+  - Replaced emoji glyphs (which risked tofu rendering) with crisp custom vector line icons in `icons.rs`.
+  - Configured Windows system Japanese font loading (Yu Gothic UI) in `font.rs` with bold clock typography.
+- **Native UI Polish**:
+  - Centered `DIGITAL / ANALOG` pill tabs, locked bottom control row coordinates across mode switches, disabled the `24H` button in Analog mode, enlarged the analog clock face (1.2x), and unified Help modal card heights.
+  - Delivered full native implementations for Yearly View (`yearly_view.rs`), Holidays Manager (`holidays_manager.rs`), and Help Modal (`help_modal.rs`).
+
 ## [1.4.4] - 2026-11-09
 ### Fixed
 - **Holiday Calculation Engine Optimization & Rust IPC Bridge**:

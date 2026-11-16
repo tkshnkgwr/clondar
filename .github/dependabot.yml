@@ -6,8 +6,5 @@ updates:
     schedule:
       interval: "weekly"
 
-  # Maintain dependencies for Cargo (Rust)
-  - package-ecosystem: "cargo"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+# 注意: Cargo.toml はリポジトリ外の ../common_lib を path 参照しており、
+# Dependabot の単一リポジトリ環境では path_dependencies_not_reachable となるため除外しています。

@@ -135,12 +135,12 @@
   - `YearlyView`・`HolidaysManager`・`HelpModal` を初期バンドル・初期 DOM から切り離し、起動時メモリを削減する。
 
 ### ⚡ Phase B: Tauri / WebView2 ランタイム最適化
-- [ ] **WebView2 起動引数の最適化 (`additional_browser_args`)**
+- [x] **WebView2 起動引数の最適化 (`additional_browser_args`)**
   - 時計・カレンダーウィジェットに不要なブラウザ機能（スペルチェック、メディア関連、バックグラウンド通信機能等）を無効化し、`utility` プロセス群等の基礎メモリを削減する。
-- [ ] **トレイ格納（非表示）時の WebView 破棄またはサスペンド (`src-tauri/src/main.rs`)**
-  - ウィンドウを閉じてトレイ常駐している間は WebView ウィンドウを破棄（再表示時に再生成）またはサスペンドさせ、バックグラウンド待機時の消費を Rust 本体の数〜十数 MB に抑える。
-- [ ] **フロントエンドの脱 React 検討**
-  - React 18 から Preact / SolidJS / バニラ TypeScript へ移行し、レンダラー側の JS ヒープとバンドルサイズを最小化する。
+- [x] **トレイ格納（非表示）時の WebView 破棄またはサスペンド (`src-tauri/src/main.rs`)**
+  - ウィンドウを閉じてトレイ常駐している間は WebView ウィンドウを破棄（再表示時に再生成）させ、バックグラウンド待機時の消費を Rust 本体の数〜十数 MB に抑える。
+- [x] **フロントエンドの脱 React 検討**
+  - React 18（現行メインバンドル 184.21 kB の大半を占有）から Preact / SolidJS / バニラ JS・TS への移行効果・コストを比較検討（オフライン完結＆最小メモリ構成としてはバニラ JS/TS または Preact が有力）。
 
 ### 🦀 Phase C: 抜本的アーキテクチャ刷新（最終目標オプション）
 - [ ] **脱 WebView2・Rust ネイティブ GUI 化の検討**

@@ -135,12 +135,12 @@ A major optimization roadmap based on actual memory profiling on 2026-11-16 (~42
   - Split `YearlyView`, `HolidaysManager`, and `HelpModal` out of the initial bundle and mount cycle to reduce baseline memory footprint.
 
 ### ⚡ Phase B: Tauri / WebView2 Runtime Optimization
-- [ ] **Tune WebView2 Launch Arguments (`additional_browser_args`)**
+- [x] **Tune WebView2 Launch Arguments (`additional_browser_args`)**
   - Disable browser features unnecessary for a desktop clock/calendar widget (spellchecking, media pipelines, background sync, etc.) to trim WebView2 `utility` process overhead.
-- [ ] **Destroy or Suspend WebView When Hidden to Tray (`src-tauri/src/main.rs`)**
-  - Instead of only calling `hide()`, destroy and recreate the WebView window (or suspend it) when minimized to the system tray so idle memory stays within the Rust core footprint (~8–15 MB).
-- [ ] **Evaluate React Alternatives**
-  - Consider migrating from React 18 to Preact, SolidJS, or Vanilla TypeScript to minimize renderer JS heap and runtime overhead.
+- [x] **Destroy or Suspend WebView When Hidden to Tray (`src-tauri/src/main.rs`)**
+  - Destroy and recreate the WebView window when closed/hidden to the system tray so idle memory stays within the Rust core footprint (~8–15 MB).
+- [x] **Evaluate React Alternatives**
+  - Evaluated migrating from React 18 (which accounts for most of the 184.21 kB main bundle) to Preact, SolidJS, or Vanilla JS/TS (Vanilla JS/TS or Preact identified as strongest candidates for minimal JS heap and zero/tiny runtime overhead).
 
 ### 🦀 Phase C: Fundamental Architecture Overhaul (Long-Term Option)
 - [ ] **Evaluate Pure Rust Native GUI (No WebView2)**

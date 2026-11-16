@@ -22,7 +22,8 @@
         "visible": false,
         "center": false,
         "skipTaskbar": true,
-        "shadow": false
+        "shadow": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,Translate,OptimizationHints,MediaRouter,AutofillServerCommunication --disable-background-networking --disable-component-update --disable-domain-reliability --disable-sync --disable-spell-checking --disable-speech-api --disable-extensions --disable-default-apps --disable-notifications --mute-audio --no-pings"
       }
     ],
     "security": {

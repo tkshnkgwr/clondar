@@ -25,11 +25,14 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex,
+};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Emitter, Manager,
+    Emitter, Manager, WebviewWindowBuilder,
 };
 
 mod holidays;
@@ -37,11 +40,14 @@ mod holidays;
 /// アプリケーションが明示的な終了処理中（システムトレイメニューの「終了」選択時など）であるかを管理する共有状態。
 ///
 /// ## 仕組みと役割
-/// 通常のウィンドウクローズイベント（❌ボタンや `Esc` キー押下）が発生した際、
-/// アプリケーションを終了させずにトレイ常駐（非表示状態）にするため、このフラグを確認します。
-/// - `false`: ウィンドウの破棄をキャンセル（`prevent_close`）し、非表示（`hide`）にします。
-/// - `true`: トレイメニューから明示的に終了が指示された状態であり、全ウィンドウの破棄とプロセスの正規終了を許可します。
+/// トレイ格納のためにメインウィンドウを破棄（クローズ）した際、Tauri の全ウィンドウ終了フック（`RunEvent::ExitRequested`）が
+/// 発火します。その際アプリを終了させずにトレイ常駐を維持するため、このフラグを確認します。
+/// - `false`: ウィンドウ破棄による終了要求をキャンセル（`api.prevent_exit()`）し、Rust 本体のみの超軽量トレイ常駐へ移行します。
+/// - `true`: トレイメニュー「終了」からの明示的な終了指示であり、プロセスの正規終了を許可します。
 struct QuittingState(Mutex<bool>);
+
+/// メインウィンドウの再生成処理が進行中かを管理する排他ガード。
+struct RecreatingState(AtomicBool);
 
 /// アプリケーションに組み込まれている内蔵標準の祝日設定データ（JSON形式）。
 ///
@@ -210,6 +216,60 @@ fn get_word_counts(text: String, words: Vec<String>) -> Result<Vec<WordCountItem
     Ok(results)
 }
 
+/// メインウィンドウにウィジェット用のネイティブ装飾（枠なし・影なし・初期最前面）を適用します。
+fn configure_main_window(window: &tauri::WebviewWindow) {
+    let _ = window.set_decorations(false);
+    let _ = window.set_shadow(false);
+    let _ = window.set_always_on_top(true);
+}
+
+/// トレイ格納中に破棄されたメインウィンドウを別スレッドで再生成します。
+///
+/// Windows 環境の WebView2 では同期イベントハンドラ内でのウィンドウ生成がデッドロックするため、
+/// 必ず独立スレッド上から `WebviewWindowBuilder::from_config` を呼び出します。
+fn spawn_recreate_main_window(app: tauri::AppHandle) {
+    let state = app.state::<RecreatingState>();
+    if state
+        .0
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return;
+    }
+
+    std::thread::spawn(move || {
+        struct ResetGuard(tauri::AppHandle);
+        impl Drop for ResetGuard {
+            fn drop(&mut self) {
+                self.0
+                    .state::<RecreatingState>()
+                    .0
+                    .store(false, Ordering::SeqCst);
+            }
+        }
+        let _guard = ResetGuard(app.clone());
+
+        if let Some(existing) = app.get_webview_window("main") {
+            let _ = existing.show();
+            let _ = existing.set_focus();
+            return;
+        }
+
+        if let Some(window_config) = app.config().app.windows.first().cloned() {
+            match WebviewWindowBuilder::from_config(&app, &window_config) {
+                Ok(builder) => {
+                    if let Ok(window) = builder.build() {
+                        configure_main_window(&window);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("メインウィンドウの再生成に失敗しました: {}", e);
+                }
+            }
+        }
+    });
+}
+
 /// アプリケーションのエントリーポイント。
 ///
 /// ## 実行ライフサイクル
@@ -217,17 +277,15 @@ fn get_word_counts(text: String, words: Vec<String>) -> Result<Vec<WordCountItem
 ///    `common_lib::check_single_instance` を呼び出し、同一マシン上で既に Clondar が起動している場合は
 ///    メッセージを出力して直ちにプロセスを安全終了（`std::process::exit(0)`）します。
 /// 2. **Tauri ビルダーの初期化**:
-///    - `QuittingState`（終了フラグ）をマネージドステートとして登録します。
-///    - IPC コマンドハンドラー（祝日計算、差分計算、単語集計、祝日ロード・保存・リセット）を登録します。
-/// 3. **メインウィンドウのネイティブ装飾・挙動セットアップ (`setup` フック)**:
-///    - `window.set_decorations(false)`: OS標準のタイトルバーと境界枠線を完全に消去。
-///    - `window.set_shadow(false)`: Windows 11 等で透過時に生じる薄い枠やOS標準の影を消去。
-///    - `window.set_always_on_top(true)`: 初期状態として最前面表示を設定。
-///    - `window.on_window_event`: ウィンドウのクローズ要求を傍受し、明示的な終了指示でない場合は破棄せず非表示（Hide）化。
+///    - `QuittingState`（終了フラグ）と `RecreatingState`（再生成排他フラグ）をマネージドステートとして登録します。
+///    - IPC コマンドハンドラー（祝日計算、差分計算、単語一括集計、祝日ロード・保存・リセット）を登録します。
+/// 3. **メインウィンドウのネイティブ装飾セットアップ (`setup` フック)**:
+///    - `configure_main_window`: OS標準枠線・影を除去し、最前面表示を設定（表示自体は座標復元後にフロントエンドが1回実行）。
 /// 4. **システムトレイ（タスクトレイ）メニューの構築**:
 ///    - 「表示 / 非表示」「最前面表示の切替」「位置をリセット」「終了」メニュー項目を作成。
-///    - メニューイベント発生時、Tauri イベントバス（`always-on-top-toggled`, `position-reset`）を通じて
-///      フロントエンド（React）へ状態変更を即時通知。
+///    - 非表示（トレイ格納）時は WebView ウィンドウを破棄して WebView2 メモリを完全解放し、再表示時に再生成します。
+/// 5. **常駐イベントループ (`RunEvent::ExitRequested`)**:
+///    - トレイ格納で全ウィンドウが破棄されても、`QuittingState` が `false` の場合は `api.prevent_exit()` で常駐を維持します。
 ///
 /// # パニック
 /// * Tauri アプリケーションの初期化または実行ループ中に回復不能なエラーが発生した場合にパニックします。
@@ -238,8 +296,9 @@ fn main() {
         std::process::exit(0);
     }
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(QuittingState(Mutex::new(false)))
+        .manage(RecreatingState(AtomicBool::new(false)))
         .invoke_handler(tauri::generate_handler![
             get_holidays,
             get_holidays_diff,
@@ -251,31 +310,7 @@ fn main() {
         .setup(|app| {
             // メインウィンドウを取得 (Tauri v2)
             let window = app.get_webview_window("main").unwrap();
-
-            // 強制的に枠を削除
-            window.set_decorations(false).unwrap();
-
-            // 強制的に影を削除 (Windows)
-            window.set_shadow(false).unwrap();
-
-            // 強制的に最前面に設定
-            window.set_always_on_top(true).unwrap();
-
-            // ウィンドウ表示はフロントエンドの座標復元完了後に1回だけ実行するため、ここでは呼ばない
-
-            // ウィンドウが閉じられようとしたときは、破棄せずに非表示にする (常駐化対策)
-            let app_handle = app.handle().clone();
-            let win_clone = window.clone();
-            window.on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    let quitting_state = app_handle.state::<QuittingState>();
-                    let is_quitting = *quitting_state.0.lock().unwrap();
-                    if !is_quitting {
-                        api.prevent_close();
-                        let _ = win_clone.hide();
-                    }
-                }
-            });
+            configure_main_window(&window);
 
             // --- システムトレイメニューの構築 ---
             let toggle =
@@ -297,14 +332,15 @@ fn main() {
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "toggle" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            if let Ok(visible) = window.is_visible() {
-                                if visible {
-                                    let _ = window.hide();
-                                } else {
-                                    let _ = window.show();
-                                    let _ = window.set_focus();
-                                }
+                            if window.is_visible().unwrap_or(false) {
+                                // トレイ格納時は WebView ウィンドウを破棄し WebView2 プロセスを解放
+                                let _ = window.close();
+                            } else {
+                                let _ = window.show();
+                                let _ = window.set_focus();
                             }
+                        } else {
+                            spawn_recreate_main_window(app.clone());
                         }
                     }
                     "always_on_top" => {
@@ -329,9 +365,7 @@ fn main() {
                     "quit" => {
                         let quitting_state = app.state::<QuittingState>();
                         *quitting_state.0.lock().unwrap() = true;
-                        for window in app.webview_windows().values() {
-                            let _ = window.close();
-                        }
+                        app.exit(0);
                     }
                     _ => {}
                 })
@@ -340,8 +374,18 @@ fn main() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("Tauri アプリケーションの実行中にエラーが発生しました");
+        .build(tauri::generate_context!())
+        .expect("Tauri アプリケーションの構築中にエラーが発生しました");
+
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::ExitRequested { api, .. } = event {
+            let quitting_state = app_handle.state::<QuittingState>();
+            let is_quitting = *quitting_state.0.lock().unwrap();
+            if !is_quitting {
+                api.prevent_exit();
+            }
+        }
+    });
 }
 
 #[cfg(test)]

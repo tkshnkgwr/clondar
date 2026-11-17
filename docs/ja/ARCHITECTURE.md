@@ -5,7 +5,7 @@
 このドキュメントでは、**Clondar Pro v2.0.0** のシステム構成、単一プロセス設計、UI 描画ループ、状態管理、および共有ライブラリ（`common_lib`）との連携に関する技術的な詳細を記述します。
 
 > [!NOTE]
-> 旧 Tauri v2 + WebView2 + React 構成（v1.4.4）は、履歴保全のため `legacy/tauri-v1` ブランチに退避されています。v2.0.0 以降は WebView2・Node.js を完全に廃した **Pure Rust ネイティブ GUI 構成** です。
+> 旧 Tauri v2 + WebView2 + React 構成（v1.4.4）は、Git タグ `v1.4.4` および過去コミット履歴に保全されています。v2.0.0 以降は WebView2・Node.js を完全に廃した **Pure Rust ネイティブ GUI 構成** です。
 
 ---
 

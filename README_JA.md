@@ -7,7 +7,7 @@
 ![Clondar Pro プレビュー](docs/assets/screenshot.png)
 
 > [!NOTE]
-> 旧 Tauri v2 + WebView2 + React 版（v1.4.4）のソースコードは、`legacy/tauri-v1` ブランチに退避・保全されています。
+> 旧 Tauri v2 + WebView2 + React 版（v1.4.4）のソースコードは、Git タグ `v1.4.4` および過去コミット履歴に保全されています。
 
 ---
 

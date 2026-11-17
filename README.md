@@ -7,7 +7,7 @@
 ![Clondar Pro Preview](docs/assets/screenshot.png)
 
 > [!NOTE]
-> Starting with **v2.0.0**, Clondar Pro migrated away from Tauri v2 + WebView2 + React to a single-process Pure Rust native GUI (`egui + glow`). The legacy Tauri v1.4.4 codebase is preserved on the `legacy/tauri-v1` branch.
+> Starting with **v2.0.0**, Clondar Pro migrated away from Tauri v2 + WebView2 + React to a single-process Pure Rust native GUI (`egui + glow`). The legacy Tauri v2 (`v1.4.4`) codebase is preserved at the `v1.4.4` Git tag and commit history.
 
 ---
 

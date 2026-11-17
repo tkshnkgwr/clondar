@@ -75,7 +75,7 @@ jobs:
             clondar/target/release/Clondar.exe
           tag_name: ${{ github.ref_name }}
           name: 'Clondar Pro ${{ github.ref_name }}'
-          body: 'Please refer to CHANGELOG.md for details of this release.'
+          body: 'Please refer to `docs/en/CHANGELOG.md` (or `docs/ja/CHANGELOG.md`) for details of this release.'
           draft: false
           prerelease: false
         env:

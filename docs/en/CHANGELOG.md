@@ -5,7 +5,7 @@
 ## [2.0.0] - 2026-11-16
 ### Changed (Breaking / Architecture Overhaul)
 - **Pure Rust Native GUI Migration (WebView2, React & Node.js Removed)**:
-  - Migrated to a single-process Pure Rust native GUI built on **egui (`eframe 0.37.0`) + `glow` (OpenGL)** (Phase C), removing `src-tauri`, WebView2, React, Vite, and Node.js assets (legacy Tauri v1.4.4 preserved on branch `legacy/tauri-v1`).
+  - Migrated to a single-process Pure Rust native GUI built on **egui (`eframe 0.37.0`) + `glow` (OpenGL)** (Phase C), removing `src-tauri`, WebView2, React, Vite, and Node.js assets (legacy Tauri v2 / `v1.4.4` history preserved at Git tag `v1.4.4` and commit history).
   - Switched from `eframe`'s default `wgpu` backend (`293.06 MB` private memory) to lightweight **`glow` (OpenGL only)**, achieving **1 process** and **`68.45 MB` private memory** (**`-122.29 MB` / -64.1%** vs. Phase B WebView2 `190.74 MB` across 7 processes, **`-139.06 MB` / -67.0%** vs. v1.4.1).
 - **Root Promotion & Modular Architecture**:
   - Promoted native Rust sources to repository root `src/`, organized into focused single-responsibility modules: `main.rs`, `clock_pane.rs`, `holidays.rs`, `holidays_manager.rs`, `yearly_view.rs`, `help_modal.rs`, `icons.rs`, `theme.rs`, `tray.rs`, `font.rs`, and `config.rs`.

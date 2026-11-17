@@ -62,7 +62,7 @@
   - [x] `App.jsx` のトレイメニュー購読解除（Unlisten）に対する安全ガードの追加。
   - [x] `README.md` / `README_JA.md` の包括的拡充、および全技術文書の整合性レビュー・更新。
 - [x] **Pure Rust ネイティブ GUI 化・正式版リリース整備 (v2.0.0)**
-  - [x] Phase C として `eframe 0.37.0` (`egui` + `glow`) による単一プロセス・脱 WebView2 構成を実装し、旧 Tauri 版は `legacy/tauri-v1` ブランチへ退避保全。
+  - [x] Phase C として `eframe 0.37.0` (`egui` + `glow`) による単一プロセス・脱 WebView2 構成を実装し、旧 Tauri 版は Git タグ `v1.4.4` および過去コミット履歴に保全（作業ブランチは `main` に一本化）。
   - [x] 絵文字廃止（ベクター線画アイコン `icons.rs`）、フォント改善（`font.rs`）、UI レイアウト調整、および全モーダル（年間・祝日設定・ヘルプ）のネイティブ移植。
   - [x] `build.rs` (`winres`) による `Clondar.exe` 正式バイナリ整備、`installer/clondar.nsi` 新設、および CI/CD・`bump-version.ps1` の Pure Rust 化。
 

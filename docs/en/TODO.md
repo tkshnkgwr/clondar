@@ -62,7 +62,7 @@ This document manages development progress, current tasks, and future feature ba
   - [x] Added null-safe unlisten guards in `App.jsx` lifecycle teardowns.
   - [x] Comprehensive overhaul of `README.md` / `README_JA.md` and complete technical documentation alignment.
 - [x] **Pure Rust Native GUI Migration & Official Release Setup (v2.0.0)**
-  - [x] Implemented Phase C single-process WebView2-free native GUI on `eframe 0.37.0` (`egui` + `glow`) and preserved legacy Tauri code on branch `legacy/tauri-v1`.
+  - [x] Implemented Phase C single-process WebView2-free native GUI on `eframe 0.37.0` (`egui` + `glow`) and retained legacy Tauri code under Git tag `v1.4.4` and commit history.
   - [x] Replaced emoji glyphs with vector line icons (`icons.rs`), refined Japanese font rendering (`font.rs`), polished UI layouts, and ported Yearly View, Holidays Manager, and Help Modal natively.
   - [x] Embedded icon/metadata into `Clondar.exe` via `build.rs` (`winres`), created `installer/clondar.nsi`, and updated CI/CD & `bump-version.ps1` for Pure Rust.
 

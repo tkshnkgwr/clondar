@@ -22,7 +22,7 @@
 | TS-007  | NSIS Bilingual Installer Build  | Compiles JA/EN NSIS installer script with zero errors and zero warnings                      | `makensis installer\clondar.nsi` (UTF-8 BOM) succeeds with 0 warnings: `Clondar_Pro_2.0.0_x64-setup.exe` (**2.59 MB**)              | **PASS** |
 | TS-008  | `glow` Memory Reduction Check   | Switching from `wgpu` to `glow` achieves low single-process private memory                   | Simultaneous Windows measurement on 2026-11-16 recorded 1 process / **68.45 MB** Private (vs. 190.74 MB Phase B / 293.06 MB `wgpu`) | **PASS** |
 
-> *(Historical Tauri v2 / WebView2 test records TS-001..TS-034 are preserved on the `legacy/tauri-v1` branch.)*
+> *(Historical Tauri v2 / WebView2 test records TS-001..TS-034 are preserved at the `v1.4.4` Git tag and commit history.)*
 
 ---
 

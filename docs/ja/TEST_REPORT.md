@@ -22,7 +22,7 @@
 | TS-007       | NSIS インストーラー生成     | 日英対応の NSIS スクリプトが警告・エラーゼロで `setup.exe` を生成すること           | `makensis installer\clondar.nsi` (UTF-8 BOM) が警告 0 で成功し `Clondar_Pro_2.0.0_x64-setup.exe` (**2.59 MB**) 生成  | **PASS** |
 | TS-008       | `glow` 移行によるメモリ削減 | `wgpu` ではなく `glow` で単一プロセス・軽量動作すること                             | 2026-11-16 実機計測で 1プロセス・固有メモリ **68.45 MB** を確認（Phase B `190.74 MB` / `wgpu` `293.06 MB` 比大幅減） | **PASS** |
 
-> *(※ Tauri v2 / WebView2 時代のテスト項目 TS-001〜TS-034 の過去履歴は `legacy/tauri-v1` ブランチに保持されています。)*
+> *(※ Tauri v2 / WebView2 時代のテスト項目 TS-001〜TS-034 の過去履歴は、Git タグ `v1.4.4` および過去コミット履歴に保持されています。)*
 
 ---
 

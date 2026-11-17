@@ -3,7 +3,7 @@
 [English Version](../en/PROJECT_TEMPLATE_GUIDE.md) | **日本語版**
 
 > [!NOTE]
-> `Clondar Pro` 本体は **v2.0.0** より WebView2 を廃した Pure Rust (`egui + glow`) 構成へ移行しました（Tauri v2 時代の構成は `legacy/tauri-v1` ブランチに保全）。本ドキュメントは、今後別途 Tauri v2 アプリを新規作成する際のリファレンス雛形として保持しています。
+> `Clondar Pro` 本体は **v2.0.0** より WebView2 を廃した Pure Rust (`egui + glow`) 構成へ移行しました（Tauri v2 時代の構成は Git タグ `v1.4.4` および過去コミット履歴に保全）。本ドキュメントは、今後別途 Tauri v2 アプリを新規作成する際のリファレンス雛形として保持しています。
 
 Google AI Studio や AntiGravity（Gem）と共同でデスクトップアプリを開発する際、初期設定や文字コード問題で躓かないための「黄金構成」と「AI指示書（AGENTS.md）」のテンプレートです。
 

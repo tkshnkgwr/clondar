@@ -5,7 +5,7 @@
 This document details the system architecture, single-process design, native GUI rendering loop, state persistence, and shared library integrations (`common_lib`) of **Clondar Pro v2.0.0**.
 
 > [!NOTE]
-> The legacy Tauri v2 + WebView2 + React implementation (v1.4.4) is preserved on the `legacy/tauri-v1` branch. Starting with v2.0.0, Clondar Pro runs as a **100% Pure Rust native GUI application** without WebView2 or Node.js.
+> The legacy Tauri v2 + WebView2 + React implementation (`v1.4.4`) is preserved at the `v1.4.4` Git tag and commit history. Starting with v2.0.0, Clondar Pro runs as a **100% Pure Rust native GUI application** without WebView2 or Node.js.
 
 ---
 

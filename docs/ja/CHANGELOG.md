@@ -5,7 +5,7 @@
 ## [2.0.0] - 2026-11-16
 ### Changed (Breaking / Architecture Overhaul)
 - **Pure Rust ネイティブ GUI 化（脱 WebView2 / 脱 React・Node.js）**:
-  - Phase C として検討・検証していた **egui (`eframe 0.37.0`) + `glow` (OpenGL)** による純粋な Rust 単一プロセス構成へ移行し、`src-tauri`・WebView2・React・Vite・Node.js 一式を撤去（旧 Tauri v1.4.4 系は退避ブランチ `legacy/tauri-v1` に保全）。
+  - Phase C として検討・検証していた **egui (`eframe 0.37.0`) + `glow` (OpenGL)** による純粋な Rust 単一プロセス構成へ移行し、`src-tauri`・WebView2・React・Vite・Node.js 一式を撤去（旧 Tauri v2 / v1.4.4 系の履歴は Git タグ `v1.4.4` および過去コミット履歴に保全）。
   - `eframe` のデフォルトバックエンド（`wgpu`：固有メモリ `293.06 MB`）から軽量な **`glow`（OpenGL 単体）** へ切り替えたことで、プロセス数 **1**、固有メモリ **`68.45 MB`** を達成（Phase B WebView2 版 `190.74 MB` / 7プロセス比 **`-122.29 MB`・-64.1%**、v1.4.1 比 **`-139.06 MB`・-67.0%**）。
 - **プロジェクト構成のルート昇格とモジュール分割**:
   - ソースコードをリポジトリ直下の `src/` へ統合し、`main.rs`・`clock_pane.rs`・`holidays.rs`・`holidays_manager.rs`・`yearly_view.rs`・`help_modal.rs`・`icons.rs`・`theme.rs`・`tray.rs`・`font.rs`・`config.rs` の単一責務モジュール群へ分割整理。

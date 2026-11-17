@@ -3,7 +3,7 @@
 **English** | [日本語版](../ja/PROJECT_TEMPLATE_GUIDE.md)
 
 > [!NOTE]
-> Starting with **v2.0.0**, `Clondar Pro` itself migrated to a WebView2-free Pure Rust (`egui + glow`) architecture (the legacy Tauri v2 edition is preserved on the `legacy/tauri-v1` branch). This document is retained as a standalone Tauri v2 project starter reference.
+> Starting with **v2.0.0**, `Clondar Pro` itself migrated to a WebView2-free Pure Rust (`egui + glow`) architecture (the legacy Tauri v2 edition is preserved at the `v1.4.4` Git tag and commit history). This document is retained as a standalone Tauri v2 project starter reference.
 
 This document serves as a "Golden Setup" template and "AI developer instructions (AGENTS.md)" guide for establishing new desktop app projects in collaboration with Google AI Studio or AntiGravity (Gem).
 
